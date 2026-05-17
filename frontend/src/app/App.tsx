@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -11,64 +11,128 @@ type BackendHealth = {
   message?: string;
 };
 
-const navItems = [
-  "Dashboard",
-  "Commands",
-  "Automations",
-  "File Organizer",
-  "App Launcher",
-  "Web Search",
-  "AI Chat",
-  "History",
-  "Settings",
-  "Security",
+type PageId =
+  | "dashboard"
+  | "commands"
+  | "automations"
+  | "files"
+  | "launcher"
+  | "web"
+  | "chat"
+  | "history"
+  | "settings"
+  | "security";
+
+const navItems: Array<{ id: PageId; label: string; description: string }> = [
+  { id: "dashboard", label: "Dashboard", description: "Main command center" },
+  { id: "commands", label: "Commands", description: "Intent and command testing" },
+  { id: "automations", label: "Automations", description: "Workflow builder" },
+  { id: "files", label: "File Organizer", description: "Search and organize files" },
+  { id: "launcher", label: "App Launcher", description: "Open apps and websites" },
+  { id: "web", label: "Web Search", description: "News, weather, dictionary" },
+  { id: "chat", label: "AI Chat", description: "Assistant conversation" },
+  { id: "history", label: "History", description: "Command activity logs" },
+  { id: "settings", label: "Settings", description: "Profile and preferences" },
+  { id: "security", label: "Security", description: "Permissions and safety" },
 ];
 
 const quickActions = [
-  {
-    title: "Open YouTube",
-    subtitle: "Launch media workspace",
-    accent: "#ef4444",
-  },
-  {
-    title: "Organize Files",
-    subtitle: "Sort downloads and documents",
-    accent: "#00e5ff",
-  },
-  {
-    title: "Start Study Mode",
-    subtitle: "Focus timer and learning setup",
-    accent: "#22c55e",
-  },
-  {
-    title: "Ask AI",
-    subtitle: "Talk naturally with Nexa",
-    accent: "#8b5cf6",
-  },
+  { title: "Open YouTube", subtitle: "Launch media workspace", accent: "#ef4444" },
+  { title: "Organize Files", subtitle: "Sort downloads and documents", accent: "#00e5ff" },
+  { title: "Start Study Mode", subtitle: "Focus timer and learning setup", accent: "#22c55e" },
+  { title: "Ask AI", subtitle: "Talk naturally with Nexa", accent: "#8b5cf6" },
 ];
+
+const dashboardMetrics = [
+  { title: "Voice Core", value: "Visual Ready", detail: "STT/TTS will be added later", color: "#00e5ff" },
+  { title: "Command Brain", value: "Planned", detail: "Bangla/English intent engine", color: "#8b5cf6" },
+  { title: "Desktop Shell", value: "Active", detail: "Electron renderer is working", color: "#22c55e" },
+  { title: "Automation", value: "Pending", detail: "Safe action executor later", color: "#f59e0b" },
+];
+
+const activityItems = [
+  { title: "Desktop shell initialized", text: "Electron window and React renderer are running." },
+  { title: "Sidebar navigation active", text: "Dashboard and module pages can be switched." },
+  { title: "Backend health watcher added", text: "FastAPI health state can be detected from the desktop UI." },
+];
+
+const pageCards: Record<PageId, Array<{ title: string; text: string }>> = {
+  dashboard: [
+    { title: "Voice Core", text: "Listening UI is ready. Real STT comes later." },
+    { title: "Command Input", text: "Typed command execution will be added soon." },
+    { title: "Backend Health", text: "FastAPI health state is displayed live." },
+  ],
+  commands: [
+    { title: "Intent Detection", text: "Detect open_app, youtube_search, file_search, reminder_create, and more." },
+    { title: "Bangla/Banglish Support", text: "Commands like ইউটিউব খুলো, YouTube open koro, and song চালাও will be mapped." },
+    { title: "Confidence Score", text: "Low-confidence commands will ask clarification before execution." },
+  ],
+  automations: [
+    { title: "Workflow Steps", text: "Multi-step desktop workflows will be designed here." },
+    { title: "Safe Run", text: "Sensitive automation steps will need confirmation." },
+    { title: "Run History", text: "Automation results will be logged." },
+  ],
+  files: [
+    { title: "File Search", text: "Search Desktop, Downloads, Documents by partial name and type." },
+    { title: "Organizer Preview", text: "Preview moves before changing files." },
+    { title: "Undo Support", text: "Safe file operations will keep history." },
+  ],
+  launcher: [
+    { title: "Apps", text: "Launch Chrome, VS Code, WhatsApp, YouTube, and more." },
+    { title: "Websites", text: "Open saved URLs through natural commands." },
+    { title: "Aliases", text: "Multiple names can point to the same app." },
+  ],
+  web: [
+    { title: "Weather", text: "Free/public sources only." },
+    { title: "News", text: "RSS-based news retrieval planned." },
+    { title: "Dictionary", text: "English-Bangla meaning support planned." },
+  ],
+  chat: [
+    { title: "Assistant Chat", text: "Conversational UI will live here." },
+    { title: "Memory Context", text: "Local SQLite memory will personalize replies." },
+    { title: "Study Help", text: "Student-friendly explanation mode planned." },
+  ],
+  history: [
+    { title: "Command Logs", text: "Previous requests and results." },
+    { title: "Corrections", text: "Wrongly understood commands can be improved." },
+    { title: "Audit Trail", text: "Sensitive actions will be traceable." },
+  ],
+  settings: [
+    { title: "Profile", text: "Name, language, and addressing style." },
+    { title: "Voice", text: "Voice preference and response style." },
+    { title: "Performance", text: "Low-end laptop friendly options." },
+  ],
+  security: [
+    { title: "Permissions", text: "Mic, files, browser, apps, and internet access." },
+    { title: "Confirmation Rules", text: "Delete, send, shutdown, and move actions guarded." },
+    { title: "Privacy", text: "Local-first data and memory reset controls." },
+  ],
+};
 
 export default function App() {
   const platform = window.nexa?.platform ?? "win32";
   const appMode = window.nexa?.appMode ?? "desktop";
   const backendUrl = window.nexa?.backendUrl ?? "http://127.0.0.1:8000";
 
-  const [backendStatus, setBackendStatus] =
-    useState<BackendStatus>("checking");
-  const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(
-    null
-  );
+  const [activePage, setActivePage] = useState<PageId>("dashboard");
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
+  const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
+  const [draftCommand, setDraftCommand] = useState("Open YouTube and play a relaxing Bangla song");
+
+  const activeNav = navItems.find((item) => item.id === activePage) ?? navItems[0];
+  const backendConnected = backendStatus === "connected";
+
+  const commandPreview = useMemo(() => {
+    if (!draftCommand.trim()) return "Waiting for your command...";
+    return draftCommand.trim();
+  }, [draftCommand]);
 
   useEffect(() => {
     const checkBackend = async () => {
       try {
         setBackendStatus("checking");
-
         const response = await fetch(`${backendUrl}/api/health`);
-
-        if (!response.ok) {
-          throw new Error("Backend health request failed");
-        }
-
+        if (!response.ok) throw new Error("Backend health request failed");
         const data = (await response.json()) as BackendHealth;
         setBackendHealth(data);
         setBackendStatus("connected");
@@ -79,13 +143,9 @@ export default function App() {
     };
 
     checkBackend();
-
     const timer = window.setInterval(checkBackend, 10000);
-
     return () => window.clearInterval(timer);
   }, [backendUrl]);
-
-  const backendConnected = backendStatus === "connected";
 
   return (
     <main className="desktop-app">
@@ -99,13 +159,14 @@ export default function App() {
         </div>
 
         <nav className="nav-list">
-          {navItems.map((item, index) => (
+          {navItems.map((item) => (
             <button
-              key={item}
-              className={index === 0 ? "nav-item active" : "nav-item"}
+              key={item.id}
+              className={activePage === item.id ? "nav-item active" : "nav-item"}
               type="button"
+              onClick={() => setActivePage(item.id)}
             >
-              <span>{item}</span>
+              <span>{item.label}</span>
             </button>
           ))}
         </nav>
@@ -124,109 +185,29 @@ export default function App() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Phase 05.4</p>
-            <h2>AI Command Center</h2>
+            <p className="eyebrow">Phase 06.3</p>
+            <h2>{activeNav.label}</h2>
           </div>
 
           <div className="topbar-actions">
-            <div className="mode-badge">
-              {appMode.toUpperCase()} · {platform}
-            </div>
-            <div
-              className={
-                backendConnected ? "backend-badge connected" : "backend-badge"
-              }
-            >
+            <div className="mode-badge">{appMode.toUpperCase()} · {platform}</div>
+            <div className={backendConnected ? "backend-badge connected" : "backend-badge"}>
               {backendConnected ? "Backend Connected" : "Backend Pending"}
             </div>
           </div>
         </header>
 
-        <div className="content-grid">
-          <section className="command-hero">
-            <div className="hero-copy">
-              <p className="eyebrow">Desktop Shell Active</p>
-              <h3>
-                Nexa <span>AI</span>
-              </h3>
-              <p>
-                Your futuristic Windows desktop assistant workspace is now
-                connected to a backend health layer. Voice, commands, and
-                automation modules will be attached in later phases.
-              </p>
-            </div>
-
-            <div className="voice-orb-wrap">
-              <div className="voice-orb">
-                <div className="voice-orb-core" />
-              </div>
-              <p>Listening UI Ready</p>
-            </div>
-
-            <div className="command-input">
-              <span>Try saying:</span>
-              <strong>“Open YouTube and play a song”</strong>
-              <button type="button">Transmit</button>
-            </div>
-          </section>
-
-          <aside className="right-panel">
-            <div className="panel-card">
-              <h4>System Status</h4>
-              <ul>
-                <li>
-                  <span className="dot green" />
-                  Electron Window Ready
-                </li>
-                <li>
-                  <span className="dot green" />
-                  React Renderer Working
-                </li>
-                <li>
-                  <span className="dot blue" />
-                  Vite Dev Server Connected
-                </li>
-                <li>
-                  <span className={backendConnected ? "dot green" : "dot orange"} />
-                  {backendConnected ? "Python Backend Connected" : "Python Backend Pending"}
-                </li>
-              </ul>
-            </div>
-
-            <div className="panel-card">
-              <h4>Backend Health</h4>
-
-              {backendConnected ? (
-                <div className="backend-health">
-                  <p>
-                    <span>App</span>
-                    <strong>{backendHealth?.app ?? "Nexa AI Backend"}</strong>
-                  </p>
-                  <p>
-                    <span>Version</span>
-                    <strong>{backendHealth?.version ?? "0.1.0"}</strong>
-                  </p>
-                  <p>
-                    <span>Environment</span>
-                    <strong>{backendHealth?.environment ?? "development"}</strong>
-                  </p>
-                  <p>
-                    <span>Message</span>
-                    <strong>{backendHealth?.message ?? "OK"}</strong>
-                  </p>
-                </div>
-              ) : (
-                <div className="backend-offline">
-                  <strong>Backend is not running.</strong>
-                  <p>
-                    Start the Python backend with <code>python run_backend.py</code>
-                    from the backend folder.
-                  </p>
-                </div>
-              )}
-            </div>
-          </aside>
-        </div>
+        {activePage === "dashboard" ? (
+          <DashboardPage
+            backendConnected={backendConnected}
+            backendHealth={backendHealth}
+            draftCommand={draftCommand}
+            commandPreview={commandPreview}
+            onCommandChange={setDraftCommand}
+          />
+        ) : (
+          <ModulePage page={activePage} pageTitle={activeNav.label} description={activeNav.description} />
+        )}
 
         <section className="quick-section">
           <div className="section-title">
@@ -249,10 +230,482 @@ export default function App() {
           <span>Private</span>
           <span>Secure</span>
           <span>Desktop Ready</span>
-          <span>Backend Health Aware</span>
+          <span>Core Pages Active</span>
         </footer>
       </section>
     </main>
+  );
+}
+
+function DashboardPage({
+  backendConnected,
+  backendHealth,
+  draftCommand,
+  commandPreview,
+  onCommandChange,
+}: {
+  backendConnected: boolean;
+  backendHealth: BackendHealth | null;
+  draftCommand: string;
+  commandPreview: string;
+  onCommandChange: (value: string) => void;
+}) {
+  return (
+    <div className="dashboard-layout">
+      <section className="dashboard-main">
+        <div className="dashboard-hero">
+          <div className="hero-copy">
+            <p className="eyebrow">Polished Dashboard</p>
+            <h3>Nexa <span>AI</span></h3>
+            <p>
+              Your futuristic Windows desktop assistant command center is taking shape.
+              The UI now has a stronger dashboard surface for voice, command, automation,
+              and backend state.
+            </p>
+          </div>
+
+          <div className="voice-orb-wrap">
+            <div className="voice-orb"><div className="voice-orb-core" /></div>
+            <p>Voice UI Standby</p>
+          </div>
+        </div>
+
+        <div className="command-console">
+          <div>
+            <p className="eyebrow">Command Preview</p>
+            <h4>{commandPreview}</h4>
+          </div>
+
+          <div className="command-editor">
+            <input
+              value={draftCommand}
+              onChange={(event) => onCommandChange(event.target.value)}
+              placeholder="Type a future voice command..."
+            />
+            <button type="button">Preview</button>
+          </div>
+        </div>
+
+        <div className="metric-grid">
+          {dashboardMetrics.map((metric) => (
+            <div className="dashboard-metric" key={metric.title}>
+              <span style={{ background: metric.color }} />
+              <p>{metric.title}</p>
+              <h4 style={{ color: metric.color }}>{metric.value}</h4>
+              <small>{metric.detail}</small>
+            </div>
+          ))}
+        </div>
+
+        <div className="roadmap-panel">
+          <p className="eyebrow">Next Build Path</p>
+          <h4>From UI shell to real assistant behavior</h4>
+          <div className="roadmap-steps">
+            <span>Pages</span>
+            <span>Command Engine</span>
+            <span>Voice</span>
+            <span>Automation</span>
+          </div>
+        </div>
+      </section>
+
+      <aside className="dashboard-side">
+        <StatusPanel backendConnected={backendConnected} />
+        <BackendPanel backendConnected={backendConnected} backendHealth={backendHealth} />
+        <ActivityPanel />
+      </aside>
+    </div>
+  );
+}
+
+function ModulePage({
+  page,
+  pageTitle,
+  description,
+}: {
+  page: PageId;
+  pageTitle: string;
+  description: string;
+}) {
+  if (page === "commands") return <CommandsPage />;
+  if (page === "launcher") return <LauncherPage />;
+  if (page === "files") return <FileOrganizerPage />;
+  if (page === "history") return <HistoryPage />;
+  if (page === "settings") return <SettingsPage />;
+  if (page === "security") return <SecurityPage />;
+
+  return (
+    <section className="page-surface">
+      <div className="page-hero">
+        <p className="eyebrow">Module Page</p>
+        <h3>{pageTitle}</h3>
+        <p>{description}</p>
+      </div>
+
+      <div className="page-card-grid">
+        {pageCards[page].map((card) => (
+          <div className="page-card" key={card.title}>
+            <h4>{card.title}</h4>
+            <p>{card.text}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="module-note">
+        This page is a layout placeholder. Real functionality will be added in later phases.
+      </div>
+    </section>
+  );
+}
+function HistoryPage() {
+  const timeline = [
+    {
+      time: "Now",
+      title: "Desktop app opened",
+      text: "Nexa AI Electron shell started successfully.",
+      status: "success",
+    },
+    {
+      time: "Phase 06",
+      title: "Navigation system active",
+      text: "Sidebar pages can switch without reload.",
+      status: "success",
+    },
+    {
+      time: "Phase 05",
+      title: "Backend health watcher added",
+      text: "Desktop UI can detect FastAPI backend state.",
+      status: "info",
+    },
+    {
+      time: "Future",
+      title: "Command audit logs",
+      text: "Voice commands and sensitive actions will be logged here.",
+      status: "pending",
+    },
+  ];
+
+  return (
+    <section className="page-surface system-page">
+      <div className="page-hero">
+        <p className="eyebrow">Activity & Audit</p>
+        <h3>History Center</h3>
+        <p>
+          This page will track command history, automation events, safety confirmations,
+          and assistant activity logs.
+        </p>
+      </div>
+
+      <div className="timeline-panel">
+        {timeline.map((item) => (
+          <div className="timeline-item" key={item.title}>
+            <div className={`timeline-dot ${item.status}`} />
+            <div>
+              <span>{item.time}</span>
+              <h4>{item.title}</h4>
+              <p>{item.text}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="module-note">
+        Real history will be stored locally in SQLite after the database phase.
+      </div>
+    </section>
+  );
+}
+
+function SettingsPage() {
+  const settingsGroups = [
+    {
+      title: "Profile",
+      items: ["Preferred name", "Sir/Madam addressing", "Language mode"],
+    },
+    {
+      title: "Voice",
+      items: ["Voice style", "Response speed", "Reply tone"],
+    },
+    {
+      title: "Performance",
+      items: ["Low-end laptop mode", "Animation intensity", "Background polling"],
+    },
+  ];
+
+  return (
+    <section className="page-surface system-page">
+      <div className="page-hero">
+        <p className="eyebrow">Assistant Preferences</p>
+        <h3>Settings</h3>
+        <p>
+          This page will control personal profile, language mode, voice behavior,
+          and performance options for low-end laptops.
+        </p>
+      </div>
+
+      <div className="settings-grid">
+        {settingsGroups.map((group) => (
+          <div className="settings-card" key={group.title}>
+            <h4>{group.title}</h4>
+
+            <div className="settings-list">
+              {group.items.map((item) => (
+                <label className="settings-row" key={item}>
+                  <span>{item}</span>
+                  <input type="checkbox" disabled />
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="module-note">
+        Settings are disabled for now. They will become active after SQLite profile
+        and preferences storage is implemented.
+      </div>
+    </section>
+  );
+}
+
+function SecurityPage() {
+  const permissions = [
+    {
+      name: "Microphone Access",
+      status: "Planned",
+      detail: "Required for voice input.",
+    },
+    {
+      name: "File System Access",
+      status: "Confirmation Required",
+      detail: "Needed for search, open, organize, move, and rename actions.",
+    },
+    {
+      name: "Browser Automation",
+      status: "Safe Mode",
+      detail: "Used for YouTube, web search, WhatsApp, and website workflows.",
+    },
+    {
+      name: "Sensitive Actions",
+      status: "Locked",
+      detail: "Delete, send, shutdown, restart, and file move actions require confirmation.",
+    },
+  ];
+
+  return (
+    <section className="page-surface system-page">
+      <div className="page-hero">
+        <p className="eyebrow">Safety & Permissions</p>
+        <h3>Security Center</h3>
+        <p>
+          This page defines what Nexa AI can access and which actions must require
+          strong user confirmation before execution.
+        </p>
+      </div>
+
+      <div className="security-grid">
+        {permissions.map((permission) => (
+          <div className="security-card" key={permission.name}>
+            <div>
+              <h4>{permission.name}</h4>
+              <p>{permission.detail}</p>
+            </div>
+            <span>{permission.status}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="danger-zone">
+        <p className="eyebrow">Protected Actions</p>
+        <h4>Never execute destructive actions without confirmation.</h4>
+        <p>
+          Future delete, send message, send email, shutdown, restart, file move,
+          and folder cleanup commands will go through the safety confirmation engine.
+        </p>
+      </div>
+    </section>
+  );
+}
+function CommandsPage() {
+  const examples = [
+    "YouTube open koro",
+    "ইউটিউব খুলো",
+    "Downloads folder clean koro",
+    "Boss ke email draft koro",
+  ];
+
+  return (
+    <section className="page-surface module-enhanced">
+      <div className="page-hero">
+        <p className="eyebrow">Command Understanding</p>
+        <h3>Commands Lab</h3>
+        <p>
+          This page will become the testing ground for Bengali, English, and Banglish command
+          understanding before commands are executed.
+        </p>
+      </div>
+
+      <div className="module-split">
+        <div className="module-console">
+          <p className="eyebrow">Test Command</p>
+          <div className="fake-input">ইউটিউব খুলো এবং গান চালাও</div>
+          <div className="intent-preview">
+            <p><span>Detected Intent</span><strong>youtube_search</strong></p>
+            <p><span>Confidence</span><strong>92%</strong></p>
+            <p><span>Risk Level</span><strong>Safe</strong></p>
+          </div>
+        </div>
+
+        <div className="module-list">
+          <h4>Example Commands</h4>
+          {examples.map((item) => (
+            <div className="module-row" key={item}>{item}</div>
+          ))}
+        </div>
+      </div>
+
+      <div className="module-note">
+        Actual command engine will be implemented later in Phase 13 and Phase 14.
+      </div>
+    </section>
+  );
+}
+
+function LauncherPage() {
+  const launchers = [
+    ["YouTube", "https://youtube.com", "#ef4444"],
+    ["Google", "https://google.com", "#00e5ff"],
+    ["VS Code", "Desktop app", "#60a5fa"],
+    ["WhatsApp", "Web/Desktop", "#22c55e"],
+  ];
+
+  return (
+    <section className="page-surface module-enhanced">
+      <div className="page-hero">
+        <p className="eyebrow">App & Website Launcher</p>
+        <h3>Launcher Hub</h3>
+        <p>
+          This module will open desktop apps and websites from natural voice or text commands.
+        </p>
+      </div>
+
+      <div className="launcher-grid">
+        {launchers.map(([name, target, color]) => (
+          <div className="launcher-card" key={name}>
+            <span style={{ background: color }} />
+            <h4>{name}</h4>
+            <p>{target}</p>
+            <button type="button">Preview Launch</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="module-note">
+        Real launcher execution will be connected after safety checks and command routing are ready.
+      </div>
+    </section>
+  );
+}
+
+function FileOrganizerPage() {
+  const locations = ["Desktop", "Downloads", "Documents", "Pictures"];
+
+  return (
+    <section className="page-surface module-enhanced">
+      <div className="page-hero">
+        <p className="eyebrow">File Search & Organizer</p>
+        <h3>File Control Center</h3>
+        <p>
+          This page will search, preview, organize, move, and safely manage local files.
+        </p>
+      </div>
+
+      <div className="file-layout">
+        <div className="module-console">
+          <p className="eyebrow">Search Query</p>
+          <div className="fake-input">Find my project report PDF</div>
+          <div className="intent-preview">
+            <p><span>Search Scope</span><strong>Desktop + Downloads</strong></p>
+            <p><span>Action Mode</span><strong>Preview Only</strong></p>
+            <p><span>Safety</span><strong>Delete Disabled</strong></p>
+          </div>
+        </div>
+
+        <div className="module-list">
+          <h4>Search Locations</h4>
+          {locations.map((item) => (
+            <div className="module-row" key={item}>{item}</div>
+          ))}
+        </div>
+      </div>
+
+      <div className="module-note">
+        File actions will always use preview and confirmation before moving, renaming, or deleting files.
+      </div>
+    </section>
+  );
+}
+
+function StatusPanel({ backendConnected }: { backendConnected: boolean }) {
+  return (
+    <div className="panel-card">
+      <h4>System Status</h4>
+      <ul>
+        <li><span className="dot green" />Electron Window Ready</li>
+        <li><span className="dot green" />React Renderer Working</li>
+        <li><span className="dot blue" />Vite Dev Server Connected</li>
+        <li>
+          <span className={backendConnected ? "dot green" : "dot orange"} />
+          {backendConnected ? "Python Backend Connected" : "Python Backend Pending"}
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+function BackendPanel({
+  backendConnected,
+  backendHealth,
+}: {
+  backendConnected: boolean;
+  backendHealth: BackendHealth | null;
+}) {
+  return (
+    <div className="panel-card">
+      <h4>Backend Health</h4>
+
+      {backendConnected ? (
+        <div className="backend-health">
+          <p><span>App</span><strong>{backendHealth?.app ?? "Nexa AI Backend"}</strong></p>
+          <p><span>Version</span><strong>{backendHealth?.version ?? "0.1.0"}</strong></p>
+          <p><span>Environment</span><strong>{backendHealth?.environment ?? "development"}</strong></p>
+          <p><span>Message</span><strong>{backendHealth?.message ?? "OK"}</strong></p>
+        </div>
+      ) : (
+        <div className="backend-offline">
+          <strong>Backend is not running.</strong>
+          <p>
+            Start the Python backend with <code>python run_backend.py</code> from the backend folder.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ActivityPanel() {
+  return (
+    <div className="panel-card">
+      <h4>Today Activity</h4>
+      <div className="activity-list">
+        {activityItems.map((item) => (
+          <div className="activity-card" key={item.title}>
+            <strong>{item.title}</strong>
+            <p>{item.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
