@@ -61,3 +61,64 @@ The backend will provide the local automation and business-logic layer for Nexa 
 
 This phase creates only the backend folder skeleton. Actual FastAPI implementation will be added in later phases.
 
+
+## Phase 03.1 Backend Setup
+
+Phase 03.1 created the basic Python backend setup files for Nexa AI.
+
+### Created Files
+
+- `backend/requirements.txt`
+- `backend/requirements-dev.txt`
+- `backend/.env.example`
+- `backend/run_backend.py`
+- `backend/app/__init__.py`
+
+### Current Backend Dependencies
+
+The Phase 03 backend foundation currently includes only lightweight core dependencies:
+
+- `fastapi`
+- `uvicorn[standard]`
+- `python-dotenv`
+- `pydantic`
+
+Development/testing dependencies:
+
+- `pytest`
+- `httpx`
+
+### Important Notes
+
+- The FastAPI application entrypoint will be created in Phase 03.2.
+- The `/api/health` endpoint will be created in Phase 03.2.
+- No voice system has been implemented yet.
+- No automation features have been implemented yet.
+- No database implementation has been added yet.
+- No command engine has been implemented yet.
+- No heavy AI models or paid APIs have been added.
+
+This step only prepares the backend setup foundation.
+
+## Phase 03.3 Backend Config System
+
+Phase 03.3 added the backend configuration foundation.
+
+### Added
+
+- `backend/app/core/config.py`
+- `Settings`
+- `get_settings()`
+- environment variable loading
+- feature flag defaults
+- root endpoint now includes environment information
+- `/api/health` now includes environment information and phase `03.3`
+
+### Current Scope
+
+- No database implementation yet
+- No WebSocket implementation yet
+- No voice system yet
+- No automation system yet
+- No command engine yet
+- No paid APIs or heavy AI models added
