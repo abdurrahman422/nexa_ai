@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { SplashScreen, useStartupSequence } from "@/components/splash";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -114,6 +115,9 @@ export default function App() {
   const appMode = window.nexa?.appMode ?? "desktop";
   const backendUrl = window.nexa?.backendUrl ?? "http://127.0.0.1:8000";
 
+  const [showSplash, setShowSplash] = useState(true);
+  const startup = useStartupSequence();
+
   const [activePage, setActivePage] = useState<PageId>("dashboard");
   const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
   const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
@@ -126,6 +130,20 @@ export default function App() {
     if (!draftCommand.trim()) return "Waiting for your command...";
     return draftCommand.trim();
   }, [draftCommand]);
+
+  useEffect(() => {
+    let timeout: number | undefined;
+    if (startup.isComplete) {
+      timeout = window.setTimeout(() => {
+        setShowSplash(false);
+      }, 400);
+    }
+    return () => {
+      if (timeout !== undefined) {
+        window.clearTimeout(timeout);
+      }
+    };
+  }, [startup.isComplete]);
 
   useEffect(() => {
     const checkBackend = async () => {
@@ -147,8 +165,19 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [backendUrl]);
 
+  if (showSplash) {
+    return (
+      <SplashScreen
+        progress={startup.progress}
+        statusText={startup.statusText}
+        activeStep={startup.activeStep}
+        steps={startup.steps}
+      />
+    );
+  }
+
   return (
-    <main className="desktop-app">
+    <main className="desktop-app dashboard-enter">
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-orb">N</div>
