@@ -1,0 +1,231 @@
+{
+  "schema_version": "0.1-placeholder",
+  "description": "Placeholder intent schema for future Nexa AI command understanding.",
+  "intents": [
+    {
+      "name": "open_app",
+      "description": "Open an installed desktop application.",
+      "required_slots": ["app_name"],
+      "optional_slots": [],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Open Chrome", "Chrome open koro"]
+    },
+    {
+      "name": "open_website",
+      "description": "Open a website or saved website shortcut.",
+      "required_slots": ["website_name_or_url"],
+      "optional_slots": ["browser_preference"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Open YouTube", "Study portal kholo"]
+    },
+    {
+      "name": "youtube_search",
+      "description": "Search YouTube for a requested topic.",
+      "required_slots": ["query"],
+      "optional_slots": [],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Search lo-fi music on YouTube", "YouTube e physics lecture khuje dao"]
+    },
+    {
+      "name": "youtube_play",
+      "description": "Play requested YouTube content when supported.",
+      "required_slots": ["query"],
+      "optional_slots": ["result_preference"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Play Rabindra Sangeet", "YouTube e coding tutorial chalao"]
+    },
+    {
+      "name": "youtube_skip_ad",
+      "description": "Attempt to skip a YouTube advertisement where supported.",
+      "required_slots": [],
+      "optional_slots": [],
+      "risk_level": "safe",
+      "mvp": false,
+      "example_commands": ["Skip ad", "Ad ta skip koro"]
+    },
+    {
+      "name": "file_search",
+      "description": "Search local files by name, type, or location.",
+      "required_slots": ["query"],
+      "optional_slots": ["file_type", "folder_scope"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Find my PDF notes", "Assignment file ta khuje dao"]
+    },
+    {
+      "name": "file_open",
+      "description": "Open a selected file.",
+      "required_slots": ["file_reference"],
+      "optional_slots": [],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Open the first file", "Oi PDF ta kholo"]
+    },
+    {
+      "name": "file_organize",
+      "description": "Move, rename, or organize files.",
+      "required_slots": ["file_reference", "action"],
+      "optional_slots": ["destination", "new_name"],
+      "risk_level": "confirmation_required",
+      "mvp": true,
+      "example_commands": ["Move this file to Documents", "Rename this to final report"]
+    },
+    {
+      "name": "brightness_up",
+      "description": "Increase screen brightness where supported.",
+      "required_slots": [],
+      "optional_slots": ["amount"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Increase brightness", "Brightness barhao"]
+    },
+    {
+      "name": "brightness_down",
+      "description": "Decrease screen brightness where supported.",
+      "required_slots": [],
+      "optional_slots": ["amount"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Decrease brightness", "Brightness komao"]
+    },
+    {
+      "name": "volume_up",
+      "description": "Increase system volume.",
+      "required_slots": [],
+      "optional_slots": ["amount"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Volume up", "Sound barhao"]
+    },
+    {
+      "name": "volume_down",
+      "description": "Decrease system volume.",
+      "required_slots": [],
+      "optional_slots": ["amount"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Volume down", "Sound komao"]
+    },
+    {
+      "name": "mute_system",
+      "description": "Mute system audio.",
+      "required_slots": [],
+      "optional_slots": [],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Mute system", "Sound mute kore dao"]
+    },
+    {
+      "name": "whatsapp_draft",
+      "description": "Create a WhatsApp message draft without sending it.",
+      "required_slots": ["recipient", "message_goal"],
+      "optional_slots": ["tone"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Draft a WhatsApp message to Rafi that I will be late", "Rafi ke late hobo bole ekta message likho"]
+    },
+    {
+      "name": "email_draft",
+      "description": "Create an email draft without sending it.",
+      "required_slots": ["recipient", "message_goal"],
+      "optional_slots": ["tone", "subject"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Write a polite email to my teacher", "Teacher ke absence niye email draft koro"]
+    },
+    {
+      "name": "weather_query",
+      "description": "Retrieve current or forecast weather information.",
+      "required_slots": ["location"],
+      "optional_slots": ["date"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Weather in Dhaka today", "Ajker weather bolo"]
+    },
+    {
+      "name": "news_query",
+      "description": "Retrieve recent news headlines.",
+      "required_slots": ["topic"],
+      "optional_slots": ["region"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Latest tech news", "Ajker world news bolo"]
+    },
+    {
+      "name": "dictionary_query",
+      "description": "Retrieve a word meaning or definition.",
+      "required_slots": ["term"],
+      "optional_slots": ["language"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Meaning of resilient", "Resilient mane ki"]
+    },
+    {
+      "name": "reminder_create",
+      "description": "Create a reminder.",
+      "required_slots": ["task", "time"],
+      "optional_slots": ["date", "recurrence"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Remind me to study at 8 PM", "Raat 8 tay porar reminder dao"]
+    },
+    {
+      "name": "task_create",
+      "description": "Create a task item.",
+      "required_slots": ["task"],
+      "optional_slots": ["due_date", "priority"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Add submit assignment to my tasks", "Assignment submit task e add koro"]
+    },
+    {
+      "name": "study_help",
+      "description": "Provide lightweight study assistance.",
+      "required_slots": ["topic"],
+      "optional_slots": ["mode"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Help me revise biology", "Math study plan dao"]
+    },
+    {
+      "name": "pdf_summary",
+      "description": "Summarize a selected PDF or document.",
+      "required_slots": ["document_reference"],
+      "optional_slots": ["section"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Summarize this PDF", "Ei document er chapter 2 summarize koro"]
+    },
+    {
+      "name": "smart_home_control",
+      "description": "Control a connected ESP32 smart-home device.",
+      "required_slots": ["device", "action"],
+      "optional_slots": ["room"],
+      "risk_level": "sensitive",
+      "mvp": false,
+      "example_commands": ["Turn on study room light", "Fan off kore dao"]
+    },
+    {
+      "name": "general_question",
+      "description": "Handle a general conversational question.",
+      "required_slots": ["query"],
+      "optional_slots": [],
+      "risk_level": "safe",
+      "mvp": false,
+      "example_commands": ["What can you do?", "Explain this simply"]
+    },
+    {
+      "name": "clarify",
+      "description": "Ask the user for clarification when intent or slots are uncertain.",
+      "required_slots": ["reason"],
+      "optional_slots": ["candidate_intents"],
+      "risk_level": "safe",
+      "mvp": true,
+      "example_commands": ["Did you mean open Chrome or search Chrome?", "Please tell me which file you mean"]
+    }
+  ]
+}

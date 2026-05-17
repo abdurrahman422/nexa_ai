@@ -1,0 +1,84 @@
+{
+  "schema_version": "0.1-placeholder",
+  "description": "Placeholder WebSocket event schema for future Nexa AI realtime frontend-backend communication.",
+  "events": [
+    {
+      "type": "backend.status",
+      "description": "Reports backend health or availability changes.",
+      "payload_fields": ["status", "message", "timestamp"],
+      "frontend_usage": "Update backend connection indicator and readiness state."
+    },
+    {
+      "type": "voice.listening.started",
+      "description": "Signals that voice capture has started.",
+      "payload_fields": ["session_id", "timestamp"],
+      "frontend_usage": "Switch microphone UI into listening mode."
+    },
+    {
+      "type": "voice.listening.stopped",
+      "description": "Signals that voice capture has stopped.",
+      "payload_fields": ["session_id", "timestamp"],
+      "frontend_usage": "Return microphone UI from listening mode."
+    },
+    {
+      "type": "voice.transcript.received",
+      "description": "Provides recognized text from speech-to-text.",
+      "payload_fields": ["session_id", "transcript", "confidence", "timestamp"],
+      "frontend_usage": "Display transcript and prepare command feedback."
+    },
+    {
+      "type": "command.processing",
+      "description": "Signals that a command is being interpreted or executed.",
+      "payload_fields": ["command_id", "input_text", "stage", "timestamp"],
+      "frontend_usage": "Show processing state and live progress."
+    },
+    {
+      "type": "command.completed",
+      "description": "Signals successful command completion.",
+      "payload_fields": ["command_id", "intent", "result", "timestamp"],
+      "frontend_usage": "Show result card and update recent activity."
+    },
+    {
+      "type": "command.failed",
+      "description": "Signals command failure.",
+      "payload_fields": ["command_id", "error_code", "message", "timestamp"],
+      "frontend_usage": "Show actionable error feedback."
+    },
+    {
+      "type": "security.confirmation.required",
+      "description": "Requests user confirmation before a sensitive action.",
+      "payload_fields": ["confirmation_id", "action", "risk_level", "message", "timestamp"],
+      "frontend_usage": "Open confirmation dialog and block execution until resolved."
+    },
+    {
+      "type": "reminder.triggered",
+      "description": "Signals that a reminder is due.",
+      "payload_fields": ["reminder_id", "title", "due_at", "timestamp"],
+      "frontend_usage": "Show reminder notification and dashboard update."
+    },
+    {
+      "type": "task.completed",
+      "description": "Signals that a task has been marked complete.",
+      "payload_fields": ["task_id", "title", "completed_at"],
+      "frontend_usage": "Update task lists and dashboard summaries."
+    },
+    {
+      "type": "automation.started",
+      "description": "Signals that an automation workflow has started.",
+      "payload_fields": ["workflow_id", "run_id", "timestamp"],
+      "frontend_usage": "Show workflow progress state."
+    },
+    {
+      "type": "automation.completed",
+      "description": "Signals that an automation workflow has finished successfully.",
+      "payload_fields": ["workflow_id", "run_id", "result", "timestamp"],
+      "frontend_usage": "Show completion status and result summary."
+    },
+    {
+      "type": "automation.failed",
+      "description": "Signals that an automation workflow failed.",
+      "payload_fields": ["workflow_id", "run_id", "error_code", "message", "timestamp"],
+      "frontend_usage": "Show failure state and next-step guidance."
+    }
+  ]
+}
