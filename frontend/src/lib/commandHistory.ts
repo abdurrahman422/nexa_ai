@@ -79,6 +79,18 @@ export function saveCommandHistoryEntry(
   }
 }
 
+export function deleteCommandHistoryEntry(id: string): CommandHistoryEntry[] {
+  try {
+    const history = loadCommandHistory();
+    const updated = history.filter((entry) => entry.id !== id);
+    if (updated.length === history.length) return history;
+    localStorage.setItem(COMMAND_HISTORY_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return loadCommandHistory();
+  }
+}
+
 export function clearCommandHistory(): void {
   try {
     localStorage.removeItem(COMMAND_HISTORY_STORAGE_KEY);

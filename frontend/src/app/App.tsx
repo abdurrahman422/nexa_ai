@@ -3,7 +3,7 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, CommandHistoryEntry } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -1199,14 +1199,82 @@ function HistoryPage() {
   const [commandHistory, setCommandHistory] = useState<CommandHistoryEntry[]>(() =>
     getLatestCommandHistory(),
   );
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedHistoryEntryId, setSelectedHistoryEntryId] = useState<string | null>(null);
+  const selectedEntry = selectedHistoryEntryId
+    ? commandHistory.find((e) => e.id === selectedHistoryEntryId) ?? null
+    : null;
+
+  const filteredHistory = commandHistory.filter((entry) => {
+    if (sourceFilter !== "all" && entry.source !== sourceFilter) return false;
+    if (riskFilter !== "all" && entry.riskLevel !== riskFilter) return false;
+    if (statusFilter !== "all") {
+      const entryStatus = entry.actionStatus ?? entry.backendStatus;
+      if (entryStatus !== statusFilter) return false;
+    }
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      const haystack = [
+        entry.originalText,
+        entry.intent,
+        entry.language,
+        entry.riskLevel,
+        entry.source,
+        entry.actionStatus,
+        entry.backendStatus,
+        entry.summary,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
+    return true;
+  });
+
+  const hasHistory = commandHistory.length > 0;
+  const hasFiltered = filteredHistory.length > 0;
+  const totalCount = commandHistory.length;
+  const shownCount = filteredHistory.length;
 
   const handleRefreshHistory = () => {
     setCommandHistory(getLatestCommandHistory());
   };
 
+  const clearFilters = () => {
+    setSourceFilter("all");
+    setRiskFilter("all");
+    setStatusFilter("all");
+  };
+
+  const clearAll = () => {
+    clearFilters();
+    setSearchQuery("");
+  };
+
   const handleClearHistory = () => {
     clearCommandHistory();
     setCommandHistory([]);
+    setSelectedHistoryEntryId(null);
+  };
+
+  const handleSelectEntry = (id: string) => {
+    setSelectedHistoryEntryId((prev) => (prev === id ? null : id));
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedHistoryEntryId(null);
+  };
+
+  const handleDeleteHistoryEntry = (id: string) => {
+    const updated = deleteCommandHistoryEntry(id);
+    setCommandHistory(updated);
+    if (selectedHistoryEntryId === id) {
+      setSelectedHistoryEntryId(null);
+    }
   };
 
   const formatTime = (iso: string) => {
@@ -1262,14 +1330,110 @@ function HistoryPage() {
           </div>
         </div>
 
-        {commandHistory.length === 0 ? (
+        {!hasHistory ? (
           <div className="command-history-empty">
             No command history saved yet.
           </div>
         ) : (
-          <div className="command-history-list">
-            {commandHistory.map((entry) => (
-              <div className="command-history-item" key={entry.id}>
+          <>
+            <div className="command-history-search-row">
+              <input
+                className="command-history-search-input"
+                type="text"
+                placeholder="Search command history..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="command-history-search-clear"
+                  onClick={() => setSearchQuery("")}
+                >
+                  Clear Search
+                </button>
+              )}
+              <button
+                type="button"
+                className="command-history-clear-all"
+                onClick={clearAll}
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="command-history-result-count">
+              Showing {shownCount} of {totalCount} history entries
+            </div>
+            <div className="command-history-filter-bar">
+              <div className="command-history-filter-group">
+                <label>Source</label>
+                <select
+                  className="command-history-select"
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                >
+                  <option value="all">All sources</option>
+                  <option value="commands_page">Commands Page</option>
+                  <option value="voice_page">Voice Page</option>
+                  <option value="backend_preview">Backend Preview</option>
+                  <option value="manual_test">Manual Test</option>
+                </select>
+              </div>
+              <div className="command-history-filter-group">
+                <label>Risk</label>
+                <select
+                  className="command-history-select"
+                  value={riskFilter}
+                  onChange={(e) => setRiskFilter(e.target.value)}
+                >
+                  <option value="all">All risks</option>
+                  <option value="safe">Safe</option>
+                  <option value="confirmation_required">Confirmation Required</option>
+                  <option value="sensitive">Sensitive</option>
+                  <option value="blocked">Blocked</option>
+                </select>
+              </div>
+              <div className="command-history-filter-group">
+                <label>Status</label>
+                <select
+                  className="command-history-select"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="all">All statuses</option>
+                  <option value="preview_only">Preview Only</option>
+                  <option value="requires_confirmation">Requires Confirmation</option>
+                  <option value="sensitive_warning">Sensitive Warning</option>
+                  <option value="blocked">Blocked</option>
+                  <option value="confirmation_required">Confirmation Required</option>
+                  <option value="warning">Warning</option>
+                  <option value="preview">Preview</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                className="command-history-clear-filter"
+                onClick={clearFilters}
+              >
+                Clear Filters
+              </button>
+            </div>
+
+            {!hasFiltered ? (
+              <div className="command-history-empty">
+                No history entries match your search or filters.
+              </div>
+            ) : (
+              <div className="command-history-list">
+                {filteredHistory.map((entry) => (
+              <div
+                className={`command-history-item${selectedHistoryEntryId === entry.id ? " active" : ""}`}
+                key={entry.id}
+                onClick={() => handleSelectEntry(entry.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelectEntry(entry.id); }}
+              >
                 <div className="command-history-meta">
                   <div>
                     <span>Source</span>
@@ -1318,10 +1482,100 @@ function HistoryPage() {
                 <p className="command-history-summary">
                   {entry.summary}
                 </p>
+                <button
+                  type="button"
+                  className="command-history-delete-button"
+                  onClick={(e) => { e.stopPropagation(); handleDeleteHistoryEntry(entry.id); }}
+                >
+                  Delete
+                </button>
               </div>
             ))}
           </div>
         )}
+
+        {selectedEntry ? (
+          <div className="command-history-detail">
+            <div className="command-history-detail-header">
+              <p className="eyebrow">History Detail</p>
+              <button
+                type="button"
+                className="command-history-close-detail"
+                onClick={handleCloseDetail}
+              >
+                Close Detail
+              </button>
+            </div>
+            <div className="command-history-detail-grid">
+              <div className="command-history-detail-row">
+                <span>Original command</span>
+                <strong>{selectedEntry.originalText}</strong>
+              </div>
+              <div className="command-history-detail-row">
+                <span>Source</span>
+                <strong>{selectedEntry.source}</strong>
+              </div>
+              <div className="command-history-detail-row">
+                <span>Intent</span>
+                <strong>{selectedEntry.intent}</strong>
+              </div>
+              <div className="command-history-detail-row">
+                <span>Language</span>
+                <strong>{selectedEntry.language}</strong>
+              </div>
+              <div className="command-history-detail-row">
+                <span>Confidence</span>
+                <strong>{selectedEntry.confidence}%</strong>
+              </div>
+              <div className="command-history-detail-row">
+                <span>Risk level</span>
+                <strong>{selectedEntry.riskLevel}</strong>
+              </div>
+              {selectedEntry.actionStatus && (
+                <div className="command-history-detail-row">
+                  <span>Action status</span>
+                  <strong>{selectedEntry.actionStatus}</strong>
+                </div>
+              )}
+              {selectedEntry.backendStatus && (
+                <div className="command-history-detail-row">
+                  <span>Backend status</span>
+                  <strong>{selectedEntry.backendStatus}</strong>
+                </div>
+              )}
+              <div className="command-history-detail-row">
+                <span>Can execute</span>
+                <strong>No</strong>
+              </div>
+              <div className="command-history-detail-row">
+                <span>Created at</span>
+                <strong>{formatTime(selectedEntry.createdAt)}</strong>
+              </div>
+              <div className="command-history-detail-row">
+                <span>Summary</span>
+                <strong>{selectedEntry.summary}</strong>
+              </div>
+            </div>
+            <div className="command-history-safety-note">
+              This is a preview/audit record only. No command was executed.
+            </div>
+            <div className="command-history-danger-note">
+              <button
+                type="button"
+                className="command-history-detail-delete"
+                onClick={() => handleDeleteHistoryEntry(selectedEntry.id)}
+              >
+                Delete This Entry
+              </button>
+            </div>
+          </div>
+        ) : hasHistory && hasFiltered ? (
+          <div className="command-history-detail-empty">
+            Select a history entry to view details.
+          </div>
+        ) : null}
+      </>
+    )}
       </div>
 
       <div className="module-note">
