@@ -2640,3 +2640,107 @@ button {
   font-size: 0.95rem;
   line-height: 1.6;
 }
+
+.backend-preview-card {
+  margin-top: 24px;
+  padding: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 24px;
+  background: rgba(7, 14, 30, 0.88);
+  color: #e2e8f0;
+}
+
+.backend-preview-actions {
+  margin-top: 12px;
+}
+
+.backend-preview-button {
+  padding: 12px 18px;
+  border: 1px solid rgba(0, 229, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(0, 229, 255, 0.08);
+  color: #e6f1ff;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.backend-preview-button:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+.backend-preview-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.backend-preview-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.backend-preview-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  color: #cbd5e1;
+  font-size: 0.92rem;
+}
+
+.backend-preview-row span {
+  color: #94a3b8;
+}
+
+.backend-preview-row strong {
+  color: #e2e8f0;
+}
+
+.backend-preview-steps {
+  margin-top: 12px;
+}
+
+.backend-preview-steps span {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.92rem;
+  margin-bottom: 8px;
+}
+
+.backend-preview-steps ul {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.backend-preview-steps li {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.55);
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.backend-preview-error {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.24);
+  color: #fecaca;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.backend-preview-note {
+  margin-top: 16px;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}

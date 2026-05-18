@@ -3,7 +3,7 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -467,6 +467,26 @@ function VoicePage() {
   const [detectedIntent, setDetectedIntent] = useState<CommandIntent>(initialVoiceResult.intent);
   const [riskLevel, setRiskLevel] = useState<CommandRiskLevel>(initialVoiceResult.riskLevel);
   const voiceActionPreview = createActionPreview(voiceCommandResult);
+
+  const [voiceBackendPreview, setVoiceBackendPreview] = useState<BackendCommandPreviewResponse | null>(null);
+  const [voiceBackendPreviewLoading, setVoiceBackendPreviewLoading] = useState(false);
+  const [voiceBackendPreviewError, setVoiceBackendPreviewError] = useState<string | null>(null);
+
+  const handleVoiceBackendPreview = async () => {
+    setVoiceBackendPreviewLoading(true);
+    setVoiceBackendPreviewError(null);
+    setVoiceBackendPreview(null);
+    try {
+      const response = await requestBackendCommandPreview(voiceCommandResult);
+      setVoiceBackendPreview(response);
+    } catch (err) {
+      setVoiceBackendPreviewError(
+        err instanceof Error ? err.message : "Backend preview request failed",
+      );
+    } finally {
+      setVoiceBackendPreviewLoading(false);
+    }
+  };
 
   const voiceStatus = realMicStatus === "denied" || realMicStatus === "unsupported" || realMicStatus === "error"
     ? "error"
@@ -1029,6 +1049,82 @@ function VoicePage() {
           Voice command execution is disabled. Preview only.
         </div>
 
+        <div className="backend-preview-card">
+          <p className="eyebrow">Backend Preview</p>
+          <div className="backend-preview-actions">
+            <button
+              type="button"
+              className="backend-preview-button"
+              onClick={handleVoiceBackendPreview}
+              disabled={voiceBackendPreviewLoading}
+            >
+              {voiceBackendPreviewLoading ? "Requesting..." : "Request Backend Preview"}
+            </button>
+          </div>
+
+          {voiceBackendPreviewError && (
+            <div className="backend-preview-error">{voiceBackendPreviewError}</div>
+          )}
+
+          {voiceBackendPreview && (
+            <div className="backend-preview-grid">
+              <div className="backend-preview-row">
+                <span>Status</span>
+                <strong>{voiceBackendPreview.status}</strong>
+              </div>
+              <div className="backend-preview-row">
+                <span>Can execute</span>
+                <strong>{String(voiceBackendPreview.can_execute)}</strong>
+              </div>
+              <div className="backend-preview-row">
+                <span>Execution mode</span>
+                <strong>{voiceBackendPreview.execution_mode}</strong>
+              </div>
+              <div className="backend-preview-row">
+                <span>Message</span>
+                <strong>{voiceBackendPreview.message}</strong>
+              </div>
+              <div className="backend-preview-row">
+                <span>Intent</span>
+                <strong>{voiceBackendPreview.intent}</strong>
+              </div>
+              <div className="backend-preview-row">
+                <span>Risk level</span>
+                <strong>{voiceBackendPreview.risk_level}</strong>
+              </div>
+
+              {voiceBackendPreview.preview_steps.length > 0 && (
+                <div className="backend-preview-steps">
+                  <span>Preview steps</span>
+                  <ul>
+                    {voiceBackendPreview.preview_steps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {voiceBackendPreview.warning && (
+                <div className="backend-preview-row">
+                  <span>Warning</span>
+                  <strong>{voiceBackendPreview.warning}</strong>
+                </div>
+              )}
+
+              {voiceBackendPreview.blocked_reason && (
+                <div className="backend-preview-row">
+                  <span>Blocked reason</span>
+                  <strong>{voiceBackendPreview.blocked_reason}</strong>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="backend-preview-note">
+            Backend preview is still execution-disabled.
+          </div>
+        </div>
+
       <div className="module-note">
         Microphone permission and real speech recognition will be added in Phase 10.3 and later backend phases.
       </div>
@@ -1252,6 +1348,26 @@ function CommandsPage() {
   const [result, setResult] = useState<CommandUnderstandingResult>(() => detectCommandIntent(defaultCommand));
   const actionPreview = createActionPreview(result);
 
+  const [backendPreview, setBackendPreview] = useState<BackendCommandPreviewResponse | null>(null);
+  const [backendPreviewLoading, setBackendPreviewLoading] = useState(false);
+  const [backendPreviewError, setBackendPreviewError] = useState<string | null>(null);
+
+  const handleBackendPreview = async () => {
+    setBackendPreviewLoading(true);
+    setBackendPreviewError(null);
+    setBackendPreview(null);
+    try {
+      const response = await requestBackendCommandPreview(result);
+      setBackendPreview(response);
+    } catch (err) {
+      setBackendPreviewError(
+        err instanceof Error ? err.message : "Backend preview request failed",
+      );
+    } finally {
+      setBackendPreviewLoading(false);
+    }
+  };
+
   const examples = [
     { label: "YouTube Bangla", value: "ইউটিউব খুলে একটা বাংলা গান চালাও" },
     { label: "Find PDF File", value: "Downloads folder theke PDF file khuje dao" },
@@ -1387,6 +1503,82 @@ function CommandsPage() {
 
       <div className="command-preview-note">
         Execution is disabled. Preview only.
+      </div>
+
+      <div className="backend-preview-card">
+        <p className="eyebrow">Backend Preview</p>
+        <div className="backend-preview-actions">
+          <button
+            type="button"
+            className="backend-preview-button"
+            onClick={handleBackendPreview}
+            disabled={backendPreviewLoading}
+          >
+            {backendPreviewLoading ? "Requesting..." : "Request Backend Preview"}
+          </button>
+        </div>
+
+        {backendPreviewError && (
+          <div className="backend-preview-error">{backendPreviewError}</div>
+        )}
+
+        {backendPreview && (
+          <div className="backend-preview-grid">
+            <div className="backend-preview-row">
+              <span>Status</span>
+              <strong>{backendPreview.status}</strong>
+            </div>
+            <div className="backend-preview-row">
+              <span>Can execute</span>
+              <strong>{String(backendPreview.can_execute)}</strong>
+            </div>
+            <div className="backend-preview-row">
+              <span>Execution mode</span>
+              <strong>{backendPreview.execution_mode}</strong>
+            </div>
+            <div className="backend-preview-row">
+              <span>Message</span>
+              <strong>{backendPreview.message}</strong>
+            </div>
+            <div className="backend-preview-row">
+              <span>Intent</span>
+              <strong>{backendPreview.intent}</strong>
+            </div>
+            <div className="backend-preview-row">
+              <span>Risk level</span>
+              <strong>{backendPreview.risk_level}</strong>
+            </div>
+
+            {backendPreview.preview_steps.length > 0 && (
+              <div className="backend-preview-steps">
+                <span>Preview steps</span>
+                <ul>
+                  {backendPreview.preview_steps.map((step, i) => (
+                    <li key={i}>{step}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {backendPreview.warning && (
+              <div className="backend-preview-row">
+                <span>Warning</span>
+                <strong>{backendPreview.warning}</strong>
+              </div>
+            )}
+
+            {backendPreview.blocked_reason && (
+              <div className="backend-preview-row">
+                <span>Blocked reason</span>
+                <strong>{backendPreview.blocked_reason}</strong>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="backend-preview-note">
+          Backend preview is still execution-disabled.
+        </div>
       </div>
 
       <div className="module-note">
