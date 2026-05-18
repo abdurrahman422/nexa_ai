@@ -2,7 +2,7 @@
 import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -460,9 +460,11 @@ function VoicePage() {
   const [lastRequestedAt, setLastRequestedAt] = useState<string | null>(null);
   const [demoMicPermissionStatus, setDemoMicPermissionStatus] = useState<"not_requested" | "allowed" | "blocked">("not_requested");
   const [transcriptText, setTranscriptText] = useState(defaultDemoTranscript);
-  const [commandDraft, setCommandDraft] = useState("Open YouTube and play a Bangla song");
-  const [detectedIntent, setDetectedIntent] = useState("youtube_search");
-  const [riskLevel, setRiskLevel] = useState<"safe" | "confirmation_required" | "sensitive">("safe");
+  const initialVoiceResult = detectCommandIntent(defaultDemoTranscript);
+  const [voiceResult, setVoiceResult] = useState<CommandUnderstandingResult>(initialVoiceResult);
+  const [commandDraft, setCommandDraft] = useState(initialVoiceResult.originalText);
+  const [detectedIntent, setDetectedIntent] = useState<CommandIntent>(initialVoiceResult.intent);
+  const [riskLevel, setRiskLevel] = useState<CommandRiskLevel>(initialVoiceResult.riskLevel);
 
   const voiceStatus = realMicStatus === "denied" || realMicStatus === "unsupported" || realMicStatus === "error"
     ? "error"
@@ -525,36 +527,25 @@ function VoicePage() {
     ? "Blocked"
     : "Not requested";
 
-  const detectIntent = (text: string) => {
-    const lower = text.toLowerCase();
-    if (/youtube|ইউটিউব/.test(lower)) return "youtube_search";
-    if (/file|folder|ফাইল|ফোল্ডার/.test(lower)) return "file_search";
-    if (/email|mail|মেইল/.test(lower)) return "email_draft";
-    if (/delete|remove|ডিলিট/.test(lower)) return "sensitive_file_action";
-    return "general_assistant_query";
-  };
-
   const applyTranscriptAsCommand = () => {
     const text = transcriptText.trim();
-    const intent = detectIntent(text);
-    const risk = intent === "sensitive_file_action"
-      ? "sensitive"
-      : intent === "email_draft"
-      ? "confirmation_required"
-      : "safe";
+    const result = detectCommandIntent(text || "");
 
-    setCommandDraft(text || "No command draft yet");
-    setDetectedIntent(intent);
-    setRiskLevel(risk);
+    setVoiceResult(result);
+    setCommandDraft(result.originalText || "No command draft yet");
+    setDetectedIntent(result.intent);
+    setRiskLevel(result.riskLevel);
   };
 
   const loadDemoBangla = () => setTranscriptText("ইউটিউব খুলে একটা বাংলা গান চালাও");
   const loadDemoFile = () => setTranscriptText("Downloads folder theke PDF file khuje dao");
   const clearTranscript = () => {
+    const emptyResult = detectCommandIntent("");
     setTranscriptText("");
+    setVoiceResult(emptyResult);
     setCommandDraft("No command draft yet");
-    setDetectedIntent("none");
-    setRiskLevel("safe");
+    setDetectedIntent(emptyResult.intent);
+    setRiskLevel(emptyResult.riskLevel);
   };
 
   const refreshPermissionStatus = async () => {
@@ -929,16 +920,40 @@ function VoicePage() {
 
         <div className="voice-page-grid" style={{ marginTop: 24 }}>
           <VoiceTranscriptPanel
-          transcript={transcriptText}
-          confidence={0}
-          language="Mixed"
-        />
-        <VoiceCommandDraft
-          command={commandDraft}
-          intent={detectedIntent}
-          riskLevel={riskLevel}
-        />
-      </div>
+            transcript={transcriptText}
+            confidence={voiceResult.confidence}
+            language={voiceResult.language === "Bangla" || voiceResult.language === "English" ? voiceResult.language : "Mixed"}
+          />
+          <VoiceCommandDraft
+            command={commandDraft}
+            intent={detectedIntent}
+            riskLevel={(riskLevel === "blocked" ? "sensitive" : riskLevel) as "safe" | "confirmation_required" | "sensitive"}
+          />
+          <section className="voice-panel command-analysis-card">
+            <div className="voice-panel-header">
+              <div>
+                <p className="eyebrow">Command analysis</p>
+                <h4>Understanding preview</h4>
+                <p>This preview remains UI-only. No command is executed.</p>
+              </div>
+            </div>
+
+            <div className="voice-meta-grid">
+              <div>
+                <span>Confirmation required</span>
+                <strong>{shouldAskConfirmation(voiceResult) ? "Yes" : "No"}</strong>
+              </div>
+              <div>
+                <span>Sensitive</span>
+                <strong>{isCommandSensitive(voiceResult) ? "Yes" : "No"}</strong>
+              </div>
+              <div>
+                <span>Confirmation reason</span>
+                <strong>{voiceResult.confirmationReason || "None"}</strong>
+              </div>
+            </div>
+          </section>
+        </div>
 
       <div className="module-note">
         Microphone permission and real speech recognition will be added in Phase 10.3 and later backend phases.
@@ -1158,45 +1173,141 @@ function SecurityPage() {
   );
 }
 function CommandsPage() {
+  const defaultCommand = "ইউটিউব খুলে একটা বাংলা গান চালাও";
+  const [commandInput, setCommandInput] = useState(defaultCommand);
+  const [result, setResult] = useState<CommandUnderstandingResult>(() => detectCommandIntent(defaultCommand));
+
   const examples = [
-    "YouTube open koro",
-    "ইউটিউব খুলো",
-    "Downloads folder clean koro",
-    "Boss ke email draft koro",
+    { label: "YouTube Bangla", value: "ইউটিউব খুলে একটা বাংলা গান চালাও" },
+    { label: "Find PDF File", value: "Downloads folder theke PDF file khuje dao" },
+    { label: "Draft Email", value: "Boss ke email draft koro" },
+    { label: "Delete Folder", value: "Delete folder ta clean koro" },
+    { label: "Light Off", value: "Light off koro" },
   ];
 
+  const handleInputChange = (value: string) => {
+    setCommandInput(value);
+    setResult(detectCommandIntent(value));
+  };
+
+  const applyExample = (value: string) => {
+    setCommandInput(value);
+    setResult(detectCommandIntent(value));
+  };
+
   return (
-    <section className="page-surface module-enhanced">
+    <section className="page-surface module-enhanced command-lab-layout">
       <div className="page-hero">
         <p className="eyebrow">Command Understanding</p>
         <h3>Commands Lab</h3>
         <p>
-          This page will become the testing ground for Bengali, English, and Banglish command
-          understanding before commands are executed.
+          This page is the interactive testing ground for Bengali, English, and Banglish command
+          understanding. All previews are disabled from executing real actions in this phase.
         </p>
       </div>
 
-      <div className="module-split">
-        <div className="module-console">
-          <p className="eyebrow">Test Command</p>
-          <div className="fake-input">ইউটিউব খুলো এবং গান চালাও</div>
-          <div className="intent-preview">
-            <p><span>Detected Intent</span><strong>youtube_search</strong></p>
-            <p><span>Confidence</span><strong>92%</strong></p>
-            <p><span>Risk Level</span><strong>Safe</strong></p>
-          </div>
+      <div className="command-input-card">
+        <p className="eyebrow">Command input</p>
+        <textarea
+          className="command-lab-textarea"
+          value={commandInput}
+          onChange={(event) => handleInputChange(event.target.value)}
+          rows={5}
+          placeholder="Enter a command to see detection results"
+        />
+
+        <div className="command-example-row">
+          {examples.map((example) => (
+            <button
+              key={example.label}
+              type="button"
+              className="command-example-button"
+              onClick={() => applyExample(example.value)}
+            >
+              {example.label}
+            </button>
+          ))}
         </div>
 
-        <div className="module-list">
-          <h4>Example Commands</h4>
-          {examples.map((item) => (
-            <div className="module-row" key={item}>{item}</div>
-          ))}
+        <p className="execution-disabled-note">
+          Command execution is disabled in this phase. This is a preview-only command lab.
+        </p>
+      </div>
+
+      <div className="command-result-card">
+        <p className="eyebrow">Result preview</p>
+        <div className="command-result-grid">
+          <div className="command-result-row">
+            <span>Original text</span>
+            <strong>{result.originalText || "—"}</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Normalized text</span>
+            <strong>{result.normalizedText || "—"}</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Intent label</span>
+            <strong>{getIntentLabel(result.intent)}</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Raw intent</span>
+            <strong>{result.intent}</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Language</span>
+            <strong>{result.language}</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Confidence</span>
+            <strong>{result.confidence}%</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Risk level</span>
+            <strong className={`command-risk-${result.riskLevel}`}>{result.riskLevel}</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Confirmation required</span>
+            <strong>{shouldAskConfirmation(result) ? "Yes" : "No"}</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Sensitive</span>
+            <strong>{isCommandSensitive(result) ? "Yes" : "No"}</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Can execute</span>
+            <strong>No</strong>
+          </div>
+          <div className="command-result-row">
+            <span>Explanation</span>
+            <strong>{result.explanation}</strong>
+          </div>
+          {result.confirmationReason && (
+            <div className="command-result-row">
+              <span>Confirmation reason</span>
+              <strong>{result.confirmationReason}</strong>
+            </div>
+          )}
+        </div>
+
+        <div className="entities-box">
+          <p className="eyebrow">Entities</p>
+          {Object.keys(result.entities).length === 0 ? (
+            <p>No entities detected yet.</p>
+          ) : (
+            <div className="command-result-grid">
+              {Object.entries(result.entities).map(([key, value]) => (
+                <div className="command-result-row" key={key}>
+                  <span>{key}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="module-note">
-        Actual command engine will be implemented later in Phase 13 and Phase 14.
+        Actual command execution will remain disabled until the command engine and confirmation flow are fully implemented.
       </div>
     </section>
   );

@@ -1363,6 +1363,103 @@ button {
   margin-bottom: 10px;
 }
 
+.command-lab-layout {
+  display: grid;
+  gap: 22px;
+}
+
+.command-input-card,
+.command-result-card {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 24px;
+  background: rgba(7, 14, 30, 0.88);
+  padding: 24px;
+}
+
+.command-lab-textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  background: rgba(2, 6, 23, 0.85);
+  color: #e6f1ff;
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.command-example-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.command-example-button {
+  padding: 12px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(3, 7, 18, 0.88);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.command-example-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 229, 255, 0.28);
+  background: rgba(2, 8, 18, 0.95);
+}
+
+.command-result-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.command-result-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) 1fr;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.10);
+}
+
+.command-result-row:last-child {
+  border-bottom: none;
+}
+
+.command-risk-safe {
+  color: #22c55e;
+}
+
+.command-risk-confirmation_required {
+  color: #f59e0b;
+}
+
+.command-risk-sensitive {
+  color: #fb923c;
+}
+
+.command-risk-blocked {
+  color: #f87171;
+}
+
+.entities-box {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 20px;
+  background: rgba(4, 10, 22, 0.78);
+}
+
+.execution-disabled-note {
+  margin-top: 14px;
+  color: #94a3b8;
+  font-size: 0.94rem;
+}
+
 .launcher-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1814,6 +1911,12 @@ button {
 .voice-risk-badge.sensitive {
   background: rgba(248, 113, 113, 0.12);
   border-color: rgba(248, 113, 113, 0.24);
+  color: #fecaca;
+}
+
+.voice-risk-badge.blocked {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.24);
   color: #fecaca;
 }
 
