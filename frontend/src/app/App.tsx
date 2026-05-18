@@ -1,7 +1,7 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
-import { VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
+import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
@@ -60,6 +60,16 @@ const activityItems = [
   { title: "Desktop shell initialized", text: "Electron window and React renderer are running." },
   { title: "Sidebar navigation active", text: "Dashboard and module pages can be switched." },
   { title: "Backend health watcher added", text: "FastAPI health state can be detected from the desktop UI." },
+];
+
+const defaultDemoTranscript = "ইউটিউব খুলে একটা বাংলা গান চালাও";
+
+const liveTranscriptPhrases = [
+  "ইউটিউব",
+  "ইউটিউব খুলে",
+  "ইউটিউব খুলে একটা",
+  "ইউটিউব খুলে একটা বাংলা গান",
+  defaultDemoTranscript,
 ];
 
 const pageCards: Record<PageId, Array<{ title: string; text: string }>> = {
@@ -253,7 +263,7 @@ export default function App() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Phase 06.3</p>
+            <p className="eyebrow">Phase 12.3</p>
             <h2>{activeNav.label}</h2>
           </div>
 
@@ -438,6 +448,9 @@ function ModulePage({
 }
 
 function VoicePage() {
+  const voiceSession = useVoiceSession();
+  const liveTranscriptTimer = useRef<number | null>(null);
+  const liveTranscriptIndex = useRef(0);
   const [selectedMode, setSelectedMode] = useState<"Push to Talk" | "Always Listening" | "Manual Text">("Push to Talk");
   const [realMicStatus, setRealMicStatus] = useState<MicrophonePermissionStatus>("unknown");
   const [micStatusMessage, setMicStatusMessage] = useState(getMicrophoneStatusLabel("unknown"));
@@ -446,16 +459,65 @@ function VoicePage() {
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
   const [lastRequestedAt, setLastRequestedAt] = useState<string | null>(null);
   const [demoMicPermissionStatus, setDemoMicPermissionStatus] = useState<"not_requested" | "allowed" | "blocked">("not_requested");
-  const [transcriptText, setTranscriptText] = useState("ইউটিউব খুলে একটা বাংলা গান চালাও");
+  const [transcriptText, setTranscriptText] = useState(defaultDemoTranscript);
   const [commandDraft, setCommandDraft] = useState("Open YouTube and play a Bangla song");
   const [detectedIntent, setDetectedIntent] = useState("youtube_search");
   const [riskLevel, setRiskLevel] = useState<"safe" | "confirmation_required" | "sensitive">("safe");
 
-  const voiceStatus = realMicStatus === "granted"
-    ? "listening"
-    : realMicStatus === "denied" || realMicStatus === "unsupported" || realMicStatus === "error"
+  const voiceStatus = realMicStatus === "denied" || realMicStatus === "unsupported" || realMicStatus === "error"
     ? "error"
+    : voiceSession.state.status === "listening"
+    ? "listening"
+    : voiceSession.state.status === "processing"
+    ? "thinking"
+    : voiceSession.state.status === "error"
+    ? "error"
+    : realMicStatus === "granted"
+    ? "idle"
     : "idle";
+
+  const voiceStatusSubtitle = realMicStatus === "denied" || realMicStatus === "unsupported" || realMicStatus === "error"
+    ? realMicStatus === "denied"
+      ? "Microphone permission is blocked. Resolve permission issues before listening."
+      : realMicStatus === "unsupported"
+      ? "Microphone is unsupported in this environment."
+      : "Microphone permission check failed."
+    : voiceSession.state.status === "listening"
+    ? "Frontend listening session is active."
+    : voiceSession.state.status === "stopped"
+    ? "Listening session stopped."
+    : voiceSession.state.status === "error"
+    ? voiceSession.state.errorMessage || "A listening error occurred."
+    : "Ready to start a listening session after microphone permission.";
+
+  const micReadiness = (() => {
+    switch (realMicStatus) {
+      case "granted":
+        return { label: "Ready", cls: "ready" };
+      case "denied":
+        return { label: "Blocked", cls: "blocked" };
+      case "unsupported":
+        return { label: "Unsupported", cls: "blocked" };
+      default:
+        return { label: "Pending", cls: "pending" };
+    }
+  })();
+
+  const listeningReadiness = (() => {
+    const s = voiceSession.state.status;
+    if (s === "listening") return { label: "Active", cls: "ready" };
+    if (s === "processing") return { label: "Processing", cls: "pending" };
+    if (realMicStatus === "granted") return { label: "Ready", cls: "ready" };
+    return { label: "Not ready", cls: "disabled" };
+  })();
+
+  const readinessSummary = realMicStatus === "granted"
+    ? "Voice UI is ready for simulated listening."
+    : realMicStatus === "denied"
+    ? "Microphone is blocked. Enable permission before real listening."
+    : realMicStatus === "unsupported"
+    ? "Microphone is unsupported in this environment."
+    : "Microphone permission is required before real listening.";
 
   const demoPermissionLabel = demoMicPermissionStatus === "allowed"
     ? "Allowed"
@@ -525,7 +587,15 @@ function VoicePage() {
     }
   };
 
+  const stopLiveTranscriptSimulation = () => {
+    if (liveTranscriptTimer.current !== null) {
+      window.clearInterval(liveTranscriptTimer.current);
+      liveTranscriptTimer.current = null;
+    }
+  };
+
   const handleClearMicrophoneCache = () => {
+    stopLiveTranscriptSimulation();
     clearMicrophonePermissionRecord();
     setRealMicStatus("unknown");
     setMicStatusMessage("Permission unknown");
@@ -563,6 +633,49 @@ function VoicePage() {
     setMicRequestError(record.error || null);
   }, []);
 
+  useEffect(() => {
+    stopLiveTranscriptSimulation();
+
+    if (voiceSession.state.status !== "listening") {
+      return () => {
+        stopLiveTranscriptSimulation();
+      };
+    }
+
+    liveTranscriptIndex.current = 0;
+    voiceSession.setInterimTranscript("");
+    voiceSession.setTranscript("");
+    setTranscriptText("");
+
+    const firstPhrase = liveTranscriptPhrases[0];
+    voiceSession.setInterimTranscript(firstPhrase);
+    setTranscriptText(firstPhrase);
+    liveTranscriptIndex.current = 1;
+
+    liveTranscriptTimer.current = window.setInterval(() => {
+      const index = liveTranscriptIndex.current;
+      if (index >= liveTranscriptPhrases.length) {
+        stopLiveTranscriptSimulation();
+        return;
+      }
+
+      const phrase = liveTranscriptPhrases[index];
+      voiceSession.setInterimTranscript(phrase);
+      setTranscriptText(phrase);
+
+      if (index === liveTranscriptPhrases.length - 1) {
+        voiceSession.setTranscript(phrase);
+        voiceSession.simulateProcessing();
+      }
+
+      liveTranscriptIndex.current += 1;
+    }, 700);
+
+    return () => {
+      stopLiveTranscriptSimulation();
+    };
+  }, [voiceSession.state.status, voiceSession]);
+
   return (
     <section className="page-surface">
       <div className="page-hero">
@@ -575,11 +688,87 @@ function VoicePage() {
       </div>
 
       <div className="voice-page-grid">
-        <VoiceStatusPanel status={voiceStatus} />
+        <VoiceStatusPanel status={voiceStatus} subtitle={voiceStatusSubtitle} />
         <VoiceModeSelector selectedMode={selectedMode} onModeChange={setSelectedMode} />
       </div>
 
-      <div className="voice-panel mic-permission-card" style={{ marginTop: 24 }}>
+      <div className="voice-page-grid" style={{ marginTop: 24 }}>
+        <div className="voice-panel voice-session-card">
+          <div className="voice-panel-header">
+            <div>
+              <p className="eyebrow">Listening Session</p>
+              <h4>Session controls</h4>
+              <p>Manage the frontend-only listening session for future voice interaction phases.</p>
+            </div>
+          </div>
+
+          <div className="voice-session-grid">
+            <div className="voice-session-row">
+              <span>Status</span>
+              <strong>{voiceSession.state.status}</strong>
+            </div>
+            <div className="voice-session-row">
+              <span>Elapsed</span>
+              <strong>{voiceSession.state.elapsedSeconds}s</strong>
+            </div>
+            <div className="voice-session-row">
+              <span>Started at</span>
+              <strong>{voiceSession.state.startedAt ? new Date(voiceSession.state.startedAt).toLocaleTimeString() : "—"}</strong>
+            </div>
+            <div className="voice-session-row">
+              <span>Stopped at</span>
+              <strong>{voiceSession.state.stoppedAt ? new Date(voiceSession.state.stoppedAt).toLocaleTimeString() : "—"}</strong>
+            </div>
+            <div className="live-transcript-box">
+              <span className="live-transcript-label">Live interim transcript</span>
+              <p className="live-transcript-text">
+                {voiceSession.state.interimTranscript || "No live transcript yet."}
+              </p>
+            </div>
+            {voiceSession.state.errorMessage && (
+              <div className="voice-session-error">
+                <strong>Error:</strong> {voiceSession.state.errorMessage}
+              </div>
+            )}
+          </div>
+
+          <div className="voice-session-actions">
+            <button
+              type="button"
+              className="voice-session-button"
+              onClick={voiceSession.startSession}
+              disabled={realMicStatus !== "granted" || voiceSession.state.isListening}
+            >
+              Start Listening
+            </button>
+            <button
+              type="button"
+              className="voice-session-button secondary"
+              onClick={voiceSession.stopSession}
+              disabled={!voiceSession.state.isListening}
+            >
+              Stop Listening
+            </button>
+            <button
+              type="button"
+              className="voice-session-button danger"
+              onClick={() => {
+                voiceSession.resetSession();
+                setTranscriptText(defaultDemoTranscript);
+              }}
+            >
+              Reset Session
+            </button>
+          </div>
+
+          <p className="voice-session-help">
+            {realMicStatus !== "granted"
+              ? "Microphone permission is required before listening can start."
+              : "This starts a frontend-only listening session. No audio is recorded yet."}
+          </p>
+        </div>
+
+        <div className="voice-panel mic-permission-card">
         <div className="voice-panel-header">
           <div>
             <p className="eyebrow">Microphone Permission</p>
@@ -680,10 +869,66 @@ function VoicePage() {
             Demo status: {demoPermissionLabel}. This does not change the real permission state.
           </div>
         </div>
-      </div>
+        </div>
+        </div>
 
-      <div className="voice-page-grid" style={{ marginTop: 24 }}>
-        <VoiceTranscriptPanel
+        <div className="voice-page-grid" style={{ marginTop: 16 }}>
+          <div className="voice-panel speech-readiness-card">
+            <div className="voice-panel-header">
+              <div>
+                <p className="eyebrow">Speech Readiness</p>
+                <h4>Readiness checks</h4>
+                <p className="readiness-summary">{readinessSummary}</p>
+              </div>
+            </div>
+
+            <div className="readiness-grid">
+              <div className={`readiness-item ${micReadiness.cls}`}>
+                <span>Microphone permission</span>
+                <strong>{micReadiness.label}</strong>
+              </div>
+
+              <div className={`readiness-item ${listeningReadiness.cls}`}>
+                <span>Listening session</span>
+                <strong>{listeningReadiness.label}</strong>
+              </div>
+
+              <div className={`readiness-item disabled`}>
+                <span>Speech recognition engine</span>
+                <strong>Not connected yet</strong>
+                <small>Real STT will be added in a later phase.</small>
+              </div>
+
+              <div className={`readiness-item disabled`}>
+                <span>Command execution</span>
+                <strong>Disabled</strong>
+                <small>Voice commands are preview-only. Nothing will be executed.</small>
+              </div>
+
+              <div className={`readiness-item ready`}>
+                <span>Safety confirmation</span>
+                <strong>Enabled by design</strong>
+                <small>Sensitive future actions will require confirmation.</small>
+              </div>
+            </div>
+          </div>
+
+          <div className="voice-panel safety-notice-box">
+            <div className="voice-panel-header">
+              <div>
+                <p className="eyebrow">Safety Notice</p>
+                <h4>Operational safeguards</h4>
+              </div>
+            </div>
+
+            <div className="voice-status-note">
+              Nexa AI will not execute voice commands automatically. Future risky actions like delete, send, move, shutdown, or browser automation will require confirmation.
+            </div>
+          </div>
+        </div>
+
+        <div className="voice-page-grid" style={{ marginTop: 24 }}>
+          <VoiceTranscriptPanel
           transcript={transcriptText}
           confidence={0}
           language="Mixed"
