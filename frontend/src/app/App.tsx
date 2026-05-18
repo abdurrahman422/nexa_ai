@@ -1,5 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { SplashScreen, useStartupSequence } from "@/components/splash";
+import { WelcomeOnboarding } from "@/components/onboarding";
+import { clearProfile, formatAddressingName, loadProfile, isOnboardingComplete, UserProfile } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -116,6 +118,8 @@ export default function App() {
   const backendUrl = window.nexa?.backendUrl ?? "http://127.0.0.1:8000";
 
   const [showSplash, setShowSplash] = useState(true);
+  const [profile, setProfile] = useState<UserProfile>(() => loadProfile());
+  const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingComplete());
   const startup = useStartupSequence();
 
   const [activePage, setActivePage] = useState<PageId>("dashboard");
@@ -165,6 +169,14 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [backendUrl]);
 
+  const handleResetSetup = () => {
+    clearProfile();
+    const freshProfile = loadProfile();
+    setProfile(freshProfile);
+    setShowOnboarding(true);
+    setActivePage("dashboard");
+  };
+
   if (showSplash) {
     return (
       <SplashScreen
@@ -172,6 +184,19 @@ export default function App() {
         statusText={startup.statusText}
         activeStep={startup.activeStep}
         steps={startup.steps}
+      />
+    );
+  }
+
+  if (showOnboarding) {
+    return (
+      <WelcomeOnboarding
+        onContinue={(savedProfile) => {
+          if (savedProfile) {
+            setProfile(savedProfile);
+          }
+          setShowOnboarding(false);
+        }}
       />
     );
   }
@@ -199,6 +224,12 @@ export default function App() {
             </button>
           ))}
         </nav>
+
+        <div className="sidebar-card">
+          <p>Profile</p>
+          <strong>{profile.userName ? profile.userName : "Local User"}</strong>
+          <span>Profile: {profile.userName ? profile.userName : "Local User"}</span>
+        </div>
 
         <div className="sidebar-card">
           <p>Backend</p>
@@ -235,7 +266,13 @@ export default function App() {
             onCommandChange={setDraftCommand}
           />
         ) : (
-          <ModulePage page={activePage} pageTitle={activeNav.label} description={activeNav.description} />
+          <ModulePage
+            page={activePage}
+            pageTitle={activeNav.label}
+            description={activeNav.description}
+            profile={profile}
+            onResetSetup={handleResetSetup}
+          />
         )}
 
         <section className="quick-section">
@@ -351,16 +388,20 @@ function ModulePage({
   page,
   pageTitle,
   description,
+  profile,
+  onResetSetup,
 }: {
   page: PageId;
   pageTitle: string;
   description: string;
+  profile: UserProfile;
+  onResetSetup: () => void;
 }) {
   if (page === "commands") return <CommandsPage />;
   if (page === "launcher") return <LauncherPage />;
   if (page === "files") return <FileOrganizerPage />;
   if (page === "history") return <HistoryPage />;
-  if (page === "settings") return <SettingsPage />;
+  if (page === "settings") return <SettingsPage profile={profile} onResetSetup={onResetSetup} />;
   if (page === "security") return <SecurityPage />;
 
   return (
@@ -445,7 +486,13 @@ function HistoryPage() {
   );
 }
 
-function SettingsPage() {
+function SettingsPage({
+  profile,
+  onResetSetup,
+}: {
+  profile: UserProfile;
+  onResetSetup: () => void;
+}) {
   const settingsGroups = [
     {
       title: "Profile",
@@ -473,6 +520,41 @@ function SettingsPage() {
       </div>
 
       <div className="settings-grid">
+        <div className="settings-card profile-preview-card">
+          <h4>Profile Preview</h4>
+          <div className="profile-preview-grid">
+            <div className="profile-preview-row">
+              <span>Name</span>
+              <strong>{profile.userName || "Local User"}</strong>
+            </div>
+            <div className="profile-preview-row">
+              <span>Addressing</span>
+              <strong>{formatAddressingName(profile)}</strong>
+            </div>
+            <div className="profile-preview-row">
+              <span>Language mode</span>
+              <strong>{profile.languageMode}</strong>
+            </div>
+            <div className="profile-preview-row">
+              <span>Voice preference</span>
+              <strong>{profile.voicePreference}</strong>
+            </div>
+            <div className="profile-preview-row">
+              <span>Onboarding complete</span>
+              <strong>{profile.hasCompletedOnboarding ? "Yes" : "No"}</strong>
+            </div>
+          </div>
+          <div className="reset-zone">
+            <p>
+              Resetting onboarding clears your local profile setup and returns you
+              to the welcome setup flow.
+            </p>
+            <button type="button" className="reset-button" onClick={onResetSetup}>
+              Reset Onboarding
+            </button>
+          </div>
+        </div>
+
         {settingsGroups.map((group) => (
           <div className="settings-card" key={group.title}>
             <h4>{group.title}</h4>
