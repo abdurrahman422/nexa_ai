@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
+import { VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { clearProfile, formatAddressingName, loadProfile, isOnboardingComplete, UserProfile } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
@@ -16,6 +17,7 @@ type BackendHealth = {
 
 type PageId =
   | "dashboard"
+  | "voice"
   | "commands"
   | "automations"
   | "files"
@@ -28,6 +30,7 @@ type PageId =
 
 const navItems: Array<{ id: PageId; label: string; description: string }> = [
   { id: "dashboard", label: "Dashboard", description: "Main command center" },
+  { id: "voice", label: "Voice", description: "Voice assistant interface" },
   { id: "commands", label: "Commands", description: "Intent and command testing" },
   { id: "automations", label: "Automations", description: "Workflow builder" },
   { id: "files", label: "File Organizer", description: "Search and organize files" },
@@ -109,6 +112,11 @@ const pageCards: Record<PageId, Array<{ title: string; text: string }>> = {
     { title: "Permissions", text: "Mic, files, browser, apps, and internet access." },
     { title: "Confirmation Rules", text: "Delete, send, shutdown, and move actions guarded." },
     { title: "Privacy", text: "Local-first data and memory reset controls." },
+  ],
+  voice: [
+    { title: "Voice UI", text: "Frontend-only voice panels for future STT/TTS integration." },
+    { title: "Mode Selector", text: "Switch between push-to-talk and always listening later." },
+    { title: "Transcript Preview", text: "Transcript and command drafts are visible here." },
   ],
 };
 
@@ -397,6 +405,7 @@ function ModulePage({
   profile: UserProfile;
   onResetSetup: () => void;
 }) {
+  if (page === "voice") return <VoicePage />;
   if (page === "commands") return <CommandsPage />;
   if (page === "launcher") return <LauncherPage />;
   if (page === "files") return <FileOrganizerPage />;
@@ -427,6 +436,148 @@ function ModulePage({
     </section>
   );
 }
+
+function VoicePage() {
+  const [selectedMode, setSelectedMode] = useState<"Push to Talk" | "Always Listening" | "Manual Text">("Push to Talk");
+  const [micPermissionStatus, setMicPermissionStatus] = useState<"not_requested" | "allowed" | "blocked">("not_requested");
+  const [transcriptText, setTranscriptText] = useState("ইউটিউব খুলে একটা বাংলা গান চালাও");
+  const [commandDraft, setCommandDraft] = useState("Open YouTube and play a Bangla song");
+  const [detectedIntent, setDetectedIntent] = useState("youtube_search");
+  const [riskLevel, setRiskLevel] = useState<"safe" | "confirmation_required" | "sensitive">("safe");
+
+  const voiceStatus = micPermissionStatus === "allowed"
+    ? "listening"
+    : micPermissionStatus === "blocked"
+    ? "error"
+    : "idle";
+
+  const permissionLabel = micPermissionStatus === "allowed"
+    ? "Allowed"
+    : micPermissionStatus === "blocked"
+    ? "Blocked"
+    : "Not requested";
+
+  const detectIntent = (text: string) => {
+    const lower = text.toLowerCase();
+    if (/youtube|ইউটিউব/.test(lower)) return "youtube_search";
+    if (/file|folder|ফাইল|ফোল্ডার/.test(lower)) return "file_search";
+    if (/email|mail|মেইল/.test(lower)) return "email_draft";
+    if (/delete|remove|ডিলিট/.test(lower)) return "sensitive_file_action";
+    return "general_assistant_query";
+  };
+
+  const applyTranscriptAsCommand = () => {
+    const text = transcriptText.trim();
+    const intent = detectIntent(text);
+    const risk = intent === "sensitive_file_action"
+      ? "sensitive"
+      : intent === "email_draft"
+      ? "confirmation_required"
+      : "safe";
+
+    setCommandDraft(text || "No command draft yet");
+    setDetectedIntent(intent);
+    setRiskLevel(risk);
+  };
+
+  const loadDemoBangla = () => setTranscriptText("ইউটিউব খুলে একটা বাংলা গান চালাও");
+  const loadDemoFile = () => setTranscriptText("Downloads folder theke PDF file khuje dao");
+  const clearTranscript = () => {
+    setTranscriptText("");
+    setCommandDraft("No command draft yet");
+    setDetectedIntent("none");
+    setRiskLevel("safe");
+  };
+
+  return (
+    <section className="page-surface">
+      <div className="page-hero">
+        <p className="eyebrow">Voice Interface</p>
+        <h3>Voice Control Center</h3>
+        <p>
+          The voice page is currently a frontend-only interface. Microphone permission,
+          live speech recognition, and backend voice actions will arrive in later phases.
+        </p>
+      </div>
+
+      <div className="voice-page-grid">
+        <VoiceStatusPanel status={voiceStatus} />
+        <VoiceModeSelector selectedMode={selectedMode} onModeChange={setSelectedMode} />
+      </div>
+
+      <div className="voice-panel simulated-transcript-card" style={{ marginTop: 24 }}>
+        <div className="voice-panel-header">
+          <div>
+            <p className="eyebrow">Simulated Transcript</p>
+            <h4>Edit transcript</h4>
+            <p>Real speech recognition will be added later.</p>
+          </div>
+        </div>
+
+        <label htmlFor="simulated-transcript" className="sr-only">
+          Simulated Transcript
+        </label>
+        <textarea
+          id="simulated-transcript"
+          className="simulated-transcript-input"
+          value={transcriptText}
+          onChange={(event) => setTranscriptText(event.target.value)}
+          rows={6}
+          placeholder="Type a simulated voice transcript here..."
+        />
+
+        <div className="transcript-action-row">
+          <button
+            type="button"
+            className="transcript-action-button"
+            onClick={applyTranscriptAsCommand}
+          >
+            Use Transcript as Command
+          </button>
+          <button
+            type="button"
+            className="transcript-action-button secondary"
+            onClick={loadDemoBangla}
+          >
+            Load Demo Bangla
+          </button>
+          <button
+            type="button"
+            className="transcript-action-button secondary"
+            onClick={loadDemoFile}
+          >
+            Load Demo File
+          </button>
+          <button
+            type="button"
+            className="transcript-action-button danger"
+            onClick={clearTranscript}
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div className="voice-page-grid" style={{ marginTop: 24 }}>
+        <VoiceTranscriptPanel
+          transcript={transcriptText}
+          confidence={0}
+          language="Mixed"
+        />
+        <VoiceCommandDraft
+          command={commandDraft}
+          intent={detectedIntent}
+          riskLevel={riskLevel}
+        />
+      </div>
+
+      <div className="module-note">
+        Microphone permission and real speech recognition will be added in Phase 10.3 and later backend phases.
+      </div>
+    </section>
+  );
+}
+
 function HistoryPage() {
   const timeline = [
     {
