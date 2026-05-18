@@ -3234,3 +3234,98 @@ button {
   font-size: 0.75rem;
   text-align: center;
 }
+
+.audit-health-panel {
+  margin-top: 24px;
+  padding: 18px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+
+.audit-health-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.audit-health-header .eyebrow {
+  margin: 0;
+}
+
+.audit-health-button {
+  padding: 6px 14px;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.audit-health-button:hover:not(:disabled) {
+  background: #475569;
+}
+
+.audit-health-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.audit-health-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+
+.audit-health-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.audit-health-row.full-width {
+  grid-column: 1 / -1;
+}
+
+.audit-health-row span {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.audit-health-row strong {
+  font-size: 0.85rem;
+  color: #f1f5f9;
+  word-break: break-word;
+}
+
+.audit-health-error {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #3b1a1a;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 0.8rem;
+}
+
+.audit-health-note {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #1e1b2e;
+  border: 1px solid #3b2d5e;
+  border-radius: 6px;
+  color: #a78bfa;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.audit-health-empty {
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
+}

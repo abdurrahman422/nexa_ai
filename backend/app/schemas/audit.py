@@ -40,6 +40,8 @@ class AuditRouteHealth(BaseModel):
     phase: str
     storage_enabled: bool
     execution_enabled: bool
+    storage_mode: str = "disabled"
+    message: str = "Audit storage is prepared but disabled in this phase."
 
 
 def create_audit_response(request: AuditLogRequest) -> AuditLogResponse:
@@ -54,7 +56,7 @@ def create_audit_response(request: AuditLogRequest) -> AuditLogResponse:
 
     message = (
         "Audit received as preview only. "
-        "No database storage or command execution is enabled in this phase."
+        "Storage is disabled and no command execution is enabled in this phase."
     )
 
     return AuditLogResponse(

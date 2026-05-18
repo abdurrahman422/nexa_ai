@@ -32,6 +32,8 @@ export type BackendAuditHealthResponse = {
   phase: string;
   storage_enabled: boolean;
   execution_enabled: boolean;
+  storage_mode?: string;
+  message?: string;
 };
 
 export function commandHistoryEntryToAuditRequest(

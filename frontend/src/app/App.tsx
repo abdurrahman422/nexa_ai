@@ -3,7 +3,7 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -1207,6 +1207,14 @@ function HistoryPage() {
   const [auditPreviewResponse, setAuditPreviewResponse] = useState<BackendAuditPreviewResponse | null>(null);
   const [auditPreviewLoading, setAuditPreviewLoading] = useState(false);
   const [auditPreviewError, setAuditPreviewError] = useState<string | null>(null);
+  const [auditHealth, setAuditHealth] = useState<BackendAuditHealthResponse | null>(null);
+  const [auditHealthLoading, setAuditHealthLoading] = useState(false);
+  const [auditHealthError, setAuditHealthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    handleRefreshAuditHealth();
+  }, []);
+
   const selectedEntry = selectedHistoryEntryId
     ? commandHistory.find((e) => e.id === selectedHistoryEntryId) ?? null
     : null;
@@ -1280,6 +1288,19 @@ function HistoryPage() {
     }
   };
 
+  const handleRefreshAuditHealth = async () => {
+    setAuditHealthLoading(true);
+    setAuditHealthError(null);
+    try {
+      const response = await getBackendAuditHealth();
+      setAuditHealth(response);
+    } catch (err) {
+      setAuditHealthError(err instanceof Error ? err.message : "Failed to reach backend audit health.");
+    } finally {
+      setAuditHealthLoading(false);
+    }
+  };
+
   const handleSyncHistoryEntryToAudit = async (entry: CommandHistoryEntry) => {
     setAuditPreviewLoading(true);
     setAuditPreviewError(null);
@@ -1324,6 +1345,65 @@ function HistoryPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="audit-health-panel">
+        <div className="audit-health-header">
+          <p className="eyebrow">Backend Audit Storage Status</p>
+          <button
+            type="button"
+            className="audit-health-button"
+            onClick={handleRefreshAuditHealth}
+            disabled={auditHealthLoading}
+          >
+            {auditHealthLoading ? "Refreshing..." : "Refresh Audit Status"}
+          </button>
+        </div>
+        {auditHealthError && (
+          <div className="audit-health-error">{auditHealthError}</div>
+        )}
+        {auditHealth && (
+          <>
+            <div className="audit-health-grid">
+              <div className="audit-health-row">
+                <span>Status</span>
+                <strong>{auditHealth.status}</strong>
+              </div>
+              <div className="audit-health-row">
+                <span>Module</span>
+                <strong>{auditHealth.module}</strong>
+              </div>
+              <div className="audit-health-row">
+                <span>Phase</span>
+                <strong>{auditHealth.phase}</strong>
+              </div>
+              <div className="audit-health-row">
+                <span>Storage enabled</span>
+                <strong>{String(auditHealth.storage_enabled)}</strong>
+              </div>
+              <div className="audit-health-row">
+                <span>Storage mode</span>
+                <strong>{auditHealth.storage_mode ?? "N/A"}</strong>
+              </div>
+              <div className="audit-health-row">
+                <span>Execution enabled</span>
+                <strong>{String(auditHealth.execution_enabled)}</strong>
+              </div>
+              {auditHealth.message && (
+                <div className="audit-health-row full-width">
+                  <span>Message</span>
+                  <strong>{auditHealth.message}</strong>
+                </div>
+              )}
+            </div>
+            <div className="audit-health-note">
+              Storage is not enabled yet. This panel only displays backend audit status.
+            </div>
+          </>
+        )}
+        {!auditHealth && !auditHealthError && !auditHealthLoading && (
+          <div className="audit-health-empty">Click "Refresh Audit Status" to load backend audit status.</div>
+        )}
       </div>
 
       <div className="command-history-panel">
