@@ -3,7 +3,7 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, CommandHistoryEntry } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -264,7 +264,7 @@ export default function App() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Phase 12.3</p>
+            <p className="eyebrow">Phase 16.2</p>
             <h2>{activeNav.label}</h2>
           </div>
 
@@ -485,6 +485,26 @@ function VoicePage() {
       );
     } finally {
       setVoiceBackendPreviewLoading(false);
+    }
+  };
+
+  const [voiceHistorySaveMessage, setVoiceHistorySaveMessage] = useState<string | null>(null);
+  const [voiceHistorySaveError, setVoiceHistorySaveError] = useState<string | null>(null);
+
+  const handleVoiceSaveToHistory = () => {
+    setVoiceHistorySaveMessage(null);
+    setVoiceHistorySaveError(null);
+    try {
+      const entry = createCommandHistoryEntry({
+        source: "voice_page",
+        result: voiceCommandResult,
+        actionPreview: voiceActionPreview,
+        backendPreview: voiceBackendPreview ?? undefined,
+      });
+      saveCommandHistoryEntry(entry);
+      setVoiceHistorySaveMessage("Saved voice preview to local command history.");
+    } catch {
+      setVoiceHistorySaveError("Failed to save command history.");
     }
   };
 
@@ -1049,6 +1069,22 @@ function VoicePage() {
           Voice command execution is disabled. Preview only.
         </div>
 
+        <div className="history-save-row">
+          <button
+            type="button"
+            className="history-save-button"
+            onClick={handleVoiceSaveToHistory}
+          >
+            Save Voice Preview to History
+          </button>
+          {voiceHistorySaveMessage && (
+            <span className="history-save-message">{voiceHistorySaveMessage}</span>
+          )}
+          {voiceHistorySaveError && (
+            <span className="history-save-error">{voiceHistorySaveError}</span>
+          )}
+        </div>
+
         <div className="backend-preview-card">
           <p className="eyebrow">Backend Preview</p>
           <div className="backend-preview-actions">
@@ -1160,6 +1196,27 @@ function HistoryPage() {
     },
   ];
 
+  const [commandHistory, setCommandHistory] = useState<CommandHistoryEntry[]>(() =>
+    getLatestCommandHistory(),
+  );
+
+  const handleRefreshHistory = () => {
+    setCommandHistory(getLatestCommandHistory());
+  };
+
+  const handleClearHistory = () => {
+    clearCommandHistory();
+    setCommandHistory([]);
+  };
+
+  const formatTime = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return iso;
+    }
+  };
+
   return (
     <section className="page-surface system-page">
       <div className="page-hero">
@@ -1182,6 +1239,89 @@ function HistoryPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="command-history-panel">
+        <div className="command-history-header">
+          <p className="eyebrow">Command Audit Log</p>
+          <div className="command-history-actions">
+            <button
+              type="button"
+              className="command-history-button"
+              onClick={handleRefreshHistory}
+            >
+              Refresh History
+            </button>
+            <button
+              type="button"
+              className="command-history-button danger"
+              onClick={handleClearHistory}
+            >
+              Clear Command History
+            </button>
+          </div>
+        </div>
+
+        {commandHistory.length === 0 ? (
+          <div className="command-history-empty">
+            No command history saved yet.
+          </div>
+        ) : (
+          <div className="command-history-list">
+            {commandHistory.map((entry) => (
+              <div className="command-history-item" key={entry.id}>
+                <div className="command-history-meta">
+                  <div>
+                    <span>Source</span>
+                    <strong>{entry.source}</strong>
+                  </div>
+                  <div>
+                    <span>Time</span>
+                    <strong>{formatTime(entry.createdAt)}</strong>
+                  </div>
+                  <div>
+                    <span>Intent</span>
+                    <strong>{entry.intent}</strong>
+                  </div>
+                  <div>
+                    <span>Language</span>
+                    <strong>{entry.language}</strong>
+                  </div>
+                  <div>
+                    <span>Confidence</span>
+                    <strong>{entry.confidence}%</strong>
+                  </div>
+                  <div className="command-history-risk">
+                    <span>Risk level</span>
+                    <strong>{entry.riskLevel}</strong>
+                  </div>
+                  <div>
+                    <span>Can execute</span>
+                    <strong>No</strong>
+                  </div>
+                  {entry.actionStatus && (
+                    <div>
+                      <span>Action status</span>
+                      <strong>{entry.actionStatus}</strong>
+                    </div>
+                  )}
+                  {entry.backendStatus && (
+                    <div>
+                      <span>Backend status</span>
+                      <strong>{entry.backendStatus}</strong>
+                    </div>
+                  )}
+                </div>
+                <p className="command-history-command">
+                  {entry.originalText}
+                </p>
+                <p className="command-history-summary">
+                  {entry.summary}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="module-note">
@@ -1368,6 +1508,26 @@ function CommandsPage() {
     }
   };
 
+  const [historySaveMessage, setHistorySaveMessage] = useState<string | null>(null);
+  const [historySaveError, setHistorySaveError] = useState<string | null>(null);
+
+  const handleSaveToHistory = () => {
+    setHistorySaveMessage(null);
+    setHistorySaveError(null);
+    try {
+      const entry = createCommandHistoryEntry({
+        source: "commands_page",
+        result,
+        actionPreview,
+        backendPreview: backendPreview ?? undefined,
+      });
+      saveCommandHistoryEntry(entry);
+      setHistorySaveMessage("Saved to local command history.");
+    } catch {
+      setHistorySaveError("Failed to save command history.");
+    }
+  };
+
   const examples = [
     { label: "YouTube Bangla", value: "ইউটিউব খুলে একটা বাংলা গান চালাও" },
     { label: "Find PDF File", value: "Downloads folder theke PDF file khuje dao" },
@@ -1503,6 +1663,22 @@ function CommandsPage() {
 
       <div className="command-preview-note">
         Execution is disabled. Preview only.
+      </div>
+
+      <div className="history-save-row">
+        <button
+          type="button"
+          className="history-save-button"
+          onClick={handleSaveToHistory}
+        >
+          Save Preview to History
+        </button>
+        {historySaveMessage && (
+          <span className="history-save-message">{historySaveMessage}</span>
+        )}
+        {historySaveError && (
+          <span className="history-save-error">{historySaveError}</span>
+        )}
       </div>
 
       <div className="backend-preview-card">
