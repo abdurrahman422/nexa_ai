@@ -3,7 +3,7 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -1204,6 +1204,9 @@ function HistoryPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedHistoryEntryId, setSelectedHistoryEntryId] = useState<string | null>(null);
+  const [auditPreviewResponse, setAuditPreviewResponse] = useState<BackendAuditPreviewResponse | null>(null);
+  const [auditPreviewLoading, setAuditPreviewLoading] = useState(false);
+  const [auditPreviewError, setAuditPreviewError] = useState<string | null>(null);
   const selectedEntry = selectedHistoryEntryId
     ? commandHistory.find((e) => e.id === selectedHistoryEntryId) ?? null
     : null;
@@ -1274,6 +1277,20 @@ function HistoryPage() {
     setCommandHistory(updated);
     if (selectedHistoryEntryId === id) {
       setSelectedHistoryEntryId(null);
+    }
+  };
+
+  const handleSyncHistoryEntryToAudit = async (entry: CommandHistoryEntry) => {
+    setAuditPreviewLoading(true);
+    setAuditPreviewError(null);
+    setAuditPreviewResponse(null);
+    try {
+      const response = await requestBackendAuditPreview(entry);
+      setAuditPreviewResponse(response);
+    } catch (err) {
+      setAuditPreviewError(err instanceof Error ? err.message : "Failed to sync with backend audit.");
+    } finally {
+      setAuditPreviewLoading(false);
     }
   };
 
@@ -1482,13 +1499,23 @@ function HistoryPage() {
                 <p className="command-history-summary">
                   {entry.summary}
                 </p>
-                <button
-                  type="button"
-                  className="command-history-delete-button"
-                  onClick={(e) => { e.stopPropagation(); handleDeleteHistoryEntry(entry.id); }}
-                >
-                  Delete
-                </button>
+                <div className="command-history-item-actions">
+                  <button
+                    type="button"
+                    className="audit-sync-button"
+                    onClick={(e) => { e.stopPropagation(); handleSyncHistoryEntryToAudit(entry); }}
+                    disabled={auditPreviewLoading}
+                  >
+                    {auditPreviewLoading ? "Syncing..." : "Sync Audit Preview"}
+                  </button>
+                  <button
+                    type="button"
+                    className="command-history-delete-button"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteHistoryEntry(entry.id); }}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1562,12 +1589,65 @@ function HistoryPage() {
             <div className="command-history-danger-note">
               <button
                 type="button"
+                className="audit-sync-button detail"
+                onClick={() => handleSyncHistoryEntryToAudit(selectedEntry)}
+                disabled={auditPreviewLoading}
+              >
+                {auditPreviewLoading ? "Syncing..." : "Sync Selected to Backend Audit"}
+              </button>
+              <button
+                type="button"
                 className="command-history-detail-delete"
                 onClick={() => handleDeleteHistoryEntry(selectedEntry.id)}
               >
                 Delete This Entry
               </button>
             </div>
+            {auditPreviewError && (
+              <div className="audit-preview-error">{auditPreviewError}</div>
+            )}
+            {auditPreviewResponse && (
+              <div className="audit-preview-panel">
+                <p className="eyebrow" style={{ margin: "0 0 10px" }}>Backend Audit Preview</p>
+                <div className="audit-preview-grid">
+                  <div className="audit-preview-row">
+                    <span>Status</span>
+                    <strong>{auditPreviewResponse.status}</strong>
+                  </div>
+                  <div className="audit-preview-row">
+                    <span>Audit ID</span>
+                    <strong>{auditPreviewResponse.audit_id}</strong>
+                  </div>
+                  <div className="audit-preview-row">
+                    <span>Stored</span>
+                    <strong>{String(auditPreviewResponse.stored)}</strong>
+                  </div>
+                  <div className="audit-preview-row">
+                    <span>Execution enabled</span>
+                    <strong>{String(auditPreviewResponse.execution_enabled)}</strong>
+                  </div>
+                  <div className="audit-preview-row">
+                    <span>Message</span>
+                    <strong>{auditPreviewResponse.message}</strong>
+                  </div>
+                  <div className="audit-preview-row">
+                    <span>Source</span>
+                    <strong>{auditPreviewResponse.source}</strong>
+                  </div>
+                  <div className="audit-preview-row">
+                    <span>Intent</span>
+                    <strong>{auditPreviewResponse.intent}</strong>
+                  </div>
+                  <div className="audit-preview-row">
+                    <span>Risk level</span>
+                    <strong>{auditPreviewResponse.risk_level}</strong>
+                  </div>
+                </div>
+                <div className="audit-preview-note">
+                  Backend audit preview does not store to database yet.
+                </div>
+              </div>
+            )}
           </div>
         ) : hasHistory && hasFiltered ? (
           <div className="command-history-detail-empty">
