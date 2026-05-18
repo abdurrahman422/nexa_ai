@@ -9,6 +9,7 @@ from .audit import AuditLogResponse
 from .audit import AuditRouteHealth
 from .audit import AuditMigrationPreviewResponse
 from .audit import create_audit_response
+from .database import DatabaseStatusResponse
 
 __all__ = [
     "CommandPreviewRequest",
@@ -20,4 +21,5 @@ __all__ = [
     "AuditRouteHealth",
     "AuditMigrationPreviewResponse",
     "create_audit_response",
+    "DatabaseStatusResponse",
 ]
