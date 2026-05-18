@@ -2,7 +2,8 @@
 import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel } from "@/lib";
+import { ActionPreviewCard } from "@/components/action-preview";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -461,10 +462,11 @@ function VoicePage() {
   const [demoMicPermissionStatus, setDemoMicPermissionStatus] = useState<"not_requested" | "allowed" | "blocked">("not_requested");
   const [transcriptText, setTranscriptText] = useState(defaultDemoTranscript);
   const initialVoiceResult = detectCommandIntent(defaultDemoTranscript);
-  const [voiceResult, setVoiceResult] = useState<CommandUnderstandingResult>(initialVoiceResult);
+  const [voiceCommandResult, setVoiceCommandResult] = useState<CommandUnderstandingResult>(initialVoiceResult);
   const [commandDraft, setCommandDraft] = useState(initialVoiceResult.originalText);
   const [detectedIntent, setDetectedIntent] = useState<CommandIntent>(initialVoiceResult.intent);
   const [riskLevel, setRiskLevel] = useState<CommandRiskLevel>(initialVoiceResult.riskLevel);
+  const voiceActionPreview = createActionPreview(voiceCommandResult);
 
   const voiceStatus = realMicStatus === "denied" || realMicStatus === "unsupported" || realMicStatus === "error"
     ? "error"
@@ -531,18 +533,20 @@ function VoicePage() {
     const text = transcriptText.trim();
     const result = detectCommandIntent(text || "");
 
-    setVoiceResult(result);
+    setVoiceCommandResult(result);
     setCommandDraft(result.originalText || "No command draft yet");
     setDetectedIntent(result.intent);
     setRiskLevel(result.riskLevel);
   };
 
   const loadDemoBangla = () => setTranscriptText("ইউটিউব খুলে একটা বাংলা গান চালাও");
-  const loadDemoFile = () => setTranscriptText("Downloads folder theke PDF file khuje dao");
+  const loadDemoEmail = () => setTranscriptText("Boss ke email draft koro");
+  const loadDemoSensitive = () => setTranscriptText("Downloads folder clean koro");
+  const loadDemoBlocked = () => setTranscriptText("delete system32");
   const clearTranscript = () => {
     const emptyResult = detectCommandIntent("");
     setTranscriptText("");
-    setVoiceResult(emptyResult);
+    setVoiceCommandResult(emptyResult);
     setCommandDraft("No command draft yet");
     setDetectedIntent(emptyResult.intent);
     setRiskLevel(emptyResult.riskLevel);
@@ -863,6 +867,68 @@ function VoicePage() {
         </div>
         </div>
 
+        <div className="voice-panel simulated-transcript-card" style={{ marginTop: 24 }}>
+          <div className="voice-panel-header">
+            <div>
+              <p className="eyebrow">Transcript Simulation</p>
+              <h4>Draft from transcript</h4>
+              <p>Turn a transcript into a preview-only command draft before any execution flow exists.</p>
+            </div>
+          </div>
+
+          <textarea
+            className="simulated-transcript-input"
+            value={transcriptText}
+            onChange={(event) => setTranscriptText(event.target.value)}
+            placeholder="Type or simulate a transcript..."
+          />
+
+          <div className="transcript-action-row">
+            <button
+              type="button"
+              className="transcript-action-button"
+              onClick={applyTranscriptAsCommand}
+            >
+              Use Transcript as Command
+            </button>
+            <button
+              type="button"
+              className="transcript-action-button secondary"
+              onClick={loadDemoBangla}
+            >
+              Load Bangla Demo
+            </button>
+            <button
+              type="button"
+              className="transcript-action-button secondary"
+              onClick={loadDemoEmail}
+            >
+              Load Email Demo
+            </button>
+            <button
+              type="button"
+              className="transcript-action-button secondary"
+              onClick={loadDemoSensitive}
+            >
+              Load Sensitive Demo
+            </button>
+            <button
+              type="button"
+              className="transcript-action-button secondary"
+              onClick={loadDemoBlocked}
+            >
+              Load Blocked Demo
+            </button>
+            <button
+              type="button"
+              className="transcript-action-button danger"
+              onClick={clearTranscript}
+            >
+              Clear Transcript
+            </button>
+          </div>
+        </div>
+
         <div className="voice-page-grid" style={{ marginTop: 16 }}>
           <div className="voice-panel speech-readiness-card">
             <div className="voice-panel-header">
@@ -921,8 +987,8 @@ function VoicePage() {
         <div className="voice-page-grid" style={{ marginTop: 24 }}>
           <VoiceTranscriptPanel
             transcript={transcriptText}
-            confidence={voiceResult.confidence}
-            language={voiceResult.language === "Bangla" || voiceResult.language === "English" ? voiceResult.language : "Mixed"}
+            confidence={voiceCommandResult.confidence}
+            language={voiceCommandResult.language === "Bangla" || voiceCommandResult.language === "English" ? voiceCommandResult.language : "Mixed"}
           />
           <VoiceCommandDraft
             command={commandDraft}
@@ -941,18 +1007,26 @@ function VoicePage() {
             <div className="voice-meta-grid">
               <div>
                 <span>Confirmation required</span>
-                <strong>{shouldAskConfirmation(voiceResult) ? "Yes" : "No"}</strong>
+                <strong>{shouldAskConfirmation(voiceCommandResult) ? "Yes" : "No"}</strong>
               </div>
               <div>
                 <span>Sensitive</span>
-                <strong>{isCommandSensitive(voiceResult) ? "Yes" : "No"}</strong>
+                <strong>{isCommandSensitive(voiceCommandResult) ? "Yes" : "No"}</strong>
               </div>
               <div>
                 <span>Confirmation reason</span>
-                <strong>{voiceResult.confirmationReason || "None"}</strong>
+                <strong>{voiceCommandResult.confirmationReason || "None"}</strong>
               </div>
             </div>
           </section>
+        </div>
+
+        <div className="command-action-preview-wrap" style={{ marginTop: 24 }}>
+          <ActionPreviewCard preview={voiceActionPreview} />
+        </div>
+
+        <div className="command-preview-note">
+          Voice command execution is disabled. Preview only.
         </div>
 
       <div className="module-note">
@@ -1176,6 +1250,7 @@ function CommandsPage() {
   const defaultCommand = "ইউটিউব খুলে একটা বাংলা গান চালাও";
   const [commandInput, setCommandInput] = useState(defaultCommand);
   const [result, setResult] = useState<CommandUnderstandingResult>(() => detectCommandIntent(defaultCommand));
+  const actionPreview = createActionPreview(result);
 
   const examples = [
     { label: "YouTube Bangla", value: "ইউটিউব খুলে একটা বাংলা গান চালাও" },
@@ -1304,6 +1379,14 @@ function CommandsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="command-action-preview-wrap">
+        <ActionPreviewCard preview={actionPreview} />
+      </div>
+
+      <div className="command-preview-note">
+        Execution is disabled. Preview only.
       </div>
 
       <div className="module-note">
