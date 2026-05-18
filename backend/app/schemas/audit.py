@@ -50,6 +50,24 @@ class AuditRouteHealth(BaseModel):
     sqlite_table_name: str | None = None
 
 
+class AuditMigrationPreviewResponse(BaseModel):
+    """Preview-only response describing the SQLite audit migration script state.
+
+    No database operation occurs. can_run and execution_enabled are always False.
+    """
+
+    status: str = "preview_only"
+    script_path: str
+    exists: bool
+    can_run: bool = False
+    migrations_enabled: bool = False
+    statement_count: int
+    table_name: str
+    preview_message: str
+    safety_notes: list[str]
+    execution_enabled: bool = False
+
+
 def create_audit_response(request: AuditLogRequest) -> AuditLogResponse:
     """Build a preview-only audit response.
 

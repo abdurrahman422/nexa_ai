@@ -4,9 +4,11 @@ from fastapi import APIRouter, Depends
 
 from app.audit import AuditRepository
 from app.audit import SQLiteAuditRepository
+from app.audit import get_audit_migration_preview
 from app.schemas import AuditLogRequest
 from app.schemas import AuditLogResponse
 from app.schemas import AuditRouteHealth
+from app.schemas import AuditMigrationPreviewResponse
 from app.schemas import create_audit_response
 
 router = APIRouter(prefix="/audit", tags=["audit"])
@@ -62,3 +64,24 @@ def preview_audit_log(
     response.storage_backend = sqlite_result["storage_backend"]
     response.storage_message = sqlite_result["reason"]
     return response
+
+
+@router.get("/migration/preview", response_model=AuditMigrationPreviewResponse)
+def audit_migration_preview() -> AuditMigrationPreviewResponse:
+    """Return a read-only preview of the SQLite audit migration script.
+
+    No database connection, no SQL execution, no table creation.
+    """
+    preview = get_audit_migration_preview()
+    return AuditMigrationPreviewResponse(
+        status="preview_only",
+        script_path=preview.script_path,
+        exists=preview.exists,
+        can_run=False,
+        migrations_enabled=False,
+        statement_count=preview.statement_count,
+        table_name=preview.table_name,
+        preview_message=preview.preview_message,
+        safety_notes=preview.safety_notes,
+        execution_enabled=False,
+    )

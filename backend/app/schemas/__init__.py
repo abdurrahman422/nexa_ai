@@ -7,6 +7,7 @@ from .command import create_preview_response
 from .audit import AuditLogRequest
 from .audit import AuditLogResponse
 from .audit import AuditRouteHealth
+from .audit import AuditMigrationPreviewResponse
 from .audit import create_audit_response
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "AuditLogRequest",
     "AuditLogResponse",
     "AuditRouteHealth",
+    "AuditMigrationPreviewResponse",
     "create_audit_response",
 ]

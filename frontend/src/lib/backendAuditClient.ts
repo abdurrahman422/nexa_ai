@@ -75,6 +75,40 @@ export async function getBackendAuditHealth(
   return response.json() as Promise<BackendAuditHealthResponse>;
 }
 
+export type BackendAuditMigrationPreviewResponse = {
+  status: string;
+  script_path: string;
+  exists: boolean;
+  can_run: boolean;
+  migrations_enabled: boolean;
+  statement_count: number;
+  table_name: string;
+  preview_message: string;
+  safety_notes: string[];
+  execution_enabled: boolean;
+};
+
+export async function getBackendAuditMigrationPreview(
+  backendUrl = DEFAULT_BACKEND_URL,
+): Promise<BackendAuditMigrationPreviewResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${backendUrl}/api/audit/migration/preview`);
+  } catch {
+    throw new Error(
+      `Failed to reach backend audit migration preview at ${backendUrl}/api/audit/migration/preview`,
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Backend audit migration preview request failed with status ${response.status}`,
+    );
+  }
+
+  return response.json() as Promise<BackendAuditMigrationPreviewResponse>;
+}
+
 export async function requestBackendAuditPreview(
   entry: CommandHistoryEntry,
   backendUrl = DEFAULT_BACKEND_URL,

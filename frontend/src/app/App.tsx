@@ -3,7 +3,7 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -1210,9 +1210,13 @@ function HistoryPage() {
   const [auditHealth, setAuditHealth] = useState<BackendAuditHealthResponse | null>(null);
   const [auditHealthLoading, setAuditHealthLoading] = useState(false);
   const [auditHealthError, setAuditHealthError] = useState<string | null>(null);
+  const [migrationPreview, setMigrationPreview] = useState<BackendAuditMigrationPreviewResponse | null>(null);
+  const [migrationPreviewLoading, setMigrationPreviewLoading] = useState(false);
+  const [migrationPreviewError, setMigrationPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     handleRefreshAuditHealth();
+    handleRefreshMigrationPreview();
   }, []);
 
   const selectedEntry = selectedHistoryEntryId
@@ -1285,6 +1289,19 @@ function HistoryPage() {
     setCommandHistory(updated);
     if (selectedHistoryEntryId === id) {
       setSelectedHistoryEntryId(null);
+    }
+  };
+
+  const handleRefreshMigrationPreview = async () => {
+    setMigrationPreviewLoading(true);
+    setMigrationPreviewError(null);
+    try {
+      const response = await getBackendAuditMigrationPreview();
+      setMigrationPreview(response);
+    } catch (err) {
+      setMigrationPreviewError(err instanceof Error ? err.message : "Failed to reach backend migration preview.");
+    } finally {
+      setMigrationPreviewLoading(false);
     }
   };
 
@@ -1403,6 +1420,73 @@ function HistoryPage() {
         )}
         {!auditHealth && !auditHealthError && !auditHealthLoading && (
           <div className="audit-health-empty">Click "Refresh Audit Status" to load backend audit status.</div>
+        )}
+      </div>
+
+      <div className="migration-preview-panel">
+        <div className="migration-preview-header">
+          <p className="eyebrow">SQLite Migration Preview</p>
+          <button
+            type="button"
+            className="migration-preview-button"
+            onClick={handleRefreshMigrationPreview}
+            disabled={migrationPreviewLoading}
+          >
+            {migrationPreviewLoading ? "Refreshing..." : "Refresh Migration Preview"}
+          </button>
+        </div>
+        {migrationPreviewError && (
+          <div className="migration-preview-error">{migrationPreviewError}</div>
+        )}
+        {migrationPreview && (
+          <>
+            <div className="migration-preview-grid">
+              <div className="migration-preview-row">
+                <span>Status</span>
+                <strong>{migrationPreview.status}</strong>
+              </div>
+              <div className="migration-preview-row">
+                <span>Script path</span>
+                <strong>{migrationPreview.script_path}</strong>
+              </div>
+              <div className="migration-preview-row">
+                <span>Exists</span>
+                <strong>{String(migrationPreview.exists)}</strong>
+              </div>
+              <div className="migration-preview-row">
+                <span>Can run</span>
+                <strong>{String(migrationPreview.can_run)}</strong>
+              </div>
+              <div className="migration-preview-row">
+                <span>Migrations enabled</span>
+                <strong>{String(migrationPreview.migrations_enabled)}</strong>
+              </div>
+              <div className="migration-preview-row">
+                <span>Statement count</span>
+                <strong>{migrationPreview.statement_count}</strong>
+              </div>
+              <div className="migration-preview-row">
+                <span>Table name</span>
+                <strong>{migrationPreview.table_name}</strong>
+              </div>
+              <div className="migration-preview-row">
+                <span>Execution enabled</span>
+                <strong>{String(migrationPreview.execution_enabled)}</strong>
+              </div>
+              <div className="migration-preview-row full-width">
+                <span>Message</span>
+                <strong>{migrationPreview.preview_message}</strong>
+              </div>
+            </div>
+            <div className="migration-preview-notes">
+              {migrationPreview.safety_notes.map((note, i) => (
+                <div key={i} className="migration-preview-note">{note}</div>
+              ))}
+            </div>
+          </>
+        )}
+        {!migrationPreview && !migrationPreviewError && !migrationPreviewLoading && (
+          <div className="migration-preview-empty">Click "Refresh Migration Preview" to load migration status.</div>
         )}
       </div>
 
