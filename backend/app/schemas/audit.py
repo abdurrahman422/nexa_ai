@@ -30,6 +30,8 @@ class AuditLogResponse(BaseModel):
     source: str
     intent: str
     risk_level: str
+    storage_backend: str | None = None
+    storage_message: str | None = None
 
 
 class AuditRouteHealth(BaseModel):
@@ -42,6 +44,10 @@ class AuditRouteHealth(BaseModel):
     execution_enabled: bool
     storage_mode: str = "disabled"
     message: str = "Audit storage is prepared but disabled in this phase."
+    sqlite_available: bool | None = None
+    sqlite_writes_enabled: bool | None = None
+    sqlite_database_path: str | None = None
+    sqlite_table_name: str | None = None
 
 
 def create_audit_response(request: AuditLogRequest) -> AuditLogResponse:
