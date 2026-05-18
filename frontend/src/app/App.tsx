@@ -2,7 +2,7 @@
 import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
-import { clearProfile, formatAddressingName, loadProfile, isOnboardingComplete, UserProfile } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -439,21 +439,27 @@ function ModulePage({
 
 function VoicePage() {
   const [selectedMode, setSelectedMode] = useState<"Push to Talk" | "Always Listening" | "Manual Text">("Push to Talk");
-  const [micPermissionStatus, setMicPermissionStatus] = useState<"not_requested" | "allowed" | "blocked">("not_requested");
+  const [realMicStatus, setRealMicStatus] = useState<MicrophonePermissionStatus>("unknown");
+  const [micStatusMessage, setMicStatusMessage] = useState(getMicrophoneStatusLabel("unknown"));
+  const [isRequestingMic, setIsRequestingMic] = useState(false);
+  const [micRequestError, setMicRequestError] = useState<string | null>(null);
+  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
+  const [lastRequestedAt, setLastRequestedAt] = useState<string | null>(null);
+  const [demoMicPermissionStatus, setDemoMicPermissionStatus] = useState<"not_requested" | "allowed" | "blocked">("not_requested");
   const [transcriptText, setTranscriptText] = useState("ইউটিউব খুলে একটা বাংলা গান চালাও");
   const [commandDraft, setCommandDraft] = useState("Open YouTube and play a Bangla song");
   const [detectedIntent, setDetectedIntent] = useState("youtube_search");
   const [riskLevel, setRiskLevel] = useState<"safe" | "confirmation_required" | "sensitive">("safe");
 
-  const voiceStatus = micPermissionStatus === "allowed"
+  const voiceStatus = realMicStatus === "granted"
     ? "listening"
-    : micPermissionStatus === "blocked"
+    : realMicStatus === "denied" || realMicStatus === "unsupported" || realMicStatus === "error"
     ? "error"
     : "idle";
 
-  const permissionLabel = micPermissionStatus === "allowed"
+  const demoPermissionLabel = demoMicPermissionStatus === "allowed"
     ? "Allowed"
-    : micPermissionStatus === "blocked"
+    : demoMicPermissionStatus === "blocked"
     ? "Blocked"
     : "Not requested";
 
@@ -489,6 +495,74 @@ function VoicePage() {
     setRiskLevel("safe");
   };
 
+  const refreshPermissionStatus = async () => {
+    const status = await checkMicrophonePermission();
+    const updated = saveMicrophonePermissionRecord({ status });
+    setRealMicStatus(updated.status);
+    setMicStatusMessage(updated.label);
+    setLastCheckedAt(updated.lastCheckedAt);
+    setMicRequestError(updated.error || null);
+  };
+
+  const handleRequestMicrophoneAccess = async () => {
+    try {
+      setIsRequestingMic(true);
+      setMicRequestError(null);
+      const result = await requestMicrophoneAccess();
+      const now = new Date().toISOString();
+      const updated = saveMicrophonePermissionRecord({
+        status: result.status,
+        lastRequestedAt: now,
+        error: result.error,
+      });
+      setRealMicStatus(updated.status);
+      setMicStatusMessage(updated.label);
+      setLastRequestedAt(updated.lastRequestedAt || null);
+      setLastCheckedAt(updated.lastCheckedAt);
+      setMicRequestError(updated.error || null);
+    } finally {
+      setIsRequestingMic(false);
+    }
+  };
+
+  const handleClearMicrophoneCache = () => {
+    clearMicrophonePermissionRecord();
+    setRealMicStatus("unknown");
+    setMicStatusMessage("Permission unknown");
+    setLastCheckedAt(null);
+    setLastRequestedAt(null);
+    setMicRequestError(null);
+  };
+
+  const getMicHelperText = (): string => {
+    switch (realMicStatus) {
+      case "granted":
+        return "Microphone access is allowed. Speech recognition will be added later.";
+      case "denied":
+        return "Microphone access is blocked. Enable it from Windows privacy settings or browser/site settings, then refresh.";
+      case "unsupported":
+        return "This environment does not support microphone access.";
+      case "prompt":
+        return "Permission has not been granted yet. Use Request Microphone Access.";
+      case "unknown":
+        return "Permission state is unknown. Refresh or request access.";
+      case "error":
+        return "Permission check failed. See error details below.";
+      default:
+        return "Click request to allow Nexa AI to use your microphone in a later voice phase.";
+    }
+  };
+
+  useEffect(() => {
+    // Load saved microphone permission record from localStorage
+    const record = loadMicrophonePermissionRecord();
+    setRealMicStatus(record.status);
+    setMicStatusMessage(record.label);
+    setLastCheckedAt(record.lastCheckedAt);
+    setLastRequestedAt(record.lastRequestedAt || null);
+    setMicRequestError(record.error || null);
+  }, []);
+
   return (
     <section className="page-surface">
       <div className="page-hero">
@@ -505,56 +579,106 @@ function VoicePage() {
         <VoiceModeSelector selectedMode={selectedMode} onModeChange={setSelectedMode} />
       </div>
 
-      <div className="voice-panel simulated-transcript-card" style={{ marginTop: 24 }}>
+      <div className="voice-panel mic-permission-card" style={{ marginTop: 24 }}>
         <div className="voice-panel-header">
           <div>
-            <p className="eyebrow">Simulated Transcript</p>
-            <h4>Edit transcript</h4>
-            <p>Real speech recognition will be added later.</p>
+            <p className="eyebrow">Microphone Permission</p>
+            <h4>Permission status check</h4>
+            <p>Nexa AI can check and request microphone access for voice input in future phases.</p>
           </div>
         </div>
 
-        <label htmlFor="simulated-transcript" className="sr-only">
-          Simulated Transcript
-        </label>
-        <textarea
-          id="simulated-transcript"
-          className="simulated-transcript-input"
-          value={transcriptText}
-          onChange={(event) => setTranscriptText(event.target.value)}
-          rows={6}
-          placeholder="Type a simulated voice transcript here..."
-        />
+        <div className="real-mic-status-card">
+          <span className={`real-mic-status-value ${realMicStatus}`}>
+            {micStatusMessage}
+          </span>
+          <div className="mic-permission-note">
+            <strong>Internal status:</strong> {realMicStatus}
+          </div>
+          {lastCheckedAt && (
+            <div className="mic-meta-grid">
+              <div className="mic-meta-row">
+                <span className="mic-meta-label">Last checked:</span>
+                <span className="mic-meta-value">{new Date(lastCheckedAt).toLocaleString()}</span>
+              </div>
+              {lastRequestedAt && (
+                <div className="mic-meta-row">
+                  <span className="mic-meta-label">Last requested:</span>
+                  <span className="mic-meta-value">{new Date(lastRequestedAt).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          )}
+          <p
+            className={`mic-helper-text ${
+              realMicStatus === "denied" || realMicStatus === "unsupported" || realMicStatus === "error"
+                ? "mic-help-warning"
+                : ""
+            }`}
+          >
+            {getMicHelperText()}
+          </p>
+          {micRequestError && (
+            <div className="mic-error-detail">
+              <strong>Error details:</strong> {micRequestError}
+            </div>
+          )}
+          <div className="transcript-action-row">
+            <button
+              type="button"
+              className="permission-refresh-button"
+              onClick={refreshPermissionStatus}
+              disabled={isRequestingMic}
+            >
+              Refresh Permission Status
+            </button>
+            <button
+              type="button"
+              className="permission-refresh-button primary"
+              onClick={handleRequestMicrophoneAccess}
+              disabled={isRequestingMic}
+            >
+              {isRequestingMic ? "Requesting..." : "Request Microphone Access"}
+            </button>
+            <button
+              type="button"
+              className="mic-cache-button secondary"
+              onClick={handleClearMicrophoneCache}
+              disabled={isRequestingMic}
+            >
+              Clear Mic Permission Cache
+            </button>
+          </div>
+        </div>
 
-        <div className="transcript-action-row">
-          <button
-            type="button"
-            className="transcript-action-button"
-            onClick={applyTranscriptAsCommand}
-          >
-            Use Transcript as Command
-          </button>
-          <button
-            type="button"
-            className="transcript-action-button secondary"
-            onClick={loadDemoBangla}
-          >
-            Load Demo Bangla
-          </button>
-          <button
-            type="button"
-            className="transcript-action-button secondary"
-            onClick={loadDemoFile}
-          >
-            Load Demo File
-          </button>
-          <button
-            type="button"
-            className="transcript-action-button danger"
-            onClick={clearTranscript}
-          >
-            Clear
-          </button>
+        <div className="mic-permission-actions">
+          <p className="eyebrow">Demo state controls</p>
+          <div className="transcript-action-row">
+            <button
+              type="button"
+              className="transcript-action-button"
+              onClick={() => setDemoMicPermissionStatus("allowed")}
+            >
+              Simulate Allow
+            </button>
+            <button
+              type="button"
+              className="transcript-action-button danger"
+              onClick={() => setDemoMicPermissionStatus("blocked")}
+            >
+              Simulate Block
+            </button>
+            <button
+              type="button"
+              className="transcript-action-button secondary"
+              onClick={() => setDemoMicPermissionStatus("not_requested")}
+            >
+              Reset Demo
+            </button>
+          </div>
+          <div className="mic-permission-note">
+            Demo status: {demoPermissionLabel}. This does not change the real permission state.
+          </div>
         </div>
       </div>
 
