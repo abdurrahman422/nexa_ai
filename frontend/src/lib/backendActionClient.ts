@@ -113,6 +113,79 @@ export function buildAppActionRequest(args: {
   };
 }
 
+export type FileSearchScopeDto = "desktop" | "downloads" | "documents" | "all_safe";
+
+export type FileSearchRequestDto = {
+  request_id?: string | null;
+  query: string;
+  scope?: FileSearchScopeDto;
+  extensions?: string[];
+  max_results?: number;
+  original_text?: string | null;
+  source?: string;
+  dry_run?: boolean;
+};
+
+export type FileSearchResultItemDto = {
+  name: string;
+  path: string;
+  extension?: string | null;
+  size_bytes?: number | null;
+  modified_at?: string | null;
+  is_directory: boolean;
+};
+
+export type FileSearchResponseDto = {
+  request_id?: string | null;
+  status: "preview_only" | "completed" | "blocked" | "failed";
+  query: string;
+  scope: FileSearchScopeDto;
+  risk_level: "safe" | "blocked";
+  searched: boolean;
+  result_count: number;
+  results: FileSearchResultItemDto[];
+  message: string;
+  error?: string | null;
+  safety_notes?: string[];
+};
+
+export async function requestFileSearchAction(
+  request: FileSearchRequestDto,
+  backendUrl = DEFAULT_BACKEND_URL,
+): Promise<FileSearchResponseDto> {
+  const response = await fetch(`${backendUrl}/api/actions/files/search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Backend file search request failed with status ${response.status}`,
+    );
+  }
+  return response.json() as Promise<FileSearchResponseDto>;
+}
+
+export function buildFileSearchRequest(args: {
+  query: string;
+  scope?: FileSearchScopeDto;
+  extensions?: string[];
+  maxResults?: number;
+  originalText?: string;
+  source?: string;
+  dryRun?: boolean;
+}): FileSearchRequestDto {
+  return {
+    query: args.query,
+    scope: args.scope ?? "all_safe",
+    extensions: args.extensions ?? [],
+    max_results: args.maxResults ?? 20,
+    original_text: args.originalText ?? null,
+    source: args.source ?? "commands_page",
+    dry_run: args.dryRun ?? false,
+  };
+}
+
 export function buildWebsiteActionRequest(args: {
   targetValue: string;
   label?: string;

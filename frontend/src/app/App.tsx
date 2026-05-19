@@ -4,7 +4,7 @@ import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
 import { ActionConfirmationCard } from "@/components/action-confirmation";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus, BackendSystemStatusSummary, getBackendSystemStatus, useAutoRefresh, requestOpenWebsiteAction, buildWebsiteActionRequest, requestOpenAppAction, buildAppActionRequest } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus, BackendSystemStatusSummary, getBackendSystemStatus, useAutoRefresh, requestOpenWebsiteAction, buildWebsiteActionRequest, requestOpenAppAction, buildAppActionRequest, FileSearchResponseDto, requestFileSearchAction, buildFileSearchRequest } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -2706,6 +2706,10 @@ function CommandsPage() {
   const [commandExecutionResultMessage, setCommandExecutionResultMessage] = useState<string | null>(null);
   const [commandExecutionErrorMessage, setCommandExecutionErrorMessage] = useState<string | null>(null);
 
+  const [fileSearchLoading, setFileSearchLoading] = useState(false);
+  const [fileSearchResponse, setFileSearchResponse] = useState<FileSearchResponseDto | null>(null);
+  const [fileSearchError, setFileSearchError] = useState<string | null>(null);
+
   const commandTextForCheck = (result.normalizedText || commandInput).toLowerCase();
 
   const websiteKeywords = [
@@ -2853,6 +2857,78 @@ function CommandsPage() {
   const handleCommandExecutionCancel = () => {
     setCommandExecutionResultMessage(null);
     setCommandExecutionErrorMessage(null);
+  };
+
+  const getFileSearchTargetFromCommand = (): { query: string; scope: "desktop" | "downloads" | "documents" | "all_safe"; extensions: string[] } | null => {
+    const lower = commandTextForCheck;
+    let scope: "desktop" | "downloads" | "documents" | "all_safe" = "all_safe";
+    if (lower.includes("downloads") || lower.includes("download") || lower.includes("ডাউনলোড"))
+      scope = "downloads";
+    else if (lower.includes("desktop") || lower.includes("desk") || lower.includes("ডেস্কটপ"))
+      scope = "desktop";
+    else if (lower.includes("documents") || lower.includes("docs") || lower.includes("ডকুমেন্ট"))
+      scope = "documents";
+
+    const isSearchIntent =
+      result.intent === "file_search" ||
+      lower.includes("find") || lower.includes("search") ||
+      lower.includes("khuje") || lower.includes("খুঁজে") ||
+      lower.includes("file") || lower.includes("ফাইল") ||
+      lower.includes("folder") || lower.includes("ফোল্ডার") ||
+      lower.includes("pdf") || lower.includes("docx") ||
+      scope !== "all_safe";
+
+    if (!isSearchIntent) return null;
+
+    let extensions: string[] = [];
+    if (lower.includes("pdf")) extensions = ["pdf"];
+    else if (lower.includes("docx") || lower.includes("doc")) extensions = ["doc", "docx"];
+    else if (lower.includes("png") || lower.includes("jpg") || lower.includes("jpeg") || lower.includes("image") || lower.includes("photo"))
+      extensions = ["png", "jpg", "jpeg"];
+    else if (lower.includes("xls") || lower.includes("xlsx") || lower.includes("excel"))
+      extensions = ["xls", "xlsx"];
+    else if (lower.includes("ppt") || lower.includes("pptx"))
+      extensions = ["ppt", "pptx"];
+
+    const commonWords = ["khuje dao", "find", "search", "file", "folder", "e", "theke", "খুলে", "খুঁজে", "ফাইল", "ফোল্ডার"];
+    let query = lower;
+    for (const word of commonWords) {
+      query = query.replace(word, "");
+    }
+    query = query.trim();
+    if (!query && extensions.length > 0) query = extensions[0];
+    if (!query) query = commandInput.toLowerCase();
+
+    return { query, scope, extensions };
+  };
+
+  const isFileSearchCandidate = getFileSearchTargetFromCommand() !== null;
+
+  const handleFileSearch = async () => {
+    const target = getFileSearchTargetFromCommand();
+    if (!target) return;
+    setFileSearchLoading(true);
+    setFileSearchError(null);
+    setFileSearchResponse(null);
+    try {
+      const request = buildFileSearchRequest({
+        query: target.query,
+        scope: target.scope,
+        extensions: target.extensions,
+        maxResults: 20,
+        originalText: commandInput,
+        source: "commands_page",
+        dryRun: false,
+      });
+      const response = await requestFileSearchAction(request);
+      setFileSearchResponse(response);
+    } catch (err) {
+      setFileSearchError(
+        err instanceof Error ? err.message : "File search request failed.",
+      );
+    } finally {
+      setFileSearchLoading(false);
+    }
   };
 
   const handleBackendPreview = async () => {
@@ -3136,6 +3212,78 @@ function CommandsPage() {
         <div className="commands-execution-note">
           Execution UI is prepared. Real execution will be connected in the next step.
         </div>
+      </div>
+
+      <div className="file-search-panel">
+        <div className="file-search-header">
+          <p className="eyebrow">File Search</p>
+          <button
+            type="button"
+            className="file-search-button"
+            onClick={handleFileSearch}
+            disabled={fileSearchLoading || !isFileSearchCandidate}
+          >
+            {fileSearchLoading ? "Searching..." : "Search Files"}
+          </button>
+        </div>
+
+        {fileSearchError && (
+          <div className="file-search-error">{fileSearchError}</div>
+        )}
+
+        {fileSearchResponse && (
+          <>
+            <div className="file-search-meta">
+              <span>Status: <strong>{fileSearchResponse.status}</strong></span>
+              <span>Scope: <strong>{fileSearchResponse.scope}</strong></span>
+              <span>Query: <strong>{fileSearchResponse.query}</strong></span>
+              <span>Results: <strong>{fileSearchResponse.result_count}</strong></span>
+            </div>
+            <p className="file-search-message">{fileSearchResponse.message}</p>
+            {fileSearchResponse.safety_notes && fileSearchResponse.safety_notes.length > 0 && (
+              <div className="file-search-notes">
+                {fileSearchResponse.safety_notes.map((note, i) => (
+                  <div key={i} className="file-search-note">{note}</div>
+                ))}
+              </div>
+            )}
+            {fileSearchResponse.results.length > 0 && (
+              <div className="file-search-list">
+                {fileSearchResponse.results.map((item, idx) => (
+                  <div className="file-search-item" key={idx}>
+                    <div className="file-search-item-header">
+                      <strong className="file-search-item-name">{item.name}</strong>
+                      <span className={`file-search-badge${item.is_directory ? " dir" : ""}`}>
+                        {item.is_directory ? "Directory" : "File"}
+                      </span>
+                    </div>
+                    <div className="file-search-item-path">{item.path}</div>
+                    <div className="file-search-item-meta">
+                      {item.extension && <span>.{item.extension}</span>}
+                      {item.size_bytes !== null && item.size_bytes !== undefined && (
+                        <span>{(item.size_bytes / 1024).toFixed(1)} KB</span>
+                      )}
+                      {item.modified_at && (
+                        <span>{new Date(item.modified_at).toLocaleString()}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {fileSearchResponse.result_count === 0 && fileSearchResponse.status === "completed" && (
+              <div className="file-search-empty">No files found matching your query.</div>
+            )}
+          </>
+        )}
+
+        {!fileSearchResponse && !fileSearchError && (
+          <div className="file-search-empty">
+            {isFileSearchCandidate
+              ? 'Click "Search Files" to search for matching files in safe folders.'
+              : 'Type a search-related command (e.g. "find pdf", "search docx in downloads") to enable file search.'}
+          </div>
+        )}
       </div>
 
       <div className="module-note">

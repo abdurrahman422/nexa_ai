@@ -21,6 +21,11 @@ from .action_execution import create_preview_only_result
 from .action_execution import create_execution_preview_response
 from .action_execution import create_confirmation_required_response
 from .action_execution import create_execution_blocked_response
+from .file_search import FileSearchRequest
+from .file_search import FileSearchResultItem
+from .file_search import FileSearchResponse
+from .file_search import create_file_search_preview_response
+from .file_search import create_file_search_blocked_response
 
 __all__ = [
     "CommandPreviewRequest",
@@ -44,4 +49,9 @@ __all__ = [
     "create_execution_preview_response",
     "create_confirmation_required_response",
     "create_execution_blocked_response",
+    "FileSearchRequest",
+    "FileSearchResultItem",
+    "FileSearchResponse",
+    "create_file_search_preview_response",
+    "create_file_search_blocked_response",
 ]
