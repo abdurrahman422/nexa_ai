@@ -8,3 +8,4 @@ export * from "./backendDatabaseClient";
 export * from "./backendSystemStatusClient";
 export * from "./commandHistory";
 export * from "./useAutoRefresh";
+export * from "./backendActionClient";
