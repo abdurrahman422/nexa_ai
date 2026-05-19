@@ -3,7 +3,7 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -1511,6 +1511,38 @@ function HistoryPage() {
           </div>
         </div>
 
+        <div className="database-readiness-note">
+          <p className="eyebrow">Database Readiness Note</p>
+          <p className="database-readiness-desc">
+            Current command history is stored locally in browser/Electron localStorage.
+            Backend SQLite database storage is prepared but disabled.
+            Audit sync endpoint is preview-only and does not store to database.
+            No command execution is connected to history records.
+          </p>
+          <div className="database-readiness-grid">
+            <div className="database-readiness-item enabled">
+              <span>Local history</span>
+              <strong>Enabled</strong>
+            </div>
+            <div className="database-readiness-item enabled">
+              <span>Backend audit preview</span>
+              <strong>Enabled</strong>
+            </div>
+            <div className="database-readiness-item disabled">
+              <span>SQLite storage</span>
+              <strong>Disabled</strong>
+            </div>
+            <div className="database-readiness-item disabled">
+              <span>Migrations</span>
+              <strong>Disabled</strong>
+            </div>
+            <div className="database-readiness-item disabled">
+              <span>Command execution</span>
+              <strong>Disabled</strong>
+            </div>
+          </div>
+        </div>
+
         {!hasHistory ? (
           <div className="command-history-empty">
             No command history saved yet.
@@ -1836,6 +1868,38 @@ function SettingsPage({
   profile: UserProfile;
   onResetSetup: () => void;
 }) {
+  const [databaseStatus, setDatabaseStatus] = useState<BackendDatabaseStatusResponse | null>(null);
+  const [databaseStatusLoading, setDatabaseStatusLoading] = useState(false);
+  const [databaseStatusError, setDatabaseStatusError] = useState<string | null>(null);
+  const [databaseStatusLastCheckedAt, setDatabaseStatusLastCheckedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    handleRefreshDatabaseStatus();
+  }, []);
+
+  const handleRefreshDatabaseStatus = async () => {
+    setDatabaseStatusLoading(true);
+    setDatabaseStatusError(null);
+    try {
+      const response = await getBackendDatabaseStatus();
+      setDatabaseStatus(response);
+      setDatabaseStatusLastCheckedAt(new Date().toISOString());
+    } catch (err) {
+      setDatabaseStatusError("Backend database status is unavailable. Start the backend server and try again.");
+      setDatabaseStatusLastCheckedAt(new Date().toISOString());
+    } finally {
+      setDatabaseStatusLoading(false);
+    }
+  };
+
+  const formatTime = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return iso;
+    }
+  };
+
   const settingsGroups = [
     {
       title: "Profile",
@@ -1912,6 +1976,86 @@ function SettingsPage({
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="database-status-panel">
+        <div className="database-status-header">
+          <p className="eyebrow">Local Database Status</p>
+          <button
+            type="button"
+            className="database-status-button"
+            onClick={handleRefreshDatabaseStatus}
+            disabled={databaseStatusLoading}
+          >
+            {databaseStatusLoading ? "Checking..." : "Refresh Database Status"}
+          </button>
+        </div>
+        <div className="database-status-meta">
+          <span className="database-status-last-checked">
+            Last checked: {databaseStatusLastCheckedAt ? formatTime(databaseStatusLastCheckedAt) : "Not checked yet"}
+          </span>
+        </div>
+        {databaseStatusError && (
+          <div className="database-status-error">
+            <strong>Offline</strong>: {databaseStatusError}
+          </div>
+        )}
+        {databaseStatus && (
+          <>
+            <div className="database-status-grid">
+              <div className="database-status-row">
+                <span>Status</span>
+                <strong>{databaseStatus.status}</strong>
+              </div>
+              <div className="database-status-row">
+                <span>Module</span>
+                <strong>{databaseStatus.module}</strong>
+              </div>
+              <div className="database-status-row">
+                <span>Phase</span>
+                <strong>{databaseStatus.phase}</strong>
+              </div>
+              <div className="database-status-row">
+                <span>Database enabled</span>
+                <strong>{String(databaseStatus.database_enabled)}</strong>
+              </div>
+              <div className="database-status-row">
+                <span>Database mode</span>
+                <strong>{databaseStatus.database_mode}</strong>
+              </div>
+              <div className="database-status-row">
+                <span>Database path</span>
+                <strong>{databaseStatus.database_path}</strong>
+              </div>
+              <div className="database-status-row">
+                <span>Migrations enabled</span>
+                <strong>{String(databaseStatus.migrations_enabled)}</strong>
+              </div>
+              <div className="database-status-row">
+                <span>Reads enabled</span>
+                <strong>{String(databaseStatus.reads_enabled)}</strong>
+              </div>
+              <div className="database-status-row">
+                <span>Writes enabled</span>
+                <strong>{String(databaseStatus.writes_enabled)}</strong>
+              </div>
+              <div className="database-status-row">
+                <span>Execution enabled</span>
+                <strong>{String(databaseStatus.execution_enabled)}</strong>
+              </div>
+              <div className="database-status-row full-width">
+                <span>Reason</span>
+                <strong>{databaseStatus.reason}</strong>
+              </div>
+            </div>
+            <div className="database-status-note">
+              Database is not enabled yet. This panel only displays backend database status.
+            </div>
+          </>
+        )}
+        {!databaseStatus && !databaseStatusError && !databaseStatusLoading && (
+          <div className="database-status-empty">Click "Refresh Database Status" to load backend database status.</div>
+        )}
       </div>
 
       <div className="module-note">
