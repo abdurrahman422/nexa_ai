@@ -73,6 +73,46 @@ export async function requestOpenWebsiteAction(
   return response.json() as Promise<ActionExecutionResponseDto>;
 }
 
+export async function requestOpenAppAction(
+  request: ActionExecutionRequestDto,
+  backendUrl = DEFAULT_BACKEND_URL,
+): Promise<ActionExecutionResponseDto> {
+  const response = await fetch(`${backendUrl}/api/actions/app/open`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Backend app open request failed with status ${response.status}`,
+    );
+  }
+  return response.json() as Promise<ActionExecutionResponseDto>;
+}
+
+export function buildAppActionRequest(args: {
+  targetValue: string;
+  label?: string;
+  originalText: string;
+  normalizedText?: string;
+  confidence?: number;
+  userConfirmed?: boolean;
+  dryRun?: boolean;
+  source?: string;
+}): ActionExecutionRequestDto {
+  return {
+    intent: "open_app",
+    target: { kind: "app", value: args.targetValue, label: args.label ?? null },
+    original_text: args.originalText,
+    normalized_text: args.normalizedText ?? null,
+    confidence: args.confidence ?? 0,
+    safety_level: "confirmation_required",
+    user_confirmed: args.userConfirmed ?? false,
+    dry_run: args.dryRun ?? true,
+    source: args.source ?? "commands_page",
+  };
+}
+
 export function buildWebsiteActionRequest(args: {
   targetValue: string;
   label?: string;

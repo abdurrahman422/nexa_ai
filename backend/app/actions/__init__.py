@@ -14,6 +14,12 @@ from .website import is_blocked_url
 from .website import list_allowed_websites
 from .website import normalize_website_key
 from .website_executor import execute_open_website
+from .app_whitelist import ALLOWED_APPS
+from .app_whitelist import get_allowed_app
+from .app_whitelist import is_blocked_app_request
+from .app_whitelist import list_allowed_apps
+from .app_whitelist import normalize_app_key
+from .app_executor import execute_open_app
 
 __all__ = [
     "classify_action_safety",
@@ -30,4 +36,10 @@ __all__ = [
     "list_allowed_websites",
     "normalize_website_key",
     "execute_open_website",
+    "ALLOWED_APPS",
+    "get_allowed_app",
+    "is_blocked_app_request",
+    "list_allowed_apps",
+    "normalize_app_key",
+    "execute_open_app",
 ]
