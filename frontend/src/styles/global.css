@@ -3854,3 +3854,250 @@ button {
   color: #a5b4fc;
   line-height: 1.6;
 }
+
+.dashboard-system-card {
+  margin-top: 14px;
+  padding: 14px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+
+.dashboard-system-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.dashboard-system-header .eyebrow {
+  margin: 0;
+}
+
+.dashboard-system-button {
+  padding: 4px 10px;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 5px;
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.dashboard-system-button:hover:not(:disabled) {
+  background: #475569;
+}
+
+.dashboard-system-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dashboard-system-error {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: #3b1a1a;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 0.75rem;
+}
+
+.dashboard-system-summary {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.dashboard-system-summary.ok {
+  background: #0a2e1a;
+  border: 1px solid #22c55e;
+  color: #4ade80;
+}
+
+.dashboard-system-summary.warning {
+  background: #2a1a1a;
+  border: 1px solid #ef4444;
+  color: #f87171;
+}
+
+.dashboard-system-stats {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dashboard-system-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  background: #0f172a;
+  border-radius: 6px;
+}
+
+.dashboard-system-stat span {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dashboard-system-stat strong {
+  font-size: 1rem;
+  color: #f1f5f9;
+}
+
+.dashboard-system-checked {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.dashboard-system-empty {
+  padding: 14px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.dashboard-service-grid {
+  margin-top: 12px;
+}
+
+.dashboard-service-grid .eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+}
+
+.dashboard-service-card {
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  background: #0f172a;
+  border: 1px solid #334155;
+}
+
+.dashboard-service-card.ok {
+  border-color: #22c55e;
+}
+
+.dashboard-service-card.offline {
+  border-color: #ef4444;
+}
+
+.dashboard-service-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.dashboard-service-header strong {
+  font-size: 0.8rem;
+  color: #f1f5f9;
+}
+
+.dashboard-service-badge {
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dashboard-service-badge.ok {
+  background: #0a2e1a;
+  color: #4ade80;
+  border: 1px solid #22c55e;
+}
+
+.dashboard-service-badge.offline {
+  background: #2a1a1a;
+  color: #f87171;
+  border: 1px solid #ef4444;
+}
+
+.dashboard-service-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 3px;
+}
+
+.dashboard-service-detail span {
+  font-size: 0.6rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dashboard-service-detail strong {
+  font-size: 0.75rem;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
+.dashboard-service-detail.error strong {
+  color: #f87171;
+}
+
+.dashboard-system-link {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid #6366f1;
+  border-radius: 6px;
+  color: #818cf8;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: center;
+}
+
+.dashboard-system-link:hover {
+  background: #6366f1;
+  color: #fff;
+}
+
+.dashboard-system-notice {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.dashboard-system-notice.warning {
+  background: #2a1a1a;
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+}
+
+.dashboard-system-notice.ok {
+  background: #0a2e1a;
+  border: 1px solid #22c55e;
+  color: #86efac;
+}
+
+.dashboard-system-notice p {
+  margin: 4px 0;
+}
+
+.dashboard-system-command {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 5px;
+}
+
+.dashboard-system-command code {
+  font-size: 0.75rem;
+  color: #a5b4fc;
+  line-height: 1.5;
+}

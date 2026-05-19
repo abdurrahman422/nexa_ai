@@ -48,6 +48,7 @@ const quickActions = [
   { title: "Organize Files", subtitle: "Sort downloads and documents", accent: "#00e5ff" },
   { title: "Start Study Mode", subtitle: "Focus timer and learning setup", accent: "#22c55e" },
   { title: "Ask AI", subtitle: "Talk naturally with Nexa", accent: "#8b5cf6" },
+  { title: "System Status", subtitle: "View backend preview services and database readiness", accent: "#6366f1", page: "settings" as PageId },
 ];
 
 const dashboardMetrics = [
@@ -283,6 +284,7 @@ export default function App() {
             draftCommand={draftCommand}
             commandPreview={commandPreview}
             onCommandChange={setDraftCommand}
+            onOpenSettings={() => setActivePage("settings")}
           />
         ) : (
           <ModulePage
@@ -302,7 +304,16 @@ export default function App() {
 
           <div className="quick-grid">
             {quickActions.map((action) => (
-              <button className="quick-card" key={action.title} type="button">
+              <button
+                className="quick-card"
+                key={action.title}
+                type="button"
+                onClick={() => {
+                  if ("page" in action && action.page) {
+                    setActivePage(action.page as PageId);
+                  }
+                }}
+              >
                 <span style={{ background: action.accent }} />
                 <h4>{action.title}</h4>
                 <p>{action.subtitle}</p>
@@ -328,13 +339,55 @@ function DashboardPage({
   draftCommand,
   commandPreview,
   onCommandChange,
+  onOpenSettings,
 }: {
   backendConnected: boolean;
   backendHealth: BackendHealth | null;
   draftCommand: string;
   commandPreview: string;
   onCommandChange: (value: string) => void;
+  onOpenSettings?: () => void;
 }) {
+  const [dashboardSystemStatus, setDashboardSystemStatus] = useState<BackendSystemStatusSummary | null>(null);
+  const [dashboardSystemStatusLoading, setDashboardSystemStatusLoading] = useState(false);
+  const [dashboardSystemStatusError, setDashboardSystemStatusError] = useState<string | null>(null);
+
+  useEffect(() => {
+    handleRefreshDashboardSystemStatus();
+  }, []);
+
+  const handleRefreshDashboardSystemStatus = async () => {
+    setDashboardSystemStatusLoading(true);
+    setDashboardSystemStatusError(null);
+    try {
+      const response = await getBackendSystemStatus();
+      setDashboardSystemStatus(response);
+    } catch (err) {
+      setDashboardSystemStatusError(err instanceof Error ? err.message : "Failed to check system status.");
+    } finally {
+      setDashboardSystemStatusLoading(false);
+    }
+  };
+
+  const formatTime = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return iso;
+    }
+  };
+
+  const dashboardBackendOffline =
+    !!dashboardSystemStatusError ||
+    (dashboardSystemStatus !== null && dashboardSystemStatus.modules.some((m) => !m.ok));
+
+  const onlineCount = dashboardSystemStatus
+    ? dashboardSystemStatus.modules.filter((m) => m.ok).length
+    : 0;
+  const offlineCount = dashboardSystemStatus
+    ? dashboardSystemStatus.modules.filter((m) => !m.ok).length
+    : 0;
+
   return (
     <div className="dashboard-layout">
       <section className="dashboard-main">
@@ -398,6 +451,112 @@ function DashboardPage({
         <StatusPanel backendConnected={backendConnected} />
         <BackendPanel backendConnected={backendConnected} backendHealth={backendHealth} />
         <ActivityPanel />
+        <div className="dashboard-system-card">
+          <div className="dashboard-system-header">
+            <p className="eyebrow">System Status</p>
+            <button
+              type="button"
+              className="dashboard-system-button"
+              onClick={handleRefreshDashboardSystemStatus}
+              disabled={dashboardSystemStatusLoading}
+            >
+              {dashboardSystemStatusLoading ? "Checking..." : "Refresh Status"}
+            </button>
+          </div>
+          {dashboardSystemStatusError && (
+            <div className="dashboard-system-error">{dashboardSystemStatusError}</div>
+          )}
+          {dashboardSystemStatus && (
+            <>
+              <div className={`dashboard-system-notice${dashboardBackendOffline ? " warning" : " ok"}`}>
+                {dashboardBackendOffline ? (
+                  <>
+                    <p>Some backend preview services are offline.</p>
+                    <p>Start the backend server, then click Refresh Status.</p>
+                    <div className="dashboard-system-command">
+                      <code>cd "C:\Users\Abdur Rahman\Desktop\nexaai\backend"</code><br />
+                      <code>python run_backend.py</code>
+                    </div>
+                  </>
+                ) : (
+                  <p>Backend preview services are reachable. Execution and storage remain disabled.</p>
+                )}
+              </div>
+              <div className={`dashboard-system-summary${dashboardSystemStatus.overallOk ? " ok" : " warning"}`}>
+                {dashboardSystemStatus.overallOk
+                  ? "Preview services ready."
+                  : "Some services offline."}
+              </div>
+              <div className="dashboard-system-stats">
+                <div className="dashboard-system-stat">
+                  <span>Total</span>
+                  <strong>{dashboardSystemStatus.modules.length}</strong>
+                </div>
+                <div className="dashboard-system-stat">
+                  <span>Online</span>
+                  <strong>{onlineCount}</strong>
+                </div>
+                <div className="dashboard-system-stat">
+                  <span>Offline</span>
+                  <strong>{offlineCount}</strong>
+                </div>
+              </div>
+              <div className="dashboard-service-grid">
+                <p className="eyebrow">Service Health</p>
+                {dashboardSystemStatus.modules.map((mod) => (
+                  <div
+                    key={mod.key}
+                    className={`dashboard-service-card${mod.ok ? " ok" : " offline"}`}
+                  >
+                    <div className="dashboard-service-header">
+                      <strong>{mod.label}</strong>
+                      <span className={`dashboard-service-badge${mod.ok ? " ok" : " offline"}`}>
+                        {mod.ok ? "OK" : "Offline"}
+                      </span>
+                    </div>
+                    <div className="dashboard-service-detail">
+                      <span>Status</span>
+                      <strong>{mod.status}</strong>
+                    </div>
+                    {mod.phase && (
+                      <div className="dashboard-service-detail">
+                        <span>Phase</span>
+                        <strong>{mod.phase}</strong>
+                      </div>
+                    )}
+                    {mod.message && (
+                      <div className="dashboard-service-detail">
+                        <span>Message</span>
+                        <strong>{mod.message}</strong>
+                      </div>
+                    )}
+                    {mod.error && (
+                      <div className="dashboard-service-detail error">
+                        <span>Error</span>
+                        <strong>{mod.error}</strong>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="dashboard-system-checked">
+                Checked at: {formatTime(dashboardSystemStatus.checkedAt)}
+              </div>
+              {onOpenSettings && (
+                <button
+                  type="button"
+                  className="dashboard-system-link"
+                  onClick={onOpenSettings}
+                >
+                  Open System Settings
+                </button>
+              )}
+            </>
+          )}
+          {!dashboardSystemStatus && !dashboardSystemStatusError && !dashboardSystemStatusLoading && (
+            <div className="dashboard-system-empty">Click "Refresh Status" to check.</div>
+          )}
+        </div>
       </aside>
     </div>
   );
