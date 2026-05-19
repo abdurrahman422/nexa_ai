@@ -3,7 +3,7 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus, BackendSystemStatusSummary, getBackendSystemStatus } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus, BackendSystemStatusSummary, getBackendSystemStatus, useAutoRefresh } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -352,10 +352,6 @@ function DashboardPage({
   const [dashboardSystemStatusLoading, setDashboardSystemStatusLoading] = useState(false);
   const [dashboardSystemStatusError, setDashboardSystemStatusError] = useState<string | null>(null);
 
-  useEffect(() => {
-    handleRefreshDashboardSystemStatus();
-  }, []);
-
   const handleRefreshDashboardSystemStatus = async () => {
     setDashboardSystemStatusLoading(true);
     setDashboardSystemStatusError(null);
@@ -387,6 +383,18 @@ function DashboardPage({
   const offlineCount = dashboardSystemStatus
     ? dashboardSystemStatus.modules.filter((m) => !m.ok).length
     : 0;
+
+  const autoRefresh = useAutoRefresh({
+    enabled: false,
+    intervalMs: 30000,
+    pauseWhenHidden: true,
+    runImmediately: false,
+    onRefresh: handleRefreshDashboardSystemStatus,
+  });
+
+  useEffect(() => {
+    handleRefreshDashboardSystemStatus();
+  }, []);
 
   return (
     <div className="dashboard-layout">
@@ -462,6 +470,47 @@ function DashboardPage({
             >
               {dashboardSystemStatusLoading ? "Checking..." : "Refresh Status"}
             </button>
+          </div>
+          <div className="dashboard-auto-refresh">
+            <div className="auto-refresh-actions">
+              <button
+                type="button"
+                className="dashboard-auto-refresh-toggle"
+                onClick={() => autoRefresh.setEnabled(!autoRefresh.enabled)}
+              >
+                {autoRefresh.enabled ? "Disable Auto Refresh" : "Enable Auto Refresh"}
+              </button>
+              <button
+                type="button"
+                className="auto-refresh-run-now"
+                onClick={autoRefresh.runNow}
+                disabled={dashboardSystemStatusLoading}
+              >
+                Run Now
+              </button>
+            </div>
+            <div className="dashboard-auto-refresh-meta">
+              <span>Status: <strong>{autoRefresh.status}</strong></span>
+              {autoRefresh.lastRunAt && (
+                <span>Last auto: {formatTime(autoRefresh.lastRunAt)}</span>
+              )}
+            </div>
+            {autoRefresh.status === "paused" && (
+              <div className="auto-refresh-note auto-refresh-paused">
+                Paused while app is hidden.
+              </div>
+            )}
+            {autoRefresh.status === "running" && (
+              <div className="auto-refresh-note">Auto-refresh is active.</div>
+            )}
+            {autoRefresh.status === "idle" && (
+              <div className="auto-refresh-note">Auto-refresh is off.</div>
+            )}
+            {autoRefresh.errorMessage && (
+              <div className="dashboard-auto-refresh-error">
+                {autoRefresh.errorMessage}
+              </div>
+            )}
           </div>
           {dashboardSystemStatusError && (
             <div className="dashboard-system-error">{dashboardSystemStatusError}</div>
@@ -2092,6 +2141,14 @@ function SettingsPage({
     !!backendServicesRefreshError ||
     (systemStatus !== null && systemStatus.modules.some((m) => !m.ok));
 
+  const settingsAutoRefresh = useAutoRefresh({
+    enabled: false,
+    intervalMs: 30000,
+    pauseWhenHidden: true,
+    runImmediately: false,
+    onRefresh: handleRefreshAllBackendServices,
+  });
+
   const handleRefreshDatabaseStatus = async () => {
     setDatabaseStatusLoading(true);
     setDatabaseStatusError(null);
@@ -2186,6 +2243,47 @@ function SettingsPage({
           >
             {backendServicesRefreshing ? "Refreshing..." : "Refresh All Backend Services"}
           </button>
+        </div>
+        <div className="settings-auto-refresh">
+          <div className="auto-refresh-actions">
+            <button
+              type="button"
+              className="settings-auto-refresh-toggle"
+              onClick={() => settingsAutoRefresh.setEnabled(!settingsAutoRefresh.enabled)}
+            >
+              {settingsAutoRefresh.enabled ? "Disable Auto Refresh" : "Enable Auto Refresh"}
+            </button>
+            <button
+              type="button"
+              className="auto-refresh-run-now"
+              onClick={settingsAutoRefresh.runNow}
+              disabled={backendServicesRefreshing}
+            >
+              Run Now
+            </button>
+          </div>
+          <div className="settings-auto-refresh-meta">
+            <span>Status: <strong>{settingsAutoRefresh.status}</strong></span>
+            {settingsAutoRefresh.lastRunAt && (
+              <span>Last auto: {formatTime(settingsAutoRefresh.lastRunAt)}</span>
+            )}
+          </div>
+          {settingsAutoRefresh.status === "paused" && (
+            <div className="auto-refresh-note auto-refresh-paused">
+              Paused while app is hidden.
+            </div>
+          )}
+          {settingsAutoRefresh.status === "running" && (
+            <div className="auto-refresh-note">Auto-refresh is active.</div>
+          )}
+          {settingsAutoRefresh.status === "idle" && (
+            <div className="auto-refresh-note">Auto-refresh is off.</div>
+          )}
+          {settingsAutoRefresh.errorMessage && (
+            <div className="settings-auto-refresh-error">
+              {settingsAutoRefresh.errorMessage}
+            </div>
+          )}
         </div>
         {backendServicesRefreshError && (
           <div className="backend-refresh-error">{backendServicesRefreshError}</div>
