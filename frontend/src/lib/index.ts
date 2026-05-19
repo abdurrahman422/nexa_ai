@@ -5,4 +5,5 @@ export * from "./actionPreview";
 export * from "./backendCommandClient";
 export * from "./backendAuditClient";
 export * from "./backendDatabaseClient";
+export * from "./backendSystemStatusClient";
 export * from "./commandHistory";

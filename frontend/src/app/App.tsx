@@ -3,7 +3,7 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus, BackendSystemStatusSummary, getBackendSystemStatus } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -1872,10 +1872,66 @@ function SettingsPage({
   const [databaseStatusLoading, setDatabaseStatusLoading] = useState(false);
   const [databaseStatusError, setDatabaseStatusError] = useState<string | null>(null);
   const [databaseStatusLastCheckedAt, setDatabaseStatusLastCheckedAt] = useState<string | null>(null);
+  const [systemStatus, setSystemStatus] = useState<BackendSystemStatusSummary | null>(null);
+  const [systemStatusLoading, setSystemStatusLoading] = useState(false);
+  const [systemStatusError, setSystemStatusError] = useState<string | null>(null);
+  const [backendServicesRefreshing, setBackendServicesRefreshing] = useState(false);
+  const [backendServicesLastRefreshedAt, setBackendServicesLastRefreshedAt] = useState<string | null>(null);
+  const [backendServicesRefreshError, setBackendServicesRefreshError] = useState<string | null>(null);
 
   useEffect(() => {
     handleRefreshDatabaseStatus();
+    handleRefreshSystemStatus();
   }, []);
+
+  const handleRefreshSystemStatus = async () => {
+    setSystemStatusLoading(true);
+    setSystemStatusError(null);
+    try {
+      const response = await getBackendSystemStatus();
+      setSystemStatus(response);
+    } catch (err) {
+      setSystemStatusError(err instanceof Error ? err.message : "Failed to check backend system status.");
+    } finally {
+      setSystemStatusLoading(false);
+    }
+  };
+
+  const handleRefreshAllBackendServices = async () => {
+    setBackendServicesRefreshing(true);
+    setBackendServicesRefreshError(null);
+    const results = await Promise.allSettled([
+      getBackendDatabaseStatus(),
+      getBackendSystemStatus(),
+    ]);
+    const dbResult = results[0];
+    const sysResult = results[1];
+    if (dbResult.status === "fulfilled") {
+      setDatabaseStatus(dbResult.value);
+      setDatabaseStatusError(null);
+    } else {
+      setDatabaseStatusError("Backend database status is unavailable. Start the backend server and try again.");
+    }
+    if (sysResult.status === "fulfilled") {
+      setSystemStatus(sysResult.value);
+      setSystemStatusError(null);
+    } else {
+      setSystemStatusError("Failed to check backend system status.");
+    }
+    const anyFailed = results.some((r) => r.status === "rejected");
+    if (anyFailed) {
+      setBackendServicesRefreshError("Some backend services could not be refreshed. Check that the backend server is running.");
+    }
+    setDatabaseStatusLastCheckedAt(new Date().toISOString());
+    setBackendServicesLastRefreshedAt(new Date().toISOString());
+    setBackendServicesRefreshing(false);
+  };
+
+  const backendOffline =
+    !!databaseStatusError ||
+    !!systemStatusError ||
+    !!backendServicesRefreshError ||
+    (systemStatus !== null && systemStatus.modules.some((m) => !m.ok));
 
   const handleRefreshDatabaseStatus = async () => {
     setDatabaseStatusLoading(true);
@@ -1924,6 +1980,57 @@ function SettingsPage({
           This page will control personal profile, language mode, voice behavior,
           and performance options for low-end laptops.
         </p>
+      </div>
+
+      <div className={`backend-connection-banner${backendOffline ? " warning" : " ok"}`}>
+        <p className="eyebrow">Backend Connection Notice</p>
+        {backendOffline ? (
+          <>
+            <p className="backend-connection-text">
+              Some backend services are offline or unavailable.
+            </p>
+            <p className="backend-connection-text">
+              Start the backend server with <code>python run_backend.py</code>, then refresh services.
+            </p>
+            <div className="backend-connection-command">
+              <code>cd "C:\Users\Abdur Rahman\Desktop\nexaai\backend"</code><br />
+              <code>python run_backend.py</code>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="backend-connection-text">
+              Backend preview services are reachable.
+            </p>
+            <p className="backend-connection-text">
+              Storage and execution remain disabled by design.
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="backend-refresh-panel">
+        <div className="backend-refresh-row">
+          <div>
+            <p className="eyebrow" style={{ margin: 0 }}>Backend Services Refresh</p>
+            {backendServicesLastRefreshedAt && (
+              <span className="backend-refresh-meta">
+                Last refreshed: {formatTime(backendServicesLastRefreshedAt)}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            className="backend-refresh-button"
+            onClick={handleRefreshAllBackendServices}
+            disabled={backendServicesRefreshing}
+          >
+            {backendServicesRefreshing ? "Refreshing..." : "Refresh All Backend Services"}
+          </button>
+        </div>
+        {backendServicesRefreshError && (
+          <div className="backend-refresh-error">{backendServicesRefreshError}</div>
+        )}
       </div>
 
       <div className="settings-grid">
@@ -2055,6 +2162,75 @@ function SettingsPage({
         )}
         {!databaseStatus && !databaseStatusError && !databaseStatusLoading && (
           <div className="database-status-empty">Click "Refresh Database Status" to load backend database status.</div>
+        )}
+      </div>
+
+      <div className="system-status-panel">
+        <div className="system-status-header">
+          <p className="eyebrow">Backend System Status</p>
+          <button
+            type="button"
+            className="system-status-button"
+            onClick={handleRefreshSystemStatus}
+            disabled={systemStatusLoading}
+          >
+            {systemStatusLoading ? "Checking..." : "Refresh System Status"}
+          </button>
+        </div>
+        {systemStatusError && (
+          <div className="system-status-error">{systemStatusError}</div>
+        )}
+        {systemStatus && (
+          <>
+            <div className={`system-status-summary${systemStatus.overallOk ? " ok" : " warning"}`}>
+              {systemStatus.overallOk
+                ? "All systems preview-ready."
+                : "Some systems are offline."}
+              <span className="system-status-checked">
+                Checked at: {formatTime(systemStatus.checkedAt)}
+              </span>
+            </div>
+            <div className="system-status-grid">
+              {systemStatus.modules.map((mod) => (
+                <div
+                  key={mod.key}
+                  className={`system-status-card${mod.ok ? " ok" : " offline"}`}
+                >
+                  <div className="system-status-card-header">
+                    <strong>{mod.label}</strong>
+                    <span className={`system-status-badge${mod.ok ? " ok" : " offline"}`}>
+                      {mod.ok ? "OK" : "Offline"}
+                    </span>
+                  </div>
+                  <div className="system-status-card-detail">
+                    <span>Status</span>
+                    <strong>{mod.status}</strong>
+                  </div>
+                  {mod.phase && (
+                    <div className="system-status-card-detail">
+                      <span>Phase</span>
+                      <strong>{mod.phase}</strong>
+                    </div>
+                  )}
+                  {mod.message && (
+                    <div className="system-status-card-detail">
+                      <span>Message</span>
+                      <strong>{mod.message}</strong>
+                    </div>
+                  )}
+                  {mod.error && (
+                    <div className="system-status-card-detail error">
+                      <span>Error</span>
+                      <strong>{mod.error}</strong>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        {!systemStatus && !systemStatusError && !systemStatusLoading && (
+          <div className="system-status-empty">Click "Refresh System Status" to check backend systems.</div>
         )}
       </div>
 

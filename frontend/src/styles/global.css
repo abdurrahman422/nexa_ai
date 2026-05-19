@@ -3597,3 +3597,260 @@ button {
 .database-readiness-item.disabled strong {
   color: #f87171;
 }
+
+.system-status-panel {
+  margin-top: 24px;
+  padding: 18px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+
+.system-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.system-status-header .eyebrow {
+  margin: 0;
+}
+
+.system-status-button {
+  padding: 6px 14px;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.system-status-button:hover:not(:disabled) {
+  background: #475569;
+}
+
+.system-status-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.system-status-error {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #3b1a1a;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 0.8rem;
+}
+
+.system-status-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+.system-status-summary.ok {
+  background: #0a2e1a;
+  border: 1px solid #22c55e;
+  color: #4ade80;
+}
+
+.system-status-summary.warning {
+  background: #2a1a1a;
+  border: 1px solid #ef4444;
+  color: #f87171;
+}
+
+.system-status-checked {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.system-status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.system-status-card {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #1e293b;
+}
+
+.system-status-card.ok {
+  border-color: #22c55e;
+}
+
+.system-status-card.offline {
+  border-color: #ef4444;
+}
+
+.system-status-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.system-status-card-header strong {
+  font-size: 0.85rem;
+  color: #f1f5f9;
+}
+
+.system-status-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.system-status-badge.ok {
+  background: #0a2e1a;
+  color: #4ade80;
+  border: 1px solid #22c55e;
+}
+
+.system-status-badge.offline {
+  background: #2a1a1a;
+  color: #f87171;
+  border: 1px solid #ef4444;
+}
+
+.system-status-card-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 4px;
+}
+
+.system-status-card-detail span {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.system-status-card-detail strong {
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
+.system-status-card-detail.error strong {
+  color: #f87171;
+}
+
+.system-status-empty {
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.backend-refresh-panel {
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+
+.backend-refresh-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.backend-refresh-button {
+  padding: 8px 18px;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.backend-refresh-button:hover:not(:disabled) {
+  background: #475569;
+}
+
+.backend-refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.backend-refresh-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.backend-refresh-error {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #3b1a1a;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 0.78rem;
+}
+
+.backend-connection-banner {
+  margin-bottom: 18px;
+  padding: 14px 18px;
+  border-radius: 10px;
+}
+
+.backend-connection-banner .eyebrow {
+  margin: 0 0 8px;
+}
+
+.backend-connection-banner.warning {
+  background: #2a1a1a;
+  border: 1px solid #ef4444;
+}
+
+.backend-connection-banner.ok {
+  background: #0a2e1a;
+  border: 1px solid #22c55e;
+}
+
+.backend-connection-text {
+  margin: 4px 0;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.backend-connection-text code {
+  padding: 1px 5px;
+  background: #1e293b;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  color: #a5b4fc;
+}
+
+.backend-connection-command {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+}
+
+.backend-connection-command code {
+  font-size: 0.8rem;
+  color: #a5b4fc;
+  line-height: 1.6;
+}
