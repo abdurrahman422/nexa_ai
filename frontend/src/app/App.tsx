@@ -4,7 +4,7 @@ import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
 import { ActionConfirmationCard } from "@/components/action-confirmation";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus, BackendSystemStatusSummary, getBackendSystemStatus, useAutoRefresh, requestOpenWebsiteAction, buildWebsiteActionRequest, requestOpenAppAction, buildAppActionRequest, FileSearchResponseDto, requestFileSearchAction, buildFileSearchRequest } from "@/lib";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus, BackendSystemStatusSummary, getBackendSystemStatus, useAutoRefresh, requestOpenWebsiteAction, buildWebsiteActionRequest, requestOpenAppAction, buildAppActionRequest, FileSearchResponseDto, requestFileSearchAction, buildFileSearchRequest, detectAppKeyFromText, containsDangerousCommandPhrase, detectFileSearchHints } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -731,6 +731,18 @@ function VoicePage() {
   };
 
   const getVoiceAppTarget = (): { targetValue: string; label: string } | null => {
+    if (containsDangerousCommandPhrase(voiceTextForCheck)) return null;
+    const key = detectAppKeyFromText(voiceTextForCheck);
+    if (key) {
+      const map: Record<string, { targetValue: string; label: string }> = {
+        notepad: { targetValue: "notepad", label: "Notepad" },
+        calculator: { targetValue: "calculator", label: "Calculator" },
+        chrome: { targetValue: "chrome", label: "Google Chrome" },
+        file_explorer: { targetValue: "file_explorer", label: "File Explorer" },
+        vscode: { targetValue: "vscode", label: "Visual Studio Code" },
+      };
+      return map[key] ?? null;
+    }
     const lower = voiceTextForCheck;
     if (lower.includes("notepad") || lower.includes("note pad") || lower.includes("নোটপ্যাড"))
       return { targetValue: "notepad", label: "Notepad" };
@@ -2756,6 +2768,18 @@ function CommandsPage() {
   const websiteTarget = getWebsiteTargetFromCommand();
 
   const getAppTargetFromCommand = (): { value: string; label: string } | null => {
+    if (containsDangerousCommandPhrase(commandInput)) return null;
+    const key = detectAppKeyFromText(commandInput);
+    if (key) {
+      const map: Record<string, { value: string; label: string }> = {
+        notepad: { value: "notepad", label: "Notepad" },
+        calculator: { value: "calculator", label: "Calculator" },
+        chrome: { value: "chrome", label: "Google Chrome" },
+        file_explorer: { value: "file_explorer", label: "File Explorer" },
+        vscode: { value: "vscode", label: "Visual Studio Code" },
+      };
+      return map[key] ?? null;
+    }
     const lower = commandTextForCheck;
     if ((result.intent as string) === "open_app" || lower.includes("notepad") || lower.includes("note pad") || lower.includes("নোটপ্যাড"))
       return { value: "notepad", label: "Notepad" };
@@ -2860,39 +2884,28 @@ function CommandsPage() {
   };
 
   const getFileSearchTargetFromCommand = (): { query: string; scope: "desktop" | "downloads" | "documents" | "all_safe"; extensions: string[] } | null => {
-    const lower = commandTextForCheck;
-    let scope: "desktop" | "downloads" | "documents" | "all_safe" = "all_safe";
-    if (lower.includes("downloads") || lower.includes("download") || lower.includes("ডাউনলোড"))
-      scope = "downloads";
-    else if (lower.includes("desktop") || lower.includes("desk") || lower.includes("ডেস্কটপ"))
-      scope = "desktop";
-    else if (lower.includes("documents") || lower.includes("docs") || lower.includes("ডকুমেন্ট"))
-      scope = "documents";
+    const hints = detectFileSearchHints(commandInput);
+    if (!hints.isFileSearch) return null;
 
-    const isSearchIntent =
-      result.intent === "file_search" ||
-      lower.includes("find") || lower.includes("search") ||
-      lower.includes("khuje") || lower.includes("খুঁজে") ||
-      lower.includes("file") || lower.includes("ফাইল") ||
-      lower.includes("folder") || lower.includes("ফোল্ডার") ||
-      lower.includes("pdf") || lower.includes("docx") ||
-      scope !== "all_safe";
+    const scope = hints.scope;
+    const extensions = hints.extensions;
 
-    if (!isSearchIntent) return null;
-
-    let extensions: string[] = [];
-    if (lower.includes("pdf")) extensions = ["pdf"];
-    else if (lower.includes("docx") || lower.includes("doc")) extensions = ["doc", "docx"];
-    else if (lower.includes("png") || lower.includes("jpg") || lower.includes("jpeg") || lower.includes("image") || lower.includes("photo"))
-      extensions = ["png", "jpg", "jpeg"];
-    else if (lower.includes("xls") || lower.includes("xlsx") || lower.includes("excel"))
-      extensions = ["xls", "xlsx"];
-    else if (lower.includes("ppt") || lower.includes("pptx"))
-      extensions = ["ppt", "pptx"];
-
-    const commonWords = ["khuje dao", "find", "search", "file", "folder", "e", "theke", "খুলে", "খুঁজে", "ফাইল", "ফোল্ডার"];
-    let query = lower;
-    for (const word of commonWords) {
+    const cleanWords = [
+      "khuje dao", "khuje ber koro", "khujun", "find", "search",
+      "file", "folder", "e", "theke", "koro",
+      "খুঁজে দাও", "খুঁজুন", "বের করো", "ফাইল খুঁজে দাও",
+      "folder e", "folder theke", "ফোল্ডারে", "থেকে",
+      "downloads", "download", "ডাউনলোড", "ডাউনলোডস",
+      "desktop", "desk", "ডেস্কটপ",
+      "documents", "docs", "document", "ডকুমেন্ট", "ডকুমেন্টস",
+      "pdf", "পিডিএফ",
+      "doc", "docx", "word", "ওয়ার্ড", "ডক",
+      "image", "photo", "png", "jpg", "jpeg", "ছবি", "ইমেজ",
+      "excel", "xls", "xlsx", "এক্সেল",
+      "ppt", "pptx", "powerpoint", "presentation", "পাওয়ারপয়েন্ট", "প্রেজেন্টেশন",
+    ];
+    let query = commandTextForCheck;
+    for (const word of cleanWords) {
       query = query.replace(word, "");
     }
     query = query.trim();

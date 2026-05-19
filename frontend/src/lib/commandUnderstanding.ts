@@ -279,6 +279,8 @@ const smartHomeKeywords = [
   "switch on",
 ];
 
+import { detectAppKeyFromText, detectWebsiteKeyFromText, containsDangerousCommandPhrase, detectFileSearchHints } from "./commandPhrases";
+
 const assistantQueryKeywords = [
   "what is",
   "কী",
@@ -462,6 +464,87 @@ export function detectCommandIntent(input: string): CommandUnderstandingResult {
 
   let intent: CommandIntent = "unknown";
   let explanation = "No matching command pattern was found.";
+
+  if (containsDangerousCommandPhrase(input)) {
+    return {
+      originalText: typeof input === "string" ? input : "",
+      normalizedText,
+      intent: "unknown",
+      language,
+      confidence: calculateCommandConfidence(normalizedText, "unknown"),
+      riskLevel: "blocked",
+      confirmationReason: "This command contains blocked or unsafe terms.",
+      entities: {},
+      explanation: "Matched blocked/dangerous command phrases.",
+      canExecute: false,
+    };
+  }
+
+  const appKey = detectAppKeyFromText(input);
+  if (appKey) {
+    entities.target = appKey;
+    const riskData = classifyCommandRisk("open_app", normalizedText);
+    return {
+      originalText: typeof input === "string" ? input : "",
+      normalizedText,
+      intent: "open_app",
+      language,
+      confidence: 90,
+      riskLevel: riskData.riskLevel,
+      confirmationReason: riskData.confirmationReason,
+      entities,
+      explanation: "Matched app opening phrases.",
+      canExecute: false,
+    };
+  }
+
+  const websiteKey = detectWebsiteKeyFromText(input);
+  if (websiteKey) {
+    entities.target = websiteKey;
+    if (websiteKey === "youtube") {
+      return {
+        originalText: typeof input === "string" ? input : "",
+        normalizedText,
+        intent: "youtube_search",
+        language,
+        confidence: 90,
+        riskLevel: "safe",
+        entities,
+        explanation: "Matched website opening phrases.",
+        canExecute: false,
+      };
+    }
+    const riskData = classifyCommandRisk("open_website", normalizedText);
+    return {
+      originalText: typeof input === "string" ? input : "",
+      normalizedText,
+      intent: "open_website",
+      language,
+      confidence: 90,
+      riskLevel: riskData.riskLevel,
+      confirmationReason: riskData.confirmationReason,
+      entities,
+      explanation: "Matched website opening phrases.",
+      canExecute: false,
+    };
+  }
+
+  const fileHints = detectFileSearchHints(input);
+  if (fileHints.isFileSearch) {
+    entities.scope = fileHints.scope;
+    entities.extensions = fileHints.extensions.join(",");
+    return {
+      originalText: typeof input === "string" ? input : "",
+      normalizedText,
+      intent: "file_search",
+      language,
+      confidence: 85,
+      riskLevel: "safe",
+      entities,
+      explanation: "Matched file search phrases.",
+      canExecute: false,
+    };
+  }
 
   if (isYoutube) {
     intent = "youtube_search";
