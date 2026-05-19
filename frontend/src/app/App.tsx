@@ -3,7 +3,8 @@ import { SplashScreen, useStartupSequence } from "@/components/splash";
 import { WelcomeOnboarding } from "@/components/onboarding";
 import { useVoiceSession, VoiceCommandDraft, VoiceModeSelector, VoiceStatusPanel, VoiceTranscriptPanel } from "@/components/voice";
 import { ActionPreviewCard } from "@/components/action-preview";
-import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus, BackendSystemStatusSummary, getBackendSystemStatus, useAutoRefresh } from "@/lib";
+import { ActionConfirmationCard } from "@/components/action-confirmation";
+import { clearProfile, checkMicrophonePermission, clearMicrophonePermissionRecord, formatAddressingName, getMicrophoneStatusLabel, getIntentLabel, isCommandSensitive, shouldAskConfirmation, createActionPreview, detectCommandIntent, loadMicrophonePermissionRecord, loadProfile, isOnboardingComplete, MicrophonePermissionStatus, requestMicrophoneAccess, saveMicrophonePermissionRecord, UserProfile, CommandUnderstandingResult, CommandIntent, CommandRiskLevel, requestBackendCommandPreview, BackendCommandPreviewResponse, createCommandHistoryEntry, saveCommandHistoryEntry, loadCommandHistory, clearCommandHistory, getLatestCommandHistory, deleteCommandHistoryEntry, CommandHistoryEntry, BackendAuditPreviewResponse, requestBackendAuditPreview, BackendAuditHealthResponse, getBackendAuditHealth, BackendAuditMigrationPreviewResponse, getBackendAuditMigrationPreview, BackendDatabaseStatusResponse, getBackendDatabaseStatus, BackendSystemStatusSummary, getBackendSystemStatus, useAutoRefresh, requestOpenWebsiteAction, buildWebsiteActionRequest, requestOpenAppAction, buildAppActionRequest } from "@/lib";
 
 type BackendStatus = "checking" | "connected" | "offline";
 
@@ -2567,6 +2568,159 @@ function CommandsPage() {
   const [backendPreviewLoading, setBackendPreviewLoading] = useState(false);
   const [backendPreviewError, setBackendPreviewError] = useState<string | null>(null);
 
+  const [commandExecutionLoading, setCommandExecutionLoading] = useState(false);
+  const [commandExecutionResultMessage, setCommandExecutionResultMessage] = useState<string | null>(null);
+  const [commandExecutionErrorMessage, setCommandExecutionErrorMessage] = useState<string | null>(null);
+
+  const commandTextForCheck = (result.normalizedText || commandInput).toLowerCase();
+
+  const websiteKeywords = [
+    "youtube", "google", "github", "facebook", "gmail",
+    "chatgpt", "stackoverflow", "ইউটিউব", "গুগল", "ফেসবুক",
+  ];
+
+  const appKeywords = [
+    "notepad", "calculator", "calc", "chrome",
+    "file explorer", "explorer", "vscode", "vs code",
+    "নোটপ্যাড", "ক্যালকুলেটর", "ক্রোম",
+  ];
+
+  const isWebsiteExecutionCandidate =
+    result.intent === "open_website" ||
+    result.intent === "youtube_search" ||
+    websiteKeywords.some((kw) => commandTextForCheck.includes(kw));
+
+  const isAppExecutionCandidate =
+    result.intent === "open_app" ||
+    appKeywords.some((kw) => commandTextForCheck.includes(kw));
+
+  const isSupportedExecutionCandidate = isWebsiteExecutionCandidate || isAppExecutionCandidate;
+
+  const getWebsiteTargetFromCommand = (): { value: string; label: string } | null => {
+    const lower = commandTextForCheck;
+    if (result.intent === "youtube_search" || lower.includes("youtube") || lower.includes("ইউটিউব"))
+      return { value: "youtube", label: "YouTube" };
+    if (lower.includes("google") || lower.includes("গুগল"))
+      return { value: "google", label: "Google" };
+    if (lower.includes("github"))
+      return { value: "github", label: "GitHub" };
+    if (lower.includes("facebook") || lower.includes("ফেসবুক"))
+      return { value: "facebook", label: "Facebook" };
+    if (lower.includes("gmail") || lower.includes("জিমেইল"))
+      return { value: "gmail", label: "Gmail" };
+    if (lower.includes("chatgpt"))
+      return { value: "chatgpt", label: "ChatGPT" };
+    if (lower.includes("stackoverflow") || lower.includes("stack overflow"))
+      return { value: "stackoverflow", label: "Stack Overflow" };
+    return null;
+  };
+
+  const websiteTarget = getWebsiteTargetFromCommand();
+
+  const getAppTargetFromCommand = (): { value: string; label: string } | null => {
+    const lower = commandTextForCheck;
+    if ((result.intent as string) === "open_app" || lower.includes("notepad") || lower.includes("note pad") || lower.includes("নোটপ্যাড"))
+      return { value: "notepad", label: "Notepad" };
+    if ((result.intent as string) === "open_app" || lower.includes("calculator") || lower.includes("calc") || lower.includes("ক্যালকুলেটর"))
+      return { value: "calculator", label: "Calculator" };
+    if (lower.includes("chrome") || lower.includes("google chrome") || lower.includes("ক্রোম"))
+      return { value: "chrome", label: "Google Chrome" };
+    if (lower.includes("file explorer") || lower.includes("explorer") || lower.includes("files") || lower.includes("ফাইল"))
+      return { value: "file_explorer", label: "File Explorer" };
+    if (lower.includes("vscode") || lower.includes("vs code") || lower.includes("visual studio code"))
+      return { value: "vscode", label: "Visual Studio Code" };
+    return null;
+  };
+
+  const appTarget = getAppTargetFromCommand();
+
+  const executionTargetLabel =
+    result.entities.url ||
+    result.entities.website ||
+    result.entities.app ||
+    websiteTarget?.label ||
+    appTarget?.label ||
+    null;
+
+  const executionTargetValue =
+    result.entities.url ||
+    result.entities.website ||
+    result.entities.app ||
+    websiteTarget?.value ||
+    appTarget?.value ||
+    null;
+
+  const handleCommandExecutionConfirm = async () => {
+    setCommandExecutionLoading(true);
+    setCommandExecutionResultMessage(null);
+    setCommandExecutionErrorMessage(null);
+
+    try {
+      if (isWebsiteExecutionCandidate) {
+        const target = getWebsiteTargetFromCommand();
+        if (!target) {
+          setCommandExecutionErrorMessage("Could not detect a supported website from this command.");
+          return;
+        }
+        const request = buildWebsiteActionRequest({
+          targetValue: target.value,
+          label: target.label,
+          originalText: commandInput,
+          normalizedText: result.normalizedText || commandInput.toLowerCase(),
+          confidence: result.confidence,
+          userConfirmed: true,
+          dryRun: false,
+          source: "commands_page",
+        });
+        const response = await requestOpenWebsiteAction(request);
+        if (response.executed) {
+          setCommandExecutionResultMessage("Website opened successfully.");
+        } else if (response.status === "blocked" || response.status === "failed") {
+          setCommandExecutionErrorMessage(response.error || response.message);
+        } else {
+          setCommandExecutionResultMessage(response.message);
+        }
+      } else if (isAppExecutionCandidate) {
+        const target = getAppTargetFromCommand();
+        if (!target) {
+          setCommandExecutionErrorMessage("Could not detect a supported app from this command.");
+          return;
+        }
+        const request = buildAppActionRequest({
+          targetValue: target.value,
+          label: target.label,
+          originalText: commandInput,
+          normalizedText: result.normalizedText || commandInput.toLowerCase(),
+          confidence: result.confidence,
+          userConfirmed: true,
+          dryRun: false,
+          source: "commands_page",
+        });
+        const response = await requestOpenAppAction(request);
+        if (response.executed) {
+          setCommandExecutionResultMessage("App opened successfully.");
+        } else if (response.status === "blocked" || response.status === "failed") {
+          setCommandExecutionErrorMessage(response.error || response.message);
+        } else {
+          setCommandExecutionResultMessage(response.message);
+        }
+      } else {
+        setCommandExecutionErrorMessage("This command is not supported for execution yet.");
+      }
+    } catch (err) {
+      setCommandExecutionErrorMessage(
+        err instanceof Error ? err.message : "Execution request failed.",
+      );
+    } finally {
+      setCommandExecutionLoading(false);
+    }
+  };
+
+  const handleCommandExecutionCancel = () => {
+    setCommandExecutionResultMessage(null);
+    setCommandExecutionErrorMessage(null);
+  };
+
   const handleBackendPreview = async () => {
     setBackendPreviewLoading(true);
     setBackendPreviewError(null);
@@ -2829,6 +2983,24 @@ function CommandsPage() {
 
         <div className="backend-preview-note">
           Backend preview is still execution-disabled.
+        </div>
+      </div>
+
+      <div className="commands-execution-wrap">
+        <ActionConfirmationCard
+          intent={result.intent}
+          targetLabel={executionTargetLabel}
+          targetValue={executionTargetValue}
+          riskLevel={result.riskLevel}
+          disabled={!isSupportedExecutionCandidate}
+          loading={commandExecutionLoading}
+          resultMessage={commandExecutionResultMessage}
+          errorMessage={commandExecutionErrorMessage}
+          onConfirm={handleCommandExecutionConfirm}
+          onCancel={handleCommandExecutionCancel}
+        />
+        <div className="commands-execution-note">
+          Execution UI is prepared. Real execution will be connected in the next step.
         </div>
       </div>
 
