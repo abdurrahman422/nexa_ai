@@ -4367,3 +4367,14 @@ button {
   color: #6366f1;
   text-align: center;
 }
+
+.voice-execution-wrap {
+  margin-top: 16px;
+}
+
+.voice-execution-note {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: #6366f1;
+  text-align: center;
+}

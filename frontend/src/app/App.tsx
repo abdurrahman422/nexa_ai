@@ -700,6 +700,120 @@ function VoicePage() {
   const [voiceHistorySaveMessage, setVoiceHistorySaveMessage] = useState<string | null>(null);
   const [voiceHistorySaveError, setVoiceHistorySaveError] = useState<string | null>(null);
 
+  const [voiceExecutionLoading, setVoiceExecutionLoading] = useState(false);
+  const [voiceExecutionResultMessage, setVoiceExecutionResultMessage] = useState<string | null>(null);
+  const [voiceExecutionErrorMessage, setVoiceExecutionErrorMessage] = useState<string | null>(null);
+
+  const getVoiceCommandText = (): string => {
+    const raw = commandDraft || transcriptText || voiceCommandResult.originalText || "";
+    return raw.toLowerCase();
+  };
+
+  const voiceTextForCheck = getVoiceCommandText();
+
+  const getVoiceWebsiteTarget = (): { targetValue: string; label: string } | null => {
+    const lower = voiceTextForCheck;
+    if (voiceCommandResult.intent === "youtube_search" || lower.includes("youtube") || lower.includes("ইউটিউব"))
+      return { targetValue: "youtube", label: "YouTube" };
+    if (lower.includes("google") || lower.includes("গুগল"))
+      return { targetValue: "google", label: "Google" };
+    if (lower.includes("github"))
+      return { targetValue: "github", label: "GitHub" };
+    if (lower.includes("facebook") || lower.includes("ফেসবুক"))
+      return { targetValue: "facebook", label: "Facebook" };
+    if (lower.includes("gmail") || lower.includes("জিমেইল"))
+      return { targetValue: "gmail", label: "Gmail" };
+    if (lower.includes("chatgpt"))
+      return { targetValue: "chatgpt", label: "ChatGPT" };
+    if (lower.includes("stackoverflow") || lower.includes("stack overflow"))
+      return { targetValue: "stackoverflow", label: "Stack Overflow" };
+    return null;
+  };
+
+  const getVoiceAppTarget = (): { targetValue: string; label: string } | null => {
+    const lower = voiceTextForCheck;
+    if (lower.includes("notepad") || lower.includes("note pad") || lower.includes("নোটপ্যাড"))
+      return { targetValue: "notepad", label: "Notepad" };
+    if (lower.includes("calculator") || lower.includes("calc") || lower.includes("ক্যালকুলেটর"))
+      return { targetValue: "calculator", label: "Calculator" };
+    if (lower.includes("chrome") || lower.includes("google chrome") || lower.includes("ক্রোম"))
+      return { targetValue: "chrome", label: "Google Chrome" };
+    if (lower.includes("file explorer") || lower.includes("explorer") || lower.includes("files") || lower.includes("ফাইল"))
+      return { targetValue: "file_explorer", label: "File Explorer" };
+    if (lower.includes("vscode") || lower.includes("vs code") || lower.includes("visual studio code"))
+      return { targetValue: "vscode", label: "Visual Studio Code" };
+    return null;
+  };
+
+  const voiceWebsiteTarget = getVoiceWebsiteTarget();
+  const voiceAppTarget = getVoiceAppTarget();
+  const isVoiceWebsiteExecutionCandidate = Boolean(voiceWebsiteTarget);
+  const isVoiceAppExecutionCandidate = Boolean(voiceAppTarget);
+  const isVoiceSupportedExecutionCandidate = isVoiceWebsiteExecutionCandidate || isVoiceAppExecutionCandidate;
+
+  const handleVoiceExecutionConfirm = async () => {
+    setVoiceExecutionLoading(true);
+    setVoiceExecutionResultMessage(null);
+    setVoiceExecutionErrorMessage(null);
+
+    try {
+      if (voiceWebsiteTarget) {
+        const voiceOriginalText = commandDraft || transcriptText || voiceCommandResult.originalText || "";
+        const request = buildWebsiteActionRequest({
+          targetValue: voiceWebsiteTarget.targetValue,
+          label: voiceWebsiteTarget.label,
+          originalText: voiceOriginalText,
+          normalizedText: voiceCommandResult.normalizedText || voiceOriginalText.toLowerCase(),
+          confidence: voiceCommandResult.confidence,
+          userConfirmed: true,
+          dryRun: false,
+          source: "voice_page",
+        });
+        const response = await requestOpenWebsiteAction(request);
+        if (response.executed) {
+          setVoiceExecutionResultMessage("Voice website action completed successfully.");
+        } else if (response.status === "blocked" || response.status === "failed") {
+          setVoiceExecutionErrorMessage(response.error || response.message);
+        } else {
+          setVoiceExecutionResultMessage(response.message);
+        }
+      } else if (voiceAppTarget) {
+        const voiceOriginalText = commandDraft || transcriptText || voiceCommandResult.originalText || "";
+        const request = buildAppActionRequest({
+          targetValue: voiceAppTarget.targetValue,
+          label: voiceAppTarget.label,
+          originalText: voiceOriginalText,
+          normalizedText: voiceCommandResult.normalizedText || voiceOriginalText.toLowerCase(),
+          confidence: voiceCommandResult.confidence,
+          userConfirmed: true,
+          dryRun: false,
+          source: "voice_page",
+        });
+        const response = await requestOpenAppAction(request);
+        if (response.executed) {
+          setVoiceExecutionResultMessage("Voice app action completed successfully.");
+        } else if (response.status === "blocked" || response.status === "failed") {
+          setVoiceExecutionErrorMessage(response.error || response.message);
+        } else {
+          setVoiceExecutionResultMessage(response.message);
+        }
+      } else {
+        setVoiceExecutionErrorMessage("This voice command is not supported for execution yet.");
+      }
+    } catch (err) {
+      setVoiceExecutionErrorMessage(
+        err instanceof Error ? err.message : "Voice execution request failed.",
+      );
+    } finally {
+      setVoiceExecutionLoading(false);
+    }
+  };
+
+  const handleVoiceExecutionCancel = () => {
+    setVoiceExecutionResultMessage(null);
+    setVoiceExecutionErrorMessage(null);
+  };
+
   const handleVoiceSaveToHistory = () => {
     setVoiceHistorySaveMessage(null);
     setVoiceHistorySaveError(null);
@@ -1367,6 +1481,26 @@ function VoicePage() {
 
           <div className="backend-preview-note">
             Backend preview is still execution-disabled.
+          </div>
+        </div>
+
+        <div className="voice-execution-wrap">
+          <ActionConfirmationCard
+            title="Confirm Voice Action"
+            description="Review the voice command before execution."
+            intent={voiceCommandResult.intent}
+            targetLabel={voiceWebsiteTarget?.label || voiceAppTarget?.label || null}
+            targetValue={voiceWebsiteTarget?.targetValue || voiceAppTarget?.targetValue || null}
+            riskLevel={voiceCommandResult.riskLevel}
+            disabled={!isVoiceSupportedExecutionCandidate}
+            loading={voiceExecutionLoading}
+            resultMessage={voiceExecutionResultMessage}
+            errorMessage={voiceExecutionErrorMessage}
+            onConfirm={handleVoiceExecutionConfirm}
+            onCancel={handleVoiceExecutionCancel}
+          />
+          <div className="voice-execution-note">
+            Voice execution UI is prepared. Real execution will be connected in the next step.
           </div>
         </div>
 
