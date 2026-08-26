@@ -1,696 +1,182 @@
 <div align="center">
 
-# ⟡ NEXA AI ⟡
-### A Next-Generation Desktop AI Operating System
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=28&duration=2600&pause=700&color=00BFFF&center=true&vCenter=true&width=850&lines=%E2%9F%A1+NEXA+AI+%E2%9F%A1;NEXT-GENERATION+DESKTOP+AI;THINK+%E2%80%A2+SPEAK+%E2%80%A2+SEARCH+%E2%80%A2+BUILD+%E2%80%A2+AUTOMATE;AI+OPERATING+LAYER+FOR+YOUR+COMPUTER" alt="Nexa AI animated title" />
 
-<p><strong>Think.</strong> <strong>Speak.</strong> <strong>Search.</strong> <strong>Build.</strong> <strong>Automate.</strong></p>
+<br/>
 
-<p>
-<a href="#overview">Overview</a> •
-<a href="#feature-status">Features</a> •
-<a href="#architecture">Architecture</a> •
-<a href="#roadmap">Roadmap</a> •
-<a href="#installation">Installation</a>
-</p>
+<img src="https://img.shields.io/badge/STATUS-ACTIVE-00BFFF?style=for-the-badge&logo=github&logoColor=white" />
+<img src="https://img.shields.io/badge/PLATFORM-WINDOWS-111827?style=for-the-badge&logo=windows&logoColor=white" />
+<img src="https://img.shields.io/badge/ELECTRON-REACT-111827?style=for-the-badge&logo=electron&logoColor=9FEAF9" />
+<img src="https://img.shields.io/badge/FASTAPI-PYTHON-111827?style=for-the-badge&logo=fastapi&logoColor=00D084" />
 
-<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=22&duration=2800&pause=900&color=2EF2FF&center=true&vCenter=true&width=760&lines=LOCAL-FIRST+AI+DESKTOP+ASSISTANT;BANGLA+%7C+BANGLISH+%7C+ENGLISH;VOICE+%C2%B7+VISION+%C2%B7+AUTOMATION+%C2%B7+DEVELOPMENT;A+LIVING+AI+OPERATING+SYSTEM" alt="Nexa AI animated title" />
+<br/><br/>
 
-<br />
-
-<img src="https://img.shields.io/badge/Platform-Windows-111827?style=for-the-badge&logo=windows&logoColor=white" alt="Windows" />
-<img src="https://img.shields.io/badge/Desktop-Electron-0f172a?style=for-the-badge&logo=electron&logoColor=9FEAF9" alt="Electron" />
-<img src="https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-0b1220?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
-<img src="https://img.shields.io/badge/Backend-FastAPI-0b1220?style=for-the-badge&logo=fastapi&logoColor=00D084" alt="FastAPI" />
-<img src="https://img.shields.io/badge/AI-Multi--LLM%20Ready-0b1220?style=for-the-badge&logo=google-gemini&logoColor=8AB4F8" alt="AI" />
-
-<br /><br />
-
-> **Nexa AI is designed to feel less like an application and more like an intelligent operating layer for your computer.**
+**🧠 Local-first • 🎙 Voice-ready • 👁 Vision-ready • ⚡ Automation-ready • 🔐 Safety-first**
 
 </div>
 
 ---
 
-## ◈ Overview
+## 🌌 What is Nexa AI?
 
-**Nexa AI** is a Windows desktop AI assistant / AI Operating System project built around a local-first architecture.
+**Nexa AI** is a next-generation Windows desktop AI system designed to feel less like a chatbot and more like an **intelligent operating layer** for your computer.
 
-Its long-term goal is to let a user interact with their computer naturally through text, voice, safe desktop actions, file discovery, web research, browser workflows, automation, and AI-powered development tools.
+It combines a cinematic desktop interface with AI interaction, safe desktop actions, local file discovery, voice capabilities, multi-model architecture, automation, and a long-term path toward AI-powered development.
 
-The project is intentionally modular so the AI model, voice engine, automation layer, interface, and desktop actions can evolve independently.
-
----
-
-## ✦ Feature Status
-
-> Status reflects the implementation summaries and repository state available during development. Items marked ❌ are planned and are not presented as completed.
-
-| System | Status | Notes |
-|---|:---:|---|
-| Electron desktop application | ✅ | Desktop shell |
-| React + TypeScript frontend | ✅ | Vite-based frontend |
-| FastAPI backend | ✅ | Local API service |
-| Token-driven design system | ✅ | Reusable visual tokens |
-| Shared UI primitives | ✅ | Reusable component architecture |
-| AI-OS navigation / shell | ✅ | Grouped navigation + command bar |
-| Command preview | ✅ | Existing command workflow |
-| Safe website launcher | ✅ | Whitelist + confirmation |
-| Safe app launcher | ✅ | Whitelist + confirmation |
-| Read-only local file search | ✅ | Safe-folder metadata search |
-| Server-side dangerous-command blocking | ✅ | Safety layer |
-| Audit / history foundation | ✅ | Existing audit/history infrastructure |
-| 3D environment engine | ✅ | Three.js / React Three Fiber |
-| Holographic AI Core / Earth | ✅ | Cinematic environment |
-| Neural network environment | ✅ | Reactive scene |
-| Energy / orbit / particle systems | ✅ | Environment layer |
-| Cinematic HUD | ✅ | Holographic overlays |
-| Interaction engine | ✅ | Event-driven motion infrastructure |
-| AI activity reactions | ✅ | Thinking / command / voice states |
-| Earth ↔ UI synchronization | ✅ | Energy / pulse synchronization |
-| Cinematic AI processing states | ✅ | Multi-channel activity model |
-| Multi-LLM provider architecture | 🚧 | Provider selection / failover direction |
-| OpenAI provider | 🚧 | Verify exact adapter state in current tree |
-| Gemini provider | 🚧 | Verify exact adapter state in current tree |
-| Automatic quota failover | 🚧 | Planned provider failover behavior |
-| End-to-end Bangla voice assistant | 🚧 | STT/TTS pipeline evolving |
-| Push-to-talk | 🚧 | Voice UX target |
-| Continuous voice conversation | ❌ | Planned |
-| Natural AI voice reply | 🚧 | TTS architecture evolving |
-| Web search answers | 🚧 | Controlled search workflow |
-| Browser control | ❌ | Planned |
-| YouTube control | ❌ | Planned |
-| n8n automation | ❌ | Planned |
-| Email automation | ❌ | Planned |
-| WhatsApp workflows | ❌ | Planned |
-| PDF / document intelligence | 🚧 | Foundation / roadmap |
-| AI memory / long-term context | 🚧 | Planned architecture |
-| RAG / vector search | ❌ | Planned |
-| AI coding workspace | ❌ | Planned |
-| Sandboxed website/project generation | ❌ | Planned |
-| Calendar / reminders | 🚧 | Partial / roadmap |
-| Windows production installer | 🚧 | Release work |
+> **One interface. One AI layer. Many tools.**
 
 ---
 
-# 🧠 Product Vision
+## ✨ Core Features
 
-Nexa AI is being built toward a desktop AI layer where the user can speak or type natural requests such as:
+### 🔵 Implemented
 
-> **“Nexa, open YouTube and search for the latest AI news.”**
+<div>
 
-> **“Find my latest PDF and summarize it.”**
+🟦 **Electron Desktop App** — Windows desktop shell  
+🟦 **React + TypeScript UI** — modern component-based frontend  
+🟦 **FastAPI Backend** — local API service  
+🟦 **AI-OS Navigation** — command bar + modular navigation  
+🟦 **Command Preview** — preview before execution  
+🟦 **Safe App Launcher** — whitelist + confirmation  
+🟦 **Safe Website Launcher** — controlled launching  
+🟦 **Read-only File Search** — safe-folder metadata discovery  
+🟦 **Dangerous Command Blocking** — server-side safety layer  
+🟦 **Audit / History Foundation** — action traceability  
+🟦 **3D AI Core / Earth** — cinematic Three.js environment  
+🟦 **Neural Network Environment** — reactive visual layer  
+🟦 **Particles / Orbits / Energy Systems** — animated environment  
+🟦 **Cinematic HUD** — holographic overlays  
+🟦 **Interaction Engine** — event-driven motion system  
+🟦 **AI Activity Reactions** — thinking / command / voice states  
+🟦 **Earth ↔ UI Synchronization** — energy / pulse feedback  
 
-> **“Draft an email to my boss based on this information.”**
+</div>
 
-And eventually:
+### 🟡 In Progress
 
-> **“Create a new website project in a new workspace, build it, run the safe sandbox, fix any errors, and show me the result.”**
+<div>
 
-The final experience is intended to be voice-first when useful, text-first when faster, and automation-ready when safe.
+🟨 **Multi-LLM Provider Layer** — provider selection & routing  
+🟨 **OpenAI / Gemini Adapters** — integration work  
+🟨 **Automatic Quota Failover** — provider fallback  
+🟨 **Bangla Voice Assistant** — STT/TTS pipeline  
+🟨 **Push-to-Talk** — voice interaction UX  
+🟨 **Natural AI Voice Reply** — TTS layer  
+🟨 **Web Search Answers** — controlled search workflow  
+🟨 **PDF / Document Intelligence** — document foundation  
+🟨 **Long-term AI Memory** — context architecture  
+🟨 **Calendar / Reminders** — partial / roadmap  
+🟨 **Windows Production Installer** — release preparation  
 
----
+</div>
 
-# 🏗 Architecture
+### ⚪ Planned / Not Completed
 
-```text
-┌──────────────────────────────────────────────────────────┐
-│                         NEXA AI                           │
-│                 Windows AI Operating System              │
-└──────────────────────────────────────────────────────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-        ▼                  ▼                  ▼
-   Voice / Chat        Desktop UI        Automation
-        │                  │                  │
-        ▼                  ▼                  ▼
-   STT / LLM          React / Electron      n8n / APIs
-        │                  │                  │
-        └────────────┬─────┴───────┬──────────┘
-                     ▼             ▼
-                 AI Router      Tool Layer
-                     │             │
-          ┌──────────┼─────────┐   ├─ Apps
-          │          │         │   ├─ Websites
-          ▼          ▼         ▼   ├─ Files
-        OpenAI     Gemini   Future  ├─ Browser
-        Adapter    Adapter  Models  └─ Automation
-                     │
-                     ▼
-               Unified Response
-                     │
-                     ▼
-                Memory / Audit
-```
+<div>
 
----
+⚪ **Continuous Voice Conversation**  
+⚪ **Browser Control**  
+⚪ **YouTube Control**  
+⚪ **n8n Automation**  
+⚪ **Email Automation**  
+⚪ **WhatsApp Workflows**  
+⚪ **RAG / Vector Search**  
+⚪ **AI Coding Workspace**  
+⚪ **Sandboxed Project Generation**  
+⚪ **Next-Generation AI Agents**  
+⚪ **Multi-Agent Orchestration**  
 
-# 🧩 Frontend Architecture
+</div>
 
-The current frontend is organized into reusable layers:
-
-```text
-frontend/src/
-├── app/
-├── components/
-│   ├── hud/
-│   ├── shell/
-│   └── ui/
-├── design/
-├── environment/
-├── interaction/
-├── pages/
-├── providers/
-├── styles/
-│   ├── tokens.css
-│   ├── index.css
-│   ├── legacy/
-│   └── system/
-└── main.tsx
-```
-
-## Design System
-
-Token categories include:
-
-- colors
-- spacing
-- typography
-- radius
-- glass surfaces
-- shadows / elevation
-- blur
-- icons
-- motion timing
-- easing
-- z-index
-
-## Environment Engine
-
-The environment layer is isolated under `src/environment/` and provides the cinematic AI ecosystem:
-
-- 3D AI Core / Earth
-- atmosphere
-- stars
-- particles
-- neural network
-- orbit systems
-- energy rings
-- energy beams
-- nebula
-- HUD-adjacent environment
-- adaptive quality
-- reduced-motion handling
-- pause-on-blur
-- lazy loading
-
-## Interaction Engine
-
-The interaction system provides an event-driven foundation for:
-
-- AI thinking
-- command execution states
-- voice states
-- notifications
-- pointer tracking
-- magnetic interactions
-- reflections
-- energy borders
-- liquid-glass effects
-- floating voice-orb behavior
+<p align="center">
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=16&duration=2200&pause=500&color=00BFFF&center=true&vCenter=true&width=720&lines=%E2%9C%93+BLUE+%3D+IMPLEMENTED;%E2%9A%A1+YELLOW+%3D+IN+PROGRESS;%E2%97%8B+WHITE+%3D+PLANNED" alt="Feature status animation" />
+</p>
 
 ---
 
-# 🎙 Voice Pipeline
+## 🎬 Experience
 
-Target pipeline:
+Nexa is being shaped around a simple interaction model:
 
-```text
-Microphone
-    │
-    ▼
-Speech-to-Text
-    │
-    ▼
-Language / Intent Detection
-    │
-    ▼
-AI Model Router
-    │
-    ▼
-Response
-    │
-    ├──────────────► Text UI
-    │
-    └──────────────► Text-to-Speech
-                           │
-                           ▼
-                       AI Voice
-```
+**💬 Type → 🧠 Understand → ⚡ Act → 👁 Visualize → 📜 Audit**
 
-Target languages:
+The interface is designed around motion, depth, holographic UI, reactive environments, floating elements, and AI activity states.
 
-- বাংলা
-- Banglish
-- English
+Target interaction languages:
 
-Planned voice capabilities:
-
-- push-to-talk
-- continuous listening
-- interruption / barge-in
-- voice activity visualization
-- AI voice reply
-- voice search
-- voice browser control
-- voice YouTube control
-- voice automation
+**🇧🇩 বাংলা • 🔤 Banglish • 🇬🇧 English**
 
 ---
 
-# 🤖 Multi-LLM Strategy
+## 🧩 Technology
 
-Nexa AI is intended to support a user-selectable multi-provider architecture.
-
-### Planned provider selector
-
-```text
-AI Models
-├── Smart Auto
-├── OpenAI
-├── Gemini
-├── Claude
-├── DeepSeek
-└── Ollama
-```
-
-The user should eventually be able to choose:
-
-- preferred provider
-- preferred model
-- provider priority
-- automatic failover
-- whether provider switching requires confirmation
-
-### Automatic failover
-
-```text
-Selected Model
-      │
-      ▼
-Generate response
-      │
-      ├── Success ─────────► Continue
-      │
-      └── 429 / quota / timeout
-                    │
-                    ▼
-             Next enabled model
-                    │
-                    ▼
-             Continue context
-```
-
-The conversation should remain intact when a provider changes.
+| Layer | Stack |
+|---|---|
+| 🖥 Desktop | Electron |
+| 🎨 Frontend | React + TypeScript + Vite |
+| 🎞 Motion | Framer Motion + custom motion system |
+| 🌐 3D | Three.js + React Three Fiber + Drei |
+| 🐍 Backend | Python + FastAPI + Uvicorn + Pydantic |
+| 🤖 AI | Multi-LLM architecture |
+| 🎙 Voice | STT / TTS foundation |
+| 🔐 Security | Whitelists + validation + confirmation + audit |
+| ⚙️ Automation | REST / Webhooks / n8n roadmap |
 
 ---
 
-# 🖥 Safe Desktop Control
+## 🛡️ Safety by Design
 
-Nexa AI is designed around:
+Nexa is intended to **assist, not silently take over**.
 
-- explicit whitelists
-- backend-side validation
-- confirmation before real actions
-- dry-run / preview where appropriate
-- dangerous-command blocking
-- safe file containment
-- audit logging
+🔐 Least privilege  
+🧱 Whitelist-first execution  
+✅ Confirmation before sensitive actions  
+🚫 Dangerous-command blocking  
+📁 Safe filesystem boundaries  
+📜 Audit logging  
+👀 Preview / dry-run where appropriate  
+🚫 No hidden destructive actions  
+🚫 No arbitrary executable launch  
 
-Example:
-
-```text
-User
-  │
-  ▼
-Intent
-  │
-  ▼
-Whitelist
-  │
-  ▼
-Confirmation
-  │
-  ▼
-Backend action
-```
-
-Unknown or dangerous actions must never be executed merely because a frontend requests them.
+Sensitive automation should always remain **permissioned, auditable, and explicit**.
 
 ---
 
-# 📁 File Intelligence
+## 🚀 Installation — Windows
 
-The safe baseline is read-only discovery.
+### 1️⃣ Requirements
 
-Expected safe areas:
+**Minimum practical setup**
 
-- Desktop
-- Downloads
-- Documents
+- 🪟 Windows 10/11 — 64-bit
+- 🧠 8 GB RAM
+- 💾 5 GB+ free storage
+- ⚙️ Modern 64-bit CPU
+- 🎨 WebGL-capable graphics support
+- 🌐 Internet connection for cloud AI / external services
+- 🟢 Git
+- 🟢 Python
+- 🟢 Node.js LTS
 
-Default model:
+**Recommended for the full visual experience**
 
-```text
-Search
-  │
-  ▼
-Metadata result
-  │
-  ▼
-User review
-```
+- 🧠 16 GB+ RAM
+- ⚡ Modern Core i5 / Ryzen 5 class CPU or better
+- 🎮 Dedicated GPU or strong integrated graphics
+- 💾 SSD
+- 🌐 Stable broadband connection
 
-Future work may add controlled document reading, summarization, attachment workflows, and sandboxed project operations with explicit permissions.
+> RAM/GPU figures above are practical recommendations for a smooth Electron + 3D experience, not hard repository limits. Exact package/runtime requirements should follow the repository manifests.
 
----
-
-# 🌐 Web / Browser / YouTube Roadmap
-
-## Browser
-
-Planned:
-
-- open browser
-- navigate
-- search
-- read structured page content
-- interact with selected page controls
-- collect results
-- summarize
-- complete safe workflows
-
-## YouTube
-
-Planned:
-
-- search
-- open video
-- play
-- pause
-- resume
-- seek
-- change video
-- search by voice
-- voice navigation
-
-These should use controlled tools and permission boundaries.
-
----
-
-# ⚙ Automation & n8n
-
-n8n is planned as an optional workflow/orchestration layer.
-
-Potential workflows:
-
-- email drafting
-- calendar actions
-- notifications
-- Google Sheets
-- reports
-- external APIs
-- document workflows
-
-Target architecture:
-
-```text
-Nexa AI
-   │
-   ▼
-Workflow Intent
-   │
-   ▼
-Permission / Preview
-   │
-   ▼
-n8n Webhook
-   │
-   ▼
-External Service
-```
-
-Sensitive actions should require explicit approval.
-
----
-
-# 📧 Email & WhatsApp Roadmap
-
-### Email
-
-Planned:
-
-- generate draft
-- review draft
-- edit draft
-- confirm recipient
-- confirm send
-- send through configured provider
-
-### WhatsApp
-
-Planned safe workflow:
-
-```text
-Find contact
-     ↓
-Prepare message
-     ↓
-Preview
-     ↓
-Confirm
-     ↓
-Send
-```
-
-No hidden mass messaging.
-
----
-
-# 💻 AI Development Workspace
-
-One major future capability is an AI development workspace.
-
-Example:
-
-> “Nexa, build me a new website.”
-
-Target workflow:
-
-```text
-User Request
-     │
-     ▼
-Create Workspace
-     │
-     ▼
-Generate Project
-     │
-     ▼
-Write Code
-     │
-     ▼
-Run Safe Build
-     │
-     ▼
-Preview
-     │
-     ▼
-Detect Errors
-     │
-     ▼
-Fix
-     │
-     ▼
-Rebuild
-     │
-     ▼
-Show Result
-```
-
-The intended model is **sandboxed workspace execution**, not unrestricted access to the entire machine.
-
-Potential safeguards:
-
-- workspace directory isolation
-- allowlisted tools
-- approval gates
-- audit logging
-- resource limits
-- safe process execution
-- preview before external actions
-
----
-
-# 🧠 Memory & RAG Roadmap
-
-Future memory capabilities:
-
-- short-term conversation memory
-- long-term preferences
-- workspace memory
-- document memory
-- semantic search
-- embeddings
-- vector storage
-- RAG
-- memory controls
-- export/delete
-
----
-
-# 🔐 Security Philosophy
-
-Security is a first-class part of Nexa AI.
-
-Core principles:
-
-- least privilege
-- explicit permissions
-- whitelist-first execution
-- server-side validation
-- safe filesystem boundaries
-- confirmation for sensitive actions
-- audit logs
-- no hidden automation
-- no arbitrary executable launch
-- no silent destructive actions
-
-## Secret handling
-
-Never commit:
-
-- API keys
-- access tokens
-- passwords
-- private certificates
-- production `.env`
-
-Use environment variables or a secure secret-management strategy.
-
-If a real key has ever been exposed, rotate it immediately.
-
----
-
-# 🧪 Testing
-
-The project uses a combination of:
-
-- TypeScript compilation
-- frontend production builds
-- Python compilation
-- backend runtime checks
-- API smoke tests
-- safety checks
-- interaction tests
-- WebGL/runtime verification where applicable
-
-Typical development commands:
+### 2️⃣ Clone
 
 ```powershell
-# Backend
-cd backend
-python -m compileall app
-python run_backend.py
-
-# Frontend
-cd frontend
-npm install
-npm run build
-npm run dev
+git clone https://github.com/abdurrahman422/nexa_ai.git
+cd nexa_ai
 ```
 
----
-
-# 🛠 Technology Stack
-
-> Exact package versions should always be taken from repository manifests.
-
-### Frontend
-
-- Electron
-- React
-- TypeScript
-- Vite
-- Framer Motion
-- Three.js
-- React Three Fiber
-- Drei
-- custom CSS / token-driven design system
-
-### Backend
-
-- Python
-- FastAPI
-- Uvicorn
-- Pydantic
-- local persistence / audit infrastructure
-
-### AI / Voice
-
-- OpenAI integration (where configured)
-- Google Gemini integration (where configured)
-- Vosk readiness foundation
-- faster-whisper direction
-- TTS integration as implemented
-
-### Automation
-
-- REST APIs
-- webhooks
-- n8n (planned)
-
----
-
-# 📡 API Architecture
-
-The backend exposes local REST endpoints.
-
-Known API families:
-
-```text
-/api/health
-/api/actions/*
-/api/commands/*
-/api/audit/*
-/api/database/*
-/api/voice/*
-```
-
-Exact available endpoints should be confirmed against the current route files before release.
-
-The frontend should communicate with the backend through a dedicated client layer rather than duplicating HTTP logic.
-
----
-
-# 📦 Installation — Windows
-
-> Replace `<YOUR_GITHUB_REPO_URL>` with your real repository URL.
-
-### 1. Install prerequisites
-
-- Git
-- Python
-- Node.js LTS
-
-### 2. Clone the repository
-
-```powershell
-git clone <YOUR_GITHUB_REPO_URL>
-cd NexaAI
-```
-
-### 3. Backend
+### 3️⃣ Backend
 
 ```powershell
 cd backend
@@ -698,13 +184,13 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Optional activation:
+Optional:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 4. Environment
+### 4️⃣ Environment
 
 Create:
 
@@ -712,25 +198,25 @@ Create:
 backend/.env
 ```
 
-Use the repository `.env.example` when available.
+Add the API credentials required by the providers you enable.
 
-Never upload `backend/.env` to GitHub.
+**Never commit `.env`, API keys, tokens, passwords, or private certificates.**
 
-### 5. Start backend
+### 5️⃣ Start Backend
 
 ```powershell
 python run_backend.py
 ```
 
-Expected local API:
+Default local API:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-### 6. Start desktop frontend
+### 6️⃣ Start Frontend
 
-Open a second terminal:
+Open another terminal:
 
 ```powershell
 cd frontend
@@ -738,287 +224,141 @@ npm install
 npm run dev
 ```
 
-Use the actual npm script defined in `frontend/package.json`.
+Use the script names defined in the current `frontend/package.json` if they differ.
 
 ---
 
-# 🗂 Repository Structure
+## 🗂️ Repository
 
 ```text
-NexaAI/
-├── backend/
-│   ├── app/
-│   │   ├── actions/
-│   │   ├── api/
-│   │   ├── audit/
-│   │   ├── automation/
-│   │   ├── command_engine/
-│   │   ├── contacts/
-│   │   ├── core/
-│   │   ├── database/
-│   │   ├── files/
-│   │   ├── pdf/
-│   │   ├── scheduler/
-│   │   ├── schemas/
-│   │   ├── security/
-│   │   └── voice/
-│   ├── requirements.txt
-│   └── run_backend.py
-│
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   ├── components/
-│   │   ├── design/
-│   │   ├── environment/
-│   │   ├── interaction/
-│   │   ├── pages/
-│   │   ├── providers/
-│   │   └── styles/
-│   ├── package.json
-│   └── vite.config.*
-│
-├── README.md
-└── TODO.md
+nexa_ai/
+├── backend/        🐍 FastAPI + AI services
+├── frontend/       ⚛️ Electron + React UI
+├── docs/           📚 Documentation
+├── scripts/        🛠 Development utilities
+├── shared/         🔗 Shared resources
+├── tools/          ⚙️ Tooling
+├── README.md       📖 Project overview
+└── .gitignore      🔐 Repository safety
 ```
 
 ---
 
-# 🚀 Roadmap
+## 🧠 AI Direction
 
-## Foundation ✅
-
-- [x] Electron desktop foundation
-- [x] React + TypeScript frontend
-- [x] FastAPI backend
-- [x] API health/status
-- [x] command preview
-- [x] safe desktop actions
-- [x] read-only file search
-- [x] audit foundation
-
-## AI OS UI ✅
-
-- [x] token-driven design system
-- [x] reusable UI primitives
-- [x] AI-OS navigation
-- [x] command bar
-- [x] premium page hero
-- [x] modular CSS architecture
-
-## Environment ✅
-
-- [x] 3D AI Core / Earth
-- [x] neural network
-- [x] particles
-- [x] stars
-- [x] orbit systems
-- [x] energy rings
-- [x] energy beams
-- [x] cinematic HUD
-- [x] adaptive rendering
-- [x] AI activity-reactive environment
-
-## Interaction ✅ / 🚧
-
-- [x] interaction bus
-- [x] thinking overlay
-- [x] command execution overlay
-- [x] notification system
-- [x] magnetic interactions
-- [x] pointer reflection
-- [x] voice orb
-- [x] AI activity synchronization
-- [🚧] complete end-to-end voice assistant
-- [🚧] full liquid-glass / physics polish
-
-## Multi-LLM 🚧
-
-- [ ] provider registry
-- [ ] OpenAI adapter
-- [ ] Gemini adapter
-- [ ] Claude adapter
-- [ ] DeepSeek adapter
-- [ ] Ollama adapter
-- [ ] user model selector
-- [ ] provider priority
-- [ ] automatic quota failover
-- [ ] provider health dashboard
-- [ ] usage analytics
-
-## Voice AI 🚧
-
-- [ ] reliable Bangla STT
-- [ ] Banglish STT
-- [ ] English STT
-- [ ] push-to-talk
-- [ ] continuous listening
-- [ ] interruption / barge-in
-- [ ] TTS provider abstraction
-- [ ] natural voice reply
-- [ ] voice-controlled tools
-- [ ] full voice conversation
-
-## Browser & YouTube ❌
-
-- [ ] web search
-- [ ] browser control
-- [ ] browser navigation
-- [ ] safe page interaction
-- [ ] structured extraction
-- [ ] YouTube control
-- [ ] voice browser commands
-
-## Automation ❌
-
-- [ ] n8n integration
-- [ ] webhook manager
-- [ ] email automation
-- [ ] calendar integration
-- [ ] notifications
-- [ ] Google Sheets
-- [ ] external API workflows
-- [ ] WhatsApp confirmation workflow
-
-## Documents & Memory 🚧
-
-- [ ] PDF intelligence
-- [ ] document summarization
-- [ ] OCR
-- [ ] embeddings
-- [ ] RAG
-- [ ] long-term memory
-- [ ] memory controls
-- [ ] workspace memory
-
-## AI Development Workspace ❌
-
-- [ ] workspace creation
-- [ ] sandboxed project directories
-- [ ] project scaffolding
-- [ ] AI code generation
-- [ ] safe build execution
-- [ ] preview server
-- [ ] error detection
-- [ ] automated repair loop
-- [ ] iterative build/test
-- [ ] project export
-
-## Next-Generation Agents ❌
-
-- [ ] browser agent
-- [ ] coding agent
-- [ ] research agent
-- [ ] document agent
-- [ ] planning agent
-- [ ] multi-agent orchestration
-- [ ] task queue
-- [ ] background jobs
-- [ ] agent memory
-- [ ] tool marketplace
-
-## Production Release 🚧
-
-- [ ] Windows installer
-- [ ] first-run onboarding
-- [ ] crash reporting
-- [ ] performance profiles
-- [ ] accessibility audit
-- [ ] security audit
-- [ ] release automation
-- [ ] signed builds
-- [ ] versioned migrations
-- [ ] production documentation
-
----
-
-# 🔮 Future Vision
-
-Nexa AI is not being designed as another chatbot.
-
-The long-term direction is:
+Nexa is moving toward a unified AI layer:
 
 ```text
-              ┌─────────────────────────┐
-              │        NEXA AI          │
-              │   AI Operating Layer   │
-              └────────────┬────────────┘
-                           │
-            ┌──────────────┼──────────────┐
-            ▼              ▼              ▼
-          VOICE           CHAT          VISION
-            │              │              │
-            └──────────────┼──────────────┘
-                           ▼
-                    MODEL ROUTER
-                           │
-            ┌──────────────┼──────────────┐
-            ▼              ▼              ▼
-         OpenAI         Gemini       Future Models
-            │              │              │
-            └──────────────┼──────────────┘
-                           ▼
-                        TOOLS
-                           │
-       ┌────────┬──────────┼─────────┬──────────┐
-       ▼        ▼          ▼         ▼          ▼
-     Files   Browser    YouTube   Desktop     n8n
-       │        │          │         │          │
-       └────────┴──────────┼─────────┴──────────┘
-                           ▼
-                    MEMORY / AUDIT
+                 ⟡ NEXA AI ⟡
+                      │
+          ┌───────────┼───────────┐
+          ▼           ▼           ▼
+        💬 CHAT     🎙 VOICE     👁 VISION
+          └───────────┼───────────┘
+                      ▼
+                 🧠 AI ROUTER
+                      │
+          ┌───────────┼───────────┐
+          ▼           ▼           ▼
+       OpenAI      Gemini      Future Models
+          └───────────┼───────────┘
+                      ▼
+                    ⚡ TOOLS
+          ┌───────────┼───────────┐
+          ▼           ▼           ▼
+        📁 Files   🌐 Browser   🖥 Desktop
+          │           │           │
+          └───────────┼───────────┘
+                      ▼
+                 🧠 MEMORY
+                      │
+                      ▼
+                  📜 AUDIT
 ```
 
-**Nexa AI — From assistant to operating layer.**
+Long-term, the goal is to evolve from **AI assistant → AI operating layer**.
 
 ---
 
-# 🤝 Contributing
+## 🛣️ Roadmap
 
-Contributions should preserve:
+**🔵 Foundation** → **🟡 Voice + Multi-LLM** → **⚪ Browser + Automation** → **⚪ Memory + RAG** → **⚪ AI Development Workspace** → **⚪ Autonomous Agent Layer**
 
-- security
-- testability
-- modular architecture
-- least privilege
-- explicit permissions
-- clean UX
-- maintainability
+The detailed task tracking belongs in the project issue/roadmap system rather than this README.
+
+---
+
+## 🔧 Development
+
+Backend checks:
+
+```powershell
+cd backend
+python -m compileall app
+python run_backend.py
+```
+
+Frontend:
+
+```powershell
+cd frontend
+npm install
+npm run build
+npm run dev
+```
+
+Before release, verify:
+
+- 🧪 frontend build
+- 🧪 Python compilation
+- 🧪 API health
+- 🧪 safety boundaries
+- 🧪 desktop actions
+- 🧪 WebGL / 3D runtime
+- 🧪 environment configuration
+
+---
+
+## 🤝 Contributing
+
+Good contributions should preserve:
+
+**🔐 Security • 🧩 Modularity • 🧪 Testability • ⚡ Performance • 🎨 UX • 🛠 Maintainability**
 
 For major architectural changes, open an issue or discussion before introducing breaking changes.
 
 ---
 
-# 📜 License
+## 📜 License
 
-No license is currently documented here.
+No license is currently documented in the repository.
 
-Add a `LICENSE` file before publishing this repository for public reuse.
+Add a `LICENSE` file before distributing Nexa AI for public reuse.
 
 ---
 
-# ⚠️ Security Disclaimer
-
-Nexa AI can interact with local software and may eventually interact with external services.
-
-Never run unreviewed automation with production credentials.
+## ⚠️ Security
 
 Never commit:
 
-- API keys
-- access tokens
-- passwords
-- private certificates
-- production `.env` files
+```text
+API keys
+Access tokens
+Passwords
+Private certificates
+Production .env files
+```
 
-Sensitive automation must remain permissioned, auditable, and explicitly approved.
+If a credential is ever exposed, **rotate it immediately**.
 
 ---
 
 <div align="center">
 
-### ⟡ THINK • SPEAK • SEARCH • BUILD • AUTOMATE ⟡
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=18&duration=2400&pause=700&color=00BFFF&center=true&vCenter=true&width=700&lines=THINK+%E2%80%A2+SPEAK+%E2%80%A2+SEARCH+%E2%80%A2+BUILD+%E2%80%A2+AUTOMATE;NEXA+AI+%E2%80%94+FROM+ASSISTANT+TO+OPERATING+LAYER" alt="Nexa AI animated footer" />
 
-**Nexa AI**
+<br/>
+
+**⟡ NEXA AI ⟡**
 
 </div>
