@@ -1,139 +1,189 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Orbitron&weight=800&size=30&duration=1900&pause=450&color=00E5FF&center=true&vCenter=true&width=920&height=110&lines=%E2%9F%A1+NEXA+AI+%E2%9F%A1;AI+CORE+ONLINE...;NEXT-GENERATION+DESKTOP+INTELLIGENCE;THINK+%E2%80%A2+SPEAK+%E2%80%A2+SEARCH+%E2%80%A2+BUILD+%E2%80%A2+AUTOMATE;SYSTEM+READY+//+AWAITING+COMMAND" alt="Nexa AI animated title" />
+<img src="https://readme-typing-svg.demolab.com?font=Orbitron&weight=800&size=34&duration=1800&pause=500&color=00E5FF&center=true&vCenter=true&width=1000&height=90&lines=%E2%9F%A1+NEXA+AI+%E2%9F%A1;NEXT-GENERATION+DESKTOP+INTELLIGENCE;AI+CORE+ONLINE...;THINK+%E2%80%A2+SPEAK+%E2%80%A2+SEARCH+%E2%80%A2+BUILD+%E2%80%A2+AUTOMATE" alt="Nexa AI animated title"/>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/STATUS-ACTIVE-00E5FF?style=for-the-badge&logo=github&logoColor=white" alt="Status" />
+  <img src="https://img.shields.io/badge/PLATFORM-WINDOWS-111827?style=for-the-badge&logo=windows&logoColor=white" alt="Windows" />
+  <img src="https://img.shields.io/badge/ELECTRON-REACT-111827?style=for-the-badge&logo=electron&logoColor=9FEAF9" alt="Electron React" />
+  <img src="https://img.shields.io/badge/FASTAPI-PYTHON-111827?style=for-the-badge&logo=fastapi&logoColor=00D084" alt="FastAPI Python" />
+</p>
+
+<img src="https://readme-typing-svg.demolab.com?font=Audiowide&size=14&duration=1600&pause=450&color=67E8F9&center=true&vCenter=true&width=920&height=32&lines=%F0%9F%A7%A0+LOCAL-FIRST;%F0%9F%8E%99+VOICE-READY;%F0%9F%91%81+VISION-READY;%E2%9A%A1+AUTOMATION-READY;%F0%9F%94%90+SAFETY-FIRST;%F0%9F%A4%96+AI-NATIVE" alt="Nexa capabilities"/>
 
 <br/>
 
-<img src="https://img.shields.io/badge/STATUS-ACTIVE-00BFFF?style=for-the-badge&logo=github&logoColor=white" />
-<img src="https://img.shields.io/badge/PLATFORM-WINDOWS-111827?style=for-the-badge&logo=windows&logoColor=white" />
-<img src="https://img.shields.io/badge/ELECTRON-REACT-111827?style=for-the-badge&logo=electron&logoColor=9FEAF9" />
-<img src="https://img.shields.io/badge/FASTAPI-PYTHON-111827?style=for-the-badge&logo=fastapi&logoColor=00D084" />
-
-<br/><br/>
-
-<img src="https://readme-typing-svg.demolab.com?font=Audiowide&size=14&duration=1750&pause=400&color=67E8F9&center=true&vCenter=true&width=820&height=30&lines=%F0%9F%A7%A0+LOCAL-FIRST+%E2%80%A2+%F0%9F%8E%99+VOICE-READY+%E2%80%A2+%F0%9F%91%81+VISION-READY;%E2%9A%A1+AUTOMATION-READY+%E2%80%A2+%F0%9F%94%90+SAFETY-FIRST+%E2%80%A2+%F0%9F%A4%96+AI-NATIVE" alt="Nexa AI animated capability line" />
+<a href="https://github.com/abdurrahman422/nexa_ai/issues"><img src="https://img.shields.io/badge/ISSUES-OPEN-111827?style=flat-square&logo=github&logoColor=white" alt="Issues" /></a>
+<a href="https://github.com/abdurrahman422/nexa_ai"><img src="https://img.shields.io/github/stars/abdurrahman422/nexa_ai?style=flat-square&color=111827&logo=github" alt="Stars" /></a>
+<a href="https://github.com/abdurrahman422/nexa_ai"><img src="https://img.shields.io/github/last-commit/abdurrahman422/nexa_ai?style=flat-square&color=111827&logo=git" alt="Last commit" /></a>
 
 </div>
 
 ---
 
-## 🌌 What is Nexa AI?
+## ◈ THE IDEA
 
-**Nexa AI** is a next-generation Windows desktop AI system designed to feel less like a chatbot and more like an **intelligent operating layer** for your computer.
+> **Nexa AI is not designed to be another chatbot. It is being engineered as an intelligent operating layer for the desktop.**
 
-It combines a cinematic desktop interface with AI interaction, safe desktop actions, local file discovery, voice capabilities, multi-model architecture, automation, and a long-term path toward AI-powered development.
+Nexa brings **AI interaction, automation, safe desktop actions, local discovery, voice, vision, multi-model routing, and a cinematic interface** into one extensible system.
 
-> **One interface. One AI layer. Many tools.**
+<div align="center">
 
-<p align="center">
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:06121A,50:0B2433,100:06121A&height=2&section=header" alt="animated divider" />
-</p>
+<img src="https://readme-typing-svg.demolab.com?font=Press+Start+2P&size=10&duration=1100&pause=220&color=00E5FF&center=true&vCenter=true&width=920&height=38&lines=%3C+HUMAN+INPUT+%E2%86%92+AI+CORE+%E2%86%92+SAFE+ACTION+%3E;%3C+MOVE+%E2%80%A2+THINK+%E2%80%A2+REACT+%E2%80%A2+ADAPT+%E2%80%A2+EXECUTE+%3E" alt="Nexa interaction loop"/>
 
-<p align="center">
-<img src="https://readme-typing-svg.demolab.com?font=Press+Start+2P&size=10&duration=1200&pause=250&color=00E5FF&center=true&vCenter=true&width=900&height=34&lines=%3C+MOVE+%E2%80%A2+THINK+%E2%80%A2+REACT+%E2%80%A2+ADAPT+%E2%80%A2+EXECUTE+%3E;%3C+HUMAN+INPUT+%E2%86%92+AI+CORE+%E2%86%92+SAFE+ACTION+%3E" alt="Nexa AI moving system ticker" />
-</p>
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:06121A,50:00BFFF,100:06121A&height=3&section=header" width="92%" alt="divider"/>
+
+</div>
 
 ---
 
-## ✨ Core Features
+## ✦ CORE EXPERIENCE
 
-### 🔵 `ONLINE / IMPLEMENTED`
+<table>
+<tr>
+<td width="50%" valign="top">
 
-<p align="center">
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=13&duration=1300&pause=300&color=00BFFF&center=true&vCenter=true&width=760&height=28&lines=%5BOK%5D+CORE+MODULES+ACTIVE;%5BSYNC%5D+VISUAL+SYSTEMS+LINKED;%5BREADY%5D+DESKTOP+INTELLIGENCE+AVAILABLE" alt="Implemented animation" />
-</p>
+### 🧠 INTELLIGENCE
 
-<div>
+- AI command interpretation
+- Modular assistant architecture
+- Multi-model direction
+- Context-aware workflows
+- AI activity states
 
-🟦 **Electron Desktop App** — Windows desktop shell  
-🟦 **React + TypeScript UI** — modern component-based frontend  
-🟦 **FastAPI Backend** — local API service  
-🟦 **AI-OS Navigation** — command bar + modular navigation  
-🟦 **Command Preview** — preview before execution  
-🟦 **Safe App Launcher** — whitelist + confirmation  
-🟦 **Safe Website Launcher** — controlled launching  
-🟦 **Read-only File Search** — safe-folder metadata discovery  
-🟦 **Dangerous Command Blocking** — server-side safety layer  
-🟦 **Audit / History Foundation** — action traceability  
-🟦 **3D AI Core / Earth** — cinematic Three.js environment  
-🟦 **Neural Network Environment** — reactive visual layer  
-🟦 **Particles / Orbits / Energy Systems** — animated environment  
-🟦 **Cinematic HUD** — holographic overlays  
-🟦 **Interaction Engine** — event-driven motion system  
-🟦 **AI Activity Reactions** — thinking / command / voice states  
-🟦 **Earth ↔ UI Synchronization** — energy / pulse feedback  
+</td>
+<td width="50%" valign="top">
 
-</div>
+### ⚡ ACTION
 
-### 🟡 `IN PROGRESS`
+- Safe desktop commands
+- App launching
+- Website launching
+- Controlled file discovery
+- Command preview before execution
 
-<p align="center">
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=13&duration=1100&pause=250&color=FACC15&center=true&vCenter=true&width=760&height=28&lines=%5BWORK%5D+MODULE+UPGRADE+IN+PROGRESS;%5BBUILD%5D+NEW+INTELLIGENCE+LAYER;%5BSTATUS%5D+SYSTEM+EVOLVING..." alt="In progress animation" />
-</p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-<div>
+### 👁 VISUAL SYSTEM
 
-🟨 **Multi-LLM Provider Layer** — provider selection & routing  
-🟨 **OpenAI / Gemini Adapters** — integration work  
-🟨 **Automatic Quota Failover** — provider fallback  
-🟨 **Bangla Voice Assistant** — STT/TTS pipeline  
-🟨 **Push-to-Talk** — voice interaction UX  
-🟨 **Natural AI Voice Reply** — TTS layer  
-🟨 **Web Search Answers** — controlled search workflow  
-🟨 **PDF / Document Intelligence** — document foundation  
-🟨 **Long-term AI Memory** — context architecture  
-🟨 **Calendar / Reminders** — partial / roadmap  
-🟨 **Windows Production Installer** — release preparation  
+- 3D AI core / Earth environment
+- Neural-network visual layer
+- Particles, orbits and energy systems
+- Holographic HUD
+- Reactive interface motion
 
-</div>
+</td>
+<td width="50%" valign="top">
 
-### ⚪ `PLANNED / NEXT PHASE`
+### 🔐 TRUST LAYER
 
-<p align="center">
-<img src="https://readme-typing-svg.demolab.com?font=Orbitron&size=12&duration=1500&pause=350&color=CBD5E1&center=true&vCenter=true&width=760&height=28&lines=%5BFUTURE%5D+MODULE+QUEUED;%5BLOCKED%5D+AWAITING+NEXT+PHASE;%5BROADMAP%5D+INTELLIGENCE+EXPANSION" alt="Planned animation" />
-</p>
+- Whitelist-first execution
+- Confirmation gates
+- Dangerous-command blocking
+- Safe filesystem boundaries
+- Audit / history foundation
 
-<div>
-
-⚪ **Continuous Voice Conversation**  
-⚪ **Browser Control**  
-⚪ **YouTube Control**  
-⚪ **n8n Automation**  
-⚪ **Email Automation**  
-⚪ **WhatsApp Workflows**  
-⚪ **RAG / Vector Search**  
-⚪ **AI Coding Workspace**  
-⚪ **Sandboxed Project Generation**  
-⚪ **Next-Generation AI Agents**  
-⚪ **Multi-Agent Orchestration**  
-
-</div>
-
-<p align="center">
-<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=16&duration=2200&pause=500&color=00BFFF&center=true&vCenter=true&width=720&lines=%E2%9C%93+BLUE+%3D+IMPLEMENTED;%E2%9A%A1+YELLOW+%3D+IN+PROGRESS;%E2%97%8B+WHITE+%3D+PLANNED" alt="Feature status animation" />
+</td>
+</tr>
+</table>
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=VT323&size=18&duration=950&pause=180&color=38BDF8&center=true&vCenter=true&width=720&height=30&lines=%3E%3E%3E+MODULE+TELEMETRY+STREAMING...;%3E%3E%3E+AI+STATE+UPDATED...;%3E%3E%3E+VISUAL+FEEDBACK+SYNCED..." alt="module telemetry animation" />
-</p>
+<div align="center">
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=13&duration=1300&pause=300&color=00BFFF&center=true&vCenter=true&width=820&height=30&lines=%5BOK%5D+CORE+MODULES+ACTIVE;%5BSYNC%5D+VISUAL+SYSTEMS+LINKED;%5BREADY%5D+DESKTOP+INTELLIGENCE+AVAILABLE" alt="Core status"/>
+</div>
 
 ---
 
-## 🎬 Experience
+## ◇ SYSTEM STATUS
 
-Nexa is being shaped around a simple interaction model:
+| State | Area | Current direction |
+|---|---|---|
+| 🔵 **IMPLEMENTED** | Desktop shell | Electron + React + TypeScript |
+| 🔵 **IMPLEMENTED** | Backend | FastAPI + Python |
+| 🔵 **IMPLEMENTED** | Safe actions | Preview + validation + confirmation |
+| 🔵 **IMPLEMENTED** | Visual engine | Three.js / React Three Fiber |
+| 🟡 **IN PROGRESS** | Multi-LLM | Provider routing + adapters |
+| 🟡 **IN PROGRESS** | Voice | Bangla STT/TTS + push-to-talk |
+| 🟡 **IN PROGRESS** | Memory | Long-term context architecture |
+| ⚪ **PLANNED** | RAG | Vector search + retrieval layer |
+| ⚪ **PLANNED** | Browser control | Controlled browser workflows |
+| ⚪ **PLANNED** | AI workspace | Code generation + project workflows |
+| ⚪ **PLANNED** | Agents | Multi-agent orchestration |
 
-**💬 Type → 🧠 Understand → ⚡ Act → 👁 Visualize → 📜 Audit**
+<div align="center">
 
-The interface is designed around motion, depth, holographic UI, reactive environments, floating elements, and AI activity states.
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=15&duration=2100&pause=450&color=67E8F9&center=true&vCenter=true&width=760&lines=%E2%97%86+BLUE+%3D+IMPLEMENTED;%E2%96%B2+YELLOW+%3D+IN+PROGRESS;%E2%97%8B+WHITE+%3D+PLANNED" alt="Status legend"/>
+
+</div>
+
+---
+
+## 🎬 EXPERIENCE MODEL
+
+<div align="center">
+
+<img src="https://readme-typing-svg.demolab.com?font=Orbitron&size=18&duration=1400&pause=400&color=22D3EE&center=true&vCenter=true&width=880&height=40&lines=%F0%9F%92%AC+TYPE;%F0%9F%A7%A0+UNDERSTAND;%E2%9A%A1+ACT;%F0%9F%91%81+VISUALIZE;%F0%9F%93%9C+AUDIT" alt="Experience flow"/>
+
+</div>
+
+Nexa is designed around a simple loop:
+
+**Input → Intelligence → Permission → Action → Feedback → Audit**
+
+The UI leans into motion, depth, holographic overlays, reactive visuals, floating elements, and AI state transitions so the application feels like a **system**, not a static dashboard.
 
 Target interaction languages:
 
-**🇧🇩 বাংলা • 🔤 Banglish • 🇬🇧 English**
+**🇧🇩 বাংলা · 🔤 Banglish · 🇬🇧 English**
 
 ---
 
-## 🧩 Technology
+## 🧩 ARCHITECTURE
+
+```text
+                         ⟡ NEXA AI ⟡
+                              │
+             ┌────────────────┼────────────────┐
+             ▼                ▼                ▼
+          💬 CHAT          🎙 VOICE          👁 VISION
+             └────────────────┼────────────────┘
+                              ▼
+                         🧠 AI ROUTER
+                              │
+             ┌────────────────┼────────────────┐
+             ▼                ▼                ▼
+          OpenAI           Gemini          Future Models
+             └────────────────┼────────────────┘
+                              ▼
+                           ⚡ TOOLS
+             ┌────────────────┼────────────────┐
+             ▼                ▼                ▼
+          📁 Files        🌐 Web           🖥 Desktop
+             └────────────────┼────────────────┘
+                              ▼
+                           🧠 MEMORY
+                              │
+                              ▼
+                           📜 AUDIT
+```
+
+Long-term direction:
+
+**AI assistant → intelligent automation layer → AI operating layer**
+
+---
+
+## 🛠️ TECHNOLOGY
+
+<div align="center">
+
+<img src="https://skillicons.dev/icons?i=electron,react,ts,vite,python,fastapi,pytorch,threejs,docker,git,github&perline=11" alt="Technology stack"/>
+
+</div>
 
 | Layer | Stack |
 |---|---|
@@ -149,62 +199,64 @@ Target interaction languages:
 
 ---
 
-## 🛡️ Safety by Design
+## 🛡️ SAFETY BY DESIGN
 
 Nexa is intended to **assist, not silently take over**.
 
-🔐 Least privilege  
-🧱 Whitelist-first execution  
-✅ Confirmation before sensitive actions  
-🚫 Dangerous-command blocking  
-📁 Safe filesystem boundaries  
-📜 Audit logging  
-👀 Preview / dry-run where appropriate  
-🚫 No hidden destructive actions  
-🚫 No arbitrary executable launch  
+| Principle | Implementation direction |
+|---|---|
+| 🔐 Least privilege | Only expose actions the system actually needs |
+| 🧱 Whitelist-first | Explicitly allow supported actions |
+| ✅ Confirmation | Sensitive actions require user confirmation |
+| 🚫 Command blocking | Block dangerous execution patterns |
+| 📁 Safe boundaries | Restrict filesystem discovery to approved areas |
+| 📜 Auditability | Keep action/history foundations visible |
+| 👀 Preview | Show what will happen before execution where appropriate |
 
-Sensitive automation should always remain **permissioned, auditable, and explicit**.
+> Sensitive automation should remain **permissioned, auditable, and explicit**.
 
 ---
 
-## 🚀 Installation — Windows
+## 🚀 WINDOWS INSTALLATION
 
-<p align="center">
-<img src="https://readme-typing-svg.demolab.com?font=Share+Tech+Mono&size=14&duration=1200&pause=280&color=22C55E&center=true&vCenter=true&width=720&height=28&lines=%5BSETUP%5D+INITIALIZING+NEXA+ENVIRONMENT;%5BBOOT%5D+PREPARING+BACKEND+%2B+FRONTEND;%5BLAUNCH%5D+READY+TO+START+THE+CORE" alt="Installation animation" />
-</p>
+<div align="center">
 
-### 1️⃣ Requirements
+<img src="https://readme-typing-svg.demolab.com?font=Share+Tech+Mono&size=14&duration=1200&pause=280&color=22C55E&center=true&vCenter=true&width=760&height=30&lines=%5BSETUP%5D+INITIALIZING+NEXA+ENVIRONMENT;%5BBOOT%5D+PREPARING+BACKEND+%2B+FRONTEND;%5BLAUNCH%5D+READY+TO+START+THE+CORE" alt="Setup animation"/>
+
+</div>
+
+### Requirements
 
 **Minimum practical setup**
 
-- 🪟 Windows 10/11 — 64-bit
-- 🧠 8 GB RAM
-- 💾 5 GB+ free storage
-- ⚙️ Modern 64-bit CPU
-- 🎨 WebGL-capable graphics support
-- 🌐 Internet connection for cloud AI / external services
-- 🟢 Git
-- 🟢 Python
-- 🟢 Node.js LTS
+- Windows 10/11 — 64-bit
+- 8 GB RAM
+- 5 GB+ free storage
+- Modern 64-bit CPU
+- WebGL-capable graphics support
+- Git
+- Python
+- Node.js LTS
+- Internet connection for cloud AI / external services
 
-**Recommended for the full visual experience**
+**Recommended**
 
-- 🧠 16 GB+ RAM
-- ⚡ Modern Core i5 / Ryzen 5 class CPU or better
-- 🎮 Dedicated GPU or strong integrated graphics
-- 💾 SSD
-- 🌐 Stable broadband connection
+- 16 GB+ RAM
+- Modern Core i5 / Ryzen 5 class CPU or better
+- Dedicated GPU or strong integrated graphics
+- SSD
+- Stable broadband connection
 
-> RAM/GPU figures above are practical recommendations for a smooth Electron + 3D experience, not hard repository limits. Exact package/runtime requirements should follow the repository manifests.
+> These are practical recommendations for a smooth Electron + 3D experience. Exact runtime requirements should follow the repository manifests.
 
-### 2️⃣ Clone
+### 1. Clone
 
 ```powershell
 git clone https://github.com/abdurrahman422/nexa_ai.git
 cd nexa_ai
 ```
 
-### 3️⃣ Backend
+### 2. Backend
 
 ```powershell
 cd backend
@@ -218,7 +270,7 @@ Optional:
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 4️⃣ Environment
+### 3. Environment
 
 Create:
 
@@ -226,11 +278,11 @@ Create:
 backend/.env
 ```
 
-Add the API credentials required by the providers you enable.
+Add the credentials for whichever providers you enable.
 
 **Never commit `.env`, API keys, tokens, passwords, or private certificates.**
 
-### 5️⃣ Start Backend
+### 4. Start Backend
 
 ```powershell
 python run_backend.py
@@ -242,9 +294,9 @@ Default local API:
 http://127.0.0.1:8000
 ```
 
-### 6️⃣ Start Frontend
+### 5. Start Frontend
 
-Open another terminal:
+In another terminal:
 
 ```powershell
 cd frontend
@@ -252,11 +304,11 @@ npm install
 npm run dev
 ```
 
-Use the script names defined in the current `frontend/package.json` if they differ.
+Use the scripts currently defined in `frontend/package.json` if they differ.
 
 ---
 
-## 🗂️ Repository
+## 🗂️ PROJECT MAP
 
 ```text
 nexa_ai/
@@ -272,55 +324,7 @@ nexa_ai/
 
 ---
 
-## 🧠 AI Direction
-
-<p align="center">
-<img src="https://readme-typing-svg.demolab.com?font=Orbitron&size=14&duration=1400&pause=350&color=22D3EE&center=true&vCenter=true&width=760&height=30&lines=NEURAL+ROUTER+%7C+TOOL+FABRIC+%7C+MEMORY+LAYER;VOICE+%7C+VISION+%7C+CHAT+%7C+AUTOMATION;FROM+ASSISTANT+TO+OPERATING+LAYER" alt="AI direction animation" />
-</p>
-
-Nexa is moving toward a unified AI layer:
-
-```text
-                 ⟡ NEXA AI ⟡
-                      │
-          ┌───────────┼───────────┐
-          ▼           ▼           ▼
-        💬 CHAT     🎙 VOICE     👁 VISION
-          └───────────┼───────────┘
-                      ▼
-                 🧠 AI ROUTER
-                      │
-          ┌───────────┼───────────┐
-          ▼           ▼           ▼
-       OpenAI      Gemini      Future Models
-          └───────────┼───────────┘
-                      ▼
-                    ⚡ TOOLS
-          ┌───────────┼───────────┐
-          ▼           ▼           ▼
-        📁 Files   🌐 Browser   🖥 Desktop
-          │           │           │
-          └───────────┼───────────┘
-                      ▼
-                 🧠 MEMORY
-                      │
-                      ▼
-                  📜 AUDIT
-```
-
-Long-term, the goal is to evolve from **AI assistant → AI operating layer**.
-
----
-
-## 🛣️ Roadmap
-
-**🔵 Foundation** → **🟡 Voice + Multi-LLM** → **⚪ Browser + Automation** → **⚪ Memory + RAG** → **⚪ AI Development Workspace** → **⚪ Autonomous Agent Layer**
-
-The detailed task tracking belongs in the project issue/roadmap system rather than this README.
-
----
-
-## 🔧 Development
+## 🧪 DEVELOPMENT
 
 Backend checks:
 
@@ -341,35 +345,57 @@ npm run dev
 
 Before release, verify:
 
-- 🧪 frontend build
-- 🧪 Python compilation
-- 🧪 API health
-- 🧪 safety boundaries
-- 🧪 desktop actions
-- 🧪 WebGL / 3D runtime
-- 🧪 environment configuration
+- frontend build
+- Python compilation
+- API health
+- safety boundaries
+- desktop actions
+- WebGL / 3D runtime
+- environment configuration
 
 ---
 
-## 🤝 Contributing
+## 🛣️ ROADMAP
+
+<div align="center">
+
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=14&duration=1700&pause=350&color=A78BFA&center=true&vCenter=true&width=900&height=34&lines=FOUNDATION;%E2%86%92+VOICE+%2B+MULTI-LLM;%E2%86%92+BROWSER+%2B+AUTOMATION;%E2%86%92+MEMORY+%2B+RAG;%E2%86%92+AI+DEVELOPMENT+WORKSPACE;%E2%86%92+AUTONOMOUS+AGENT+LAYER" alt="Roadmap animation"/>
+
+</div>
+
+### Next milestones
+
+**🟡 Multi-LLM provider layer**  
+Provider selection, routing, adapter work, and automatic fallback.
+
+**🟡 Voice intelligence**  
+Bangla STT/TTS, push-to-talk, and natural voice response.
+
+**⚪ Browser & workflow automation**  
+Controlled browser actions, n8n workflows, email and other integrations.
+
+**⚪ Memory & retrieval**  
+Long-term context, RAG, vector search, and document intelligence.
+
+**⚪ AI development workspace**  
+Project generation, coding workflows, and sandboxed execution patterns.
+
+**⚪ Agent layer**  
+Multi-agent orchestration and higher-level autonomous workflows.
+
+---
+
+## 🤝 CONTRIBUTING
 
 Good contributions should preserve:
 
-**🔐 Security • 🧩 Modularity • 🧪 Testability • ⚡ Performance • 🎨 UX • 🛠 Maintainability**
+**🔐 Security · 🧩 Modularity · 🧪 Testability · ⚡ Performance · 🎨 UX · 🛠 Maintainability**
 
 For major architectural changes, open an issue or discussion before introducing breaking changes.
 
 ---
 
-## 📜 License
-
-No license is currently documented in the repository.
-
-Add a `LICENSE` file before distributing Nexa AI for public reuse.
-
----
-
-## ⚠️ Security
+## 🔐 SECURITY
 
 Never commit:
 
@@ -385,9 +411,19 @@ If a credential is ever exposed, **rotate it immediately**.
 
 ---
 
+## 📜 LICENSE
+
+No license is currently documented in the repository.
+
+Add a `LICENSE` file before distributing Nexa AI for public reuse.
+
+---
+
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Audiowide&weight=700&size=19&duration=1900&pause=500&color=00E5FF&center=true&vCenter=true&width=800&height=60&lines=THINK+%E2%80%A2+SPEAK+%E2%80%A2+SEARCH+%E2%80%A2+BUILD+%E2%80%A2+AUTOMATE;NEXA+AI+%E2%80%94+FROM+ASSISTANT+TO+OPERATING+LAYER;SYSTEM+ONLINE+%E2%80%94+WAITING+FOR+COMMAND" alt="Nexa AI animated footer" />
+<img src="https://capsule-render.vercel.app/api?type=waving&height=120&section=footer&color=0:06121A,50:0B2433,100:06121A" width="100%" alt="Nexa footer"/>
+
+<img src="https://readme-typing-svg.demolab.com?font=Audiowide&weight=700&size=20&duration=1900&pause=500&color=00E5FF&center=true&vCenter=true&width=850&height=60&lines=THINK+%E2%80%A2+SPEAK+%E2%80%A2+SEARCH+%E2%80%A2+BUILD+%E2%80%A2+AUTOMATE;NEXA+AI+%E2%80%94+FROM+ASSISTANT+TO+OPERATING+LAYER;SYSTEM+ONLINE+%E2%80%94+WAITING+FOR+COMMAND" alt="Nexa footer animation"/>
 
 <br/>
 
