@@ -1,6 +1,5 @@
-<div align="center">
-
-<img src="https://readme-typing-svg.demolab.com?font=Orbitron&weight=800&size=34&duration=1800&pause=500&color=00E5FF&center=true&vCenter=true&width=1000&height=90&lines=%E2%9F%A1+NEXA+AI+%E2%9F%A1;NEXT-GENERATION+DESKTOP+INTELLIGENCE;AI+CORE+ONLINE...;THINK+%E2%80%A2+SPEAK+%E2%80%A2+SEARCH+%E2%80%A2+BUILD+%E2%80%A2+AUTOMATE" alt="Nexa AI animated title"/>
+# NEXA AI
+### NEXT-GENERATION DESKTOP INTELLIGENCE
 
 <p align="center">
   <img src="https://img.shields.io/badge/STATUS-ACTIVE-00E5FF?style=for-the-badge&logo=github&logoColor=white" alt="Status" />
@@ -9,33 +8,18 @@
   <img src="https://img.shields.io/badge/FASTAPI-PYTHON-111827?style=for-the-badge&logo=fastapi&logoColor=00D084" alt="FastAPI Python" />
 </p>
 
-<img src="https://readme-typing-svg.demolab.com?font=Audiowide&size=14&duration=1600&pause=450&color=67E8F9&center=true&vCenter=true&width=920&height=32&lines=%F0%9F%A7%A0+LOCAL-FIRST;%F0%9F%8E%99+VOICE-READY;%F0%9F%91%81+VISION-READY;%E2%9A%A1+AUTOMATION-READY;%F0%9F%94%90+SAFETY-FIRST;%F0%9F%A4%96+AI-NATIVE" alt="Nexa capabilities"/>
-
-<br/>
-
-<a href="https://github.com/abdurrahman422/nexa_ai/issues"><img src="https://img.shields.io/badge/ISSUES-OPEN-111827?style=flat-square&logo=github&logoColor=white" alt="Issues" /></a>
-<a href="https://github.com/abdurrahman422/nexa_ai"><img src="https://img.shields.io/github/stars/abdurrahman422/nexa_ai?style=flat-square&color=111827&logo=github" alt="Stars" /></a>
-<a href="https://github.com/abdurrahman422/nexa_ai"><img src="https://img.shields.io/github/last-commit/abdurrahman422/nexa_ai?style=flat-square&color=111827&logo=git" alt="Last commit" /></a>
+<p align="center">
+  <a href="https://github.com/abdurrahman422/nexa_ai/issues"><img src="https://img.shields.io/badge/ISSUES-OPEN-111827?style=flat-square&logo=github&logoColor=white" alt="Issues" /></a>
+  <a href="https://github.com/abdurrahman422/nexa_ai"><img src="https://img.shields.io/github/stars/abdurrahman422/nexa_ai?style=flat-square&color=111827&logo=github" alt="Stars" /></a>
+</p>
 
 </div>
-
----
 
 ## ◈ THE IDEA
 
 > **Nexa AI is not designed to be another chatbot. It is being engineered as an intelligent operating layer for the desktop.**
 
 Nexa brings **AI interaction, automation, safe desktop actions, local discovery, voice, vision, multi-model routing, and a cinematic interface** into one extensible system.
-
-<div align="center">
-
-<img src="https://readme-typing-svg.demolab.com?font=Press+Start+2P&size=10&duration=1100&pause=220&color=00E5FF&center=true&vCenter=true&width=920&height=38&lines=%3C+HUMAN+INPUT+%E2%86%92+AI+CORE+%E2%86%92+SAFE+ACTION+%3E;%3C+MOVE+%E2%80%A2+THINK+%E2%80%A2+REACT+%E2%80%A2+ADAPT+%E2%80%A2+EXECUTE+%3E" alt="Nexa interaction loop"/>
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:06121A,50:00BFFF,100:06121A&height=3&section=header" width="92%" alt="divider"/>
-
-</div>
-
----
 
 ## ✦ CORE EXPERIENCE
 
@@ -92,12 +76,6 @@ Nexa brings **AI interaction, automation, safe desktop actions, local discovery,
 
 <br/>
 
-<div align="center">
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=13&duration=1300&pause=300&color=00BFFF&center=true&vCenter=true&width=820&height=30&lines=%5BOK%5D+CORE+MODULES+ACTIVE;%5BSYNC%5D+VISUAL+SYSTEMS+LINKED;%5BREADY%5D+DESKTOP+INTELLIGENCE+AVAILABLE" alt="Core status"/>
-</div>
-
----
-
 ## ◇ SYSTEM STATUS
 
 | State | Area | Current direction |
@@ -114,21 +92,9 @@ Nexa brings **AI interaction, automation, safe desktop actions, local discovery,
 | ⚪ **PLANNED** | AI workspace | Code generation + project workflows |
 | ⚪ **PLANNED** | Agents | Multi-agent orchestration |
 
-<div align="center">
-
-<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=15&duration=2100&pause=450&color=67E8F9&center=true&vCenter=true&width=760&lines=%E2%97%86+BLUE+%3D+IMPLEMENTED;%E2%96%B2+YELLOW+%3D+IN+PROGRESS;%E2%97%8B+WHITE+%3D+PLANNED" alt="Status legend"/>
-
-</div>
-
 ---
 
 ## 🎬 EXPERIENCE MODEL
-
-<div align="center">
-
-<img src="https://readme-typing-svg.demolab.com?font=Orbitron&size=18&duration=1400&pause=400&color=22D3EE&center=true&vCenter=true&width=880&height=40&lines=%F0%9F%92%AC+TYPE;%F0%9F%A7%A0+UNDERSTAND;%E2%9A%A1+ACT;%F0%9F%91%81+VISUALIZE;%F0%9F%93%9C+AUDIT" alt="Experience flow"/>
-
-</div>
 
 Nexa is designed around a simple loop:
 
@@ -144,31 +110,62 @@ Target interaction languages:
 
 ## 🧩 ARCHITECTURE
 
-```text
-                         ⟡ NEXA AI ⟡
-                              │
-             ┌────────────────┼────────────────┐
-             ▼                ▼                ▼
-          💬 CHAT          🎙 VOICE          👁 VISION
-             └────────────────┼────────────────┘
-                              ▼
-                         🧠 AI ROUTER
-                              │
-             ┌────────────────┼────────────────┐
-             ▼                ▼                ▼
-          OpenAI           Gemini          Future Models
-             └────────────────┼────────────────┘
-                              ▼
-                           ⚡ TOOLS
-             ┌────────────────┼────────────────┐
-             ▼                ▼                ▼
-          📁 Files        🌐 Web           🖥 Desktop
-             └────────────────┼────────────────┘
-                              ▼
-                           🧠 MEMORY
-                              │
-                              ▼
-                           📜 AUDIT
+```mermaid
+flowchart TD
+    NEXA["⟡ NEXA AI ⟡"]
+
+    CHAT["💬 CHAT"]
+    VOICE["🎙 VOICE"]
+    VISION["👁 VISION"]
+
+    ROUTER["🧠 AI ROUTER"]
+
+    OPENAI["OpenAI"]
+    GEMINI["Gemini"]
+    FUTURE["Future Models"]
+
+    TOOLS["⚡ TOOLS"]
+
+    FILES["📁 Files"]
+    WEB["🌐 Web"]
+    DESKTOP["🖥 Desktop"]
+
+    MEMORY["🧠 MEMORY"]
+    AUDIT["📜 AUDIT"]
+
+    NEXA --> CHAT
+    NEXA --> VOICE
+    NEXA --> VISION
+
+    CHAT --> ROUTER
+    VOICE --> ROUTER
+    VISION --> ROUTER
+
+    ROUTER --> OPENAI
+    ROUTER --> GEMINI
+    ROUTER --> FUTURE
+
+    OPENAI --> TOOLS
+    GEMINI --> TOOLS
+    FUTURE --> TOOLS
+
+    TOOLS --> FILES
+    TOOLS --> WEB
+    TOOLS --> DESKTOP
+
+    FILES --> MEMORY
+    WEB --> MEMORY
+    DESKTOP --> MEMORY
+
+    MEMORY --> AUDIT
+
+    classDef title fill:#0d1117,stroke:#00e5ff,color:#00e5ff,stroke-width:2px;
+    classDef node fill:#161b22,stroke:#30363d,color:#ffffff;
+    classDef core fill:#111827,stroke:#00e5ff,color:#ffffff,stroke-width:2px;
+
+    class NEXA title;
+    class CHAT,VOICE,VISION,OPENAI,GEMINI,FUTURE,FILES,WEB,DESKTOP,AUDIT node;
+    class ROUTER,TOOLS,MEMORY core;
 ```
 
 Long-term direction:
@@ -178,12 +175,6 @@ Long-term direction:
 ---
 
 ## 🛠️ TECHNOLOGY
-
-<div align="center">
-
-<img src="https://skillicons.dev/icons?i=electron,react,ts,vite,python,fastapi,pytorch,threejs,docker,git,github&perline=11" alt="Technology stack"/>
-
-</div>
 
 | Layer | Stack |
 |---|---|
@@ -218,12 +209,6 @@ Nexa is intended to **assist, not silently take over**.
 ---
 
 ## 🚀 WINDOWS INSTALLATION
-
-<div align="center">
-
-<img src="https://readme-typing-svg.demolab.com?font=Share+Tech+Mono&size=14&duration=1200&pause=280&color=22C55E&center=true&vCenter=true&width=760&height=30&lines=%5BSETUP%5D+INITIALIZING+NEXA+ENVIRONMENT;%5BBOOT%5D+PREPARING+BACKEND+%2B+FRONTEND;%5BLAUNCH%5D+READY+TO+START+THE+CORE" alt="Setup animation"/>
-
-</div>
 
 ### Requirements
 
@@ -357,12 +342,6 @@ Before release, verify:
 
 ## 🛣️ ROADMAP
 
-<div align="center">
-
-<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=14&duration=1700&pause=350&color=A78BFA&center=true&vCenter=true&width=900&height=34&lines=FOUNDATION;%E2%86%92+VOICE+%2B+MULTI-LLM;%E2%86%92+BROWSER+%2B+AUTOMATION;%E2%86%92+MEMORY+%2B+RAG;%E2%86%92+AI+DEVELOPMENT+WORKSPACE;%E2%86%92+AUTONOMOUS+AGENT+LAYER" alt="Roadmap animation"/>
-
-</div>
-
 ### Next milestones
 
 **🟡 Multi-LLM provider layer**  
@@ -416,17 +395,3 @@ If a credential is ever exposed, **rotate it immediately**.
 No license is currently documented in the repository.
 
 Add a `LICENSE` file before distributing Nexa AI for public reuse.
-
----
-
-<div align="center">
-
-<img src="https://capsule-render.vercel.app/api?type=waving&height=120&section=footer&color=0:06121A,50:0B2433,100:06121A" width="100%" alt="Nexa footer"/>
-
-<img src="https://readme-typing-svg.demolab.com?font=Audiowide&weight=700&size=20&duration=1900&pause=500&color=00E5FF&center=true&vCenter=true&width=850&height=60&lines=THINK+%E2%80%A2+SPEAK+%E2%80%A2+SEARCH+%E2%80%A2+BUILD+%E2%80%A2+AUTOMATE;NEXA+AI+%E2%80%94+FROM+ASSISTANT+TO+OPERATING+LAYER;SYSTEM+ONLINE+%E2%80%94+WAITING+FOR+COMMAND" alt="Nexa footer animation"/>
-
-<br/>
-
-**⟡ NEXA AI ⟡**
-
-</div>
