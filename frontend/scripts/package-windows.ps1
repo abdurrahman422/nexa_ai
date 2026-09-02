@@ -36,7 +36,6 @@ Copy-Item -LiteralPath (Join-Path $frontendDir "electron") -Destination (Join-Pa
 Copy-Item -LiteralPath (Join-Path $backendDir "dist\nexa-backend") -Destination (Join-Path $appDir "backend") -Recurse
 Copy-Item -LiteralPath (Join-Path $projectDir "packaging\runtime-package.json") -Destination (Join-Path $appDir "package.json")
 Copy-Item -LiteralPath (Join-Path $projectDir "README.md") -Destination (Join-Path $releaseDir "README.md")
-Copy-Item -LiteralPath (Join-Path $projectDir "THIRD_PARTY_NOTICES.md") -Destination (Join-Path $releaseDir "THIRD_PARTY_NOTICES.md")
 
 $zipPath = Join-Path $projectDir "release\NexaAI-Windows.zip"
 if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }

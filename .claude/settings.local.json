@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(Set-Location D:\\\\Abdur\\\\nexaai\\\\nexaai\\\\backend; & .\\\\.venv\\\\Scripts\\\\python.exe -m compileall app -q; \"EXIT=$LASTEXITCODE\")"
-    ]
-  }
-}
