@@ -13,6 +13,9 @@ const EXAMPLES = [
   "নেক্সা shopping list এ coffee যোগ করো",
   "নেক্সা calendar এ tomorrow 10 am team meeting add করো",
   "নেক্সা email draft to Rahim project update পাঠাব",
+  "নেক্সা YouTube-এ Bangla song চালাও",
+  "নেক্সা YouTube ২০ সেকেন্ড সামনে নাও",
+  "নেক্সা YouTube volume ৫০ করো",
   "নেক্সা এই স্ক্রিনে কী আছে?",
   "নেক্সা সব feature দেখাও",
 ];

@@ -56,9 +56,10 @@ def _number(text: str) -> float | None:
 def _clean_query(text: str) -> str:
     cleaned = text.lower().strip()
     patterns = (
-        r"^(?:youtube|yt|ইউটিউব)\s+(?:e|te|এ|তে)?\s*",
+        r"^(?:(?:youtube|yt)\s+(?:e|te)?\s*|ইউটিউব\s+(?:এ|তে)\s*|ইউটিউব(?:ে|তে)?\s*)",
         r"^(?:play|search|find|চালাও|চালু করো|খুঁজে দাও|search koro)\s+",
         r"\s+(?:on youtube|youtube e|youtube te|ইউটিউবে)\s*$",
+        r"\s+(?:search koro|search করো|search dao|search দাও|খুঁজে দাও|খোঁজো|chalao|চালাও|play koro|play করো)\s*$",
     )
     for pattern in patterns:
         cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
@@ -113,7 +114,7 @@ def parse_youtube_command(command: str) -> ParsedYouTubeCommand:
         return ParsedYouTubeCommand("pause")
     if any(token in text for token in ("resume", "unpause", "আবার চালাও", "abar chalao")):
         return ParsedYouTubeCommand("resume")
-    if any(token in text for token in ("youtube search", "search youtube", "youtube e", "youtube te", "ইউটিউবে")):
+    if any(token in text for token in ("youtube search", "search youtube", "youtube e", "youtube te", "yt e", "yt te", "ইউটিউবে", "ইউটিউব এ", "ইউটিউবতে")):
         return ParsedYouTubeCommand("search", query=_clean_query(raw))
     if text.startswith(("play ", "চালাও ", "chalao ")):
         return ParsedYouTubeCommand("launch", query=_clean_query(raw))

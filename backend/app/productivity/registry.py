@@ -6,7 +6,7 @@ SKILLS = [
     ("multilingual_nlu", "Bangla/Banglish/English NLU", "ready", "Mixed-language commands use the unified router."),
     ("follow_up_voice", "Follow-up Voice", "ready", "Voice resumes after each neural reply."),
     ("application_control", "Application Control", "ready", "Allowlisted apps and safe Windows media controls."),
-    ("advanced_youtube", "Advanced YouTube", "ready", "Search, play, seek, volume, captions, speed and more."),
+    ("advanced_youtube", "YouTube Skill", "ready", "Bangla/Banglish/English search, play, seek, volume, captions, speed, timers and more."),
     ("media_control", "Music & Media", "ready", "YouTube plus safe system media commands."),
     ("reminders", "Reminders, Alarms & Timers", "ready", "Local recurring reminders and due alerts."),
     ("calendar", "Calendar", "ready", "Local calendar works now; cloud sync is optional."),

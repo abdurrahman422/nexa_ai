@@ -28,7 +28,27 @@ def test_youtube_command_parser_supports_media_controls() -> None:
 def test_youtube_search_parser_keeps_query() -> None:
     parsed = parse_youtube_command("youtube e lofi music search koro")
     assert parsed.action == "search"
-    assert "lofi music" in (parsed.query or "")
+    assert parsed.query == "lofi music"
+
+
+def test_youtube_search_parser_supports_bangla_and_short_yt_forms() -> None:
+    cases = {
+        "yt te python tutorial search dao": "python tutorial",
+        "ইউটিউবে বাংলা গান চালাও": "বাংলা গান",
+        "ইউটিউব এ রবীন্দ্র সংগীত খুঁজে দাও": "রবীন্দ্র সংগীত",
+    }
+    for text, expected_query in cases.items():
+        parsed = parse_youtube_command(text)
+        assert parsed.action == "search"
+        assert parsed.query == expected_query
+
+
+def test_youtube_skill_is_registered() -> None:
+    from app.productivity.registry import skill_registry
+
+    skill = next(item for item in skill_registry() if item["id"] == "advanced_youtube")
+    assert skill["name"] == "YouTube Skill"
+    assert skill["status"] == "ready"
 
 
 def test_youtube_command_requires_confirmation(monkeypatch) -> None:
