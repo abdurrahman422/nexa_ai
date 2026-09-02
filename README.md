@@ -352,7 +352,6 @@ nexa_ai/
 - [Memory policy](docs/MEMORY_POLICY.md)
 - [Safety policy](docs/SAFETY_POLICY.md)
 - [Tool/plugin contract](docs/TOOL_PLUGIN_CONTRACT.md)
-- [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 ## 🤝 Contributing
 
