@@ -24,7 +24,7 @@ Nexa AI is a Windows desktop assistant built as an academic software project wit
 The core application can run without a paid AI API. Optional provider keys can be added for hosted LLMs, higher-quality search, Google Cloud streaming speech-to-text, and AI image generation.
 
 > [!IMPORTANT]
-> Nexa AI is under active development. The main assistant, safety center, chat, web answers, reminders, voice integrations, YouTube controls, WhatsApp drafting, and packaging workflow are implemented. Some automation templates remain preview-only.
+> Nexa AI is under active development. The current source includes the main assistant, safety center, chat, web answers, reminders, voice integrations, YouTube controls, and WhatsApp drafting. Some automation templates remain preview-only.
 
 ## ✨ Features
 
@@ -44,7 +44,6 @@ The core application can run without a paid AI API. Optional provider keys can b
 | AI Image Studio | Queued Hugging Face image generation with a local gallery | Optional token |
 | Performance dashboard | Local audit analytics and CSV/JSON export | Built in |
 | Security center | User-controlled permissions, audit history, allowlists, and permanently blocked dangerous capabilities | Built in |
-| Windows distribution | Portable ZIP and optional Inno Setup installer containing the frontend and standalone backend | Build workflow ready |
 
 ## 🧭 Application Areas
 
@@ -69,7 +68,6 @@ The core application can run without a paid AI API. Optional provider keys can b
 | Voice | Web Speech, Google Cloud Speech (optional), Edge TTS |
 | Search and AI | Free web fallbacks, Serper and other search providers, optional hosted LLM router |
 | Automation and media | Selenium-based YouTube control, restricted Windows integrations |
-| Distribution | PyInstaller backend bundle, Electron runtime, ZIP, optional Inno Setup 6 |
 
 ## 🏗 Architecture
 
@@ -88,29 +86,11 @@ flowchart LR
 
 The frontend owns interaction and visualization. The backend owns routing, validation, permissions, persistence, integrations, and audit logging. Desktop actions are never executed solely because the interface requested them; the backend applies its own safety rules.
 
-## 📥 Install and Run
+## 📥 Install and Run from GitHub
 
-There are two ways to use Nexa AI.
+The repository currently provides the complete **source project**. A user downloads the code, creates a clean Python virtual environment, installs the frontend dependencies, and runs the backend and Electron app locally.
 
-### Option A: Portable Windows build
-
-When a packaged build is published under [GitHub Releases](https://github.com/abdurrahman422/nexa_ai/releases):
-
-1. Download `NexaAI-Windows.zip`.
-2. Extract the complete ZIP to a writable folder.
-3. Open the extracted folder and run `NexaAI.exe`.
-4. Allow network and microphone access only for the features you want to use.
-
-The portable build contains Electron and the standalone Python backend. A destination computer does **not** need Python, Node.js, npm, pip, or a virtual environment.
-
-> [!NOTE]
-> Public builds are not code-signed yet, so Windows SmartScreen may display an unknown-publisher warning. Verify that the file came from this repository before running it.
-
-### Option B: Run from source
-
-This is the recommended path for development, evaluation, and project demonstration.
-
-#### Requirements
+### Requirements
 
 | Requirement | Version / purpose |
 |---|---|
@@ -121,16 +101,38 @@ This is the recommended path for development, evaluation, and project demonstrat
 | Google Chrome | Required only for advanced YouTube control |
 | Internet | Required for live search, online voice, YouTube, hosted AI, and image generation |
 
-#### 1. Download the project
+> [!NOTE]
+> The repository intentionally excludes `.venv`, `node_modules`, `.env`, API keys, local databases, caches, downloaded models, and generated output. Each user creates a clean environment on their own computer by following the steps below.
+
+### 1. Download the project
+
+Choose either method below.
+
+**Method A: Clone with Git**
 
 ```powershell
 git clone https://github.com/abdurrahman422/nexa_ai.git
 cd nexa_ai
 ```
 
-Alternatively, use **Code → Download ZIP** on GitHub, extract it, and open PowerShell inside the extracted folder.
+**Method B: Download ZIP**
 
-#### 2. Set up the backend
+1. Open [github.com/abdurrahman422/nexa_ai](https://github.com/abdurrahman422/nexa_ai).
+2. Select **Code → Download ZIP**.
+3. Extract the ZIP to a normal writable folder such as `Documents` or `Desktop`.
+4. Open the extracted `nexa_ai` folder in PowerShell.
+
+### 2. Confirm the required tools
+
+```powershell
+python --version
+node --version
+npm.cmd --version
+```
+
+Python should be 3.11+ and Node.js should be 20+. If `python` is unavailable but the Python launcher is installed, use `py -3` instead of `python` in the backend commands.
+
+### 3. Create a clean backend environment
 
 ```powershell
 cd backend
@@ -144,9 +146,9 @@ python run_backend.py
 
 Keep this terminal open. The backend runs at `http://127.0.0.1:8000`; health check: `http://127.0.0.1:8000/api/health`.
 
-No API key is required for the default local/free mode. The copied `.env` file is for local settings and is excluded from Git.
+These commands create a new isolated `.venv` inside `backend`; no machine-specific virtual environment is downloaded from GitHub. No API key is required for the default local/free mode. The copied `.env` file is local-only and excluded from Git.
 
-#### 3. Set up the desktop app
+### 4. Install and run the desktop app
 
 Open a second PowerShell window in the repository root:
 
@@ -157,6 +159,30 @@ npm.cmd run dev
 ```
 
 Vite starts on `http://127.0.0.1:5173`, and the Electron desktop window opens automatically. Start the backend first so all backend-connected features are available.
+
+### 5. Use Nexa AI
+
+Keep both PowerShell windows open while using the project:
+
+| Terminal | Folder | Command | Purpose |
+|---|---|---|---|
+| Terminal 1 | `backend` | `python run_backend.py` | Runs the local API and assistant services |
+| Terminal 2 | `frontend` | `npm.cmd run dev` | Runs Vite and opens the Electron desktop app |
+
+On later runs, dependencies do not need to be installed again. Start the backend with its virtual environment activated, then start the frontend:
+
+```powershell
+# Terminal 1, from the repository root
+cd backend
+.\.venv\Scripts\Activate.ps1
+python run_backend.py
+```
+
+```powershell
+# Terminal 2, from the repository root
+cd frontend
+npm.cmd run dev
+```
 
 ## 🔌 Optional Configuration
 
@@ -231,7 +257,6 @@ Nexa falls back to browser speech recognition when Google streaming STT is unava
 | Higher-quality Serper search | Serper API key |
 | AI image generation | Hugging Face token + permission toggle |
 | Google streaming STT | Google Cloud credentials + permission toggle |
-| Build an installer | Inno Setup 6 |
 
 ## 🛡 Safety by Design
 
@@ -245,26 +270,6 @@ Nexa AI treats desktop control as a permissioned capability, not an unrestricted
 - Permissions are visible and adjustable in the Security Center.
 - Executed and blocked actions are recorded in a local audit trail.
 - Shell execution, arbitrary app execution, file delete/move/rename/edit, and automatic message sending are permanently locked off.
-
-## 📦 Build a Windows Release
-
-Install the development requirements first, then run:
-
-```powershell
-cd frontend
-npm.cmd install
-npm.cmd run package:windows
-```
-
-The workflow builds the React frontend, creates a standalone PyInstaller backend, bundles Electron, and produces `release/NexaAI-Windows.zip`.
-
-To also create `NexaAI-Setup.exe`, install [Inno Setup 6](https://jrsoftware.org/isinfo.php) and run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/package-windows.ps1 -BuildInstaller
-```
-
-Before public distribution, code-sign the executables and installer. Do not package local `.env` files, API keys, virtual environments, downloaded models, databases, or user-generated data.
 
 ## ✅ Verification
 
@@ -305,26 +310,25 @@ nexa_ai/
 │   │   ├── router/         # Smart task routing
 │   │   ├── tools/          # Restricted assistant tools
 │   │   └── voice/          # STT and TTS integrations
-│   ├── scripts/            # Setup, verification, packaging helpers
+│   ├── scripts/            # Setup and verification helpers
 │   └── tests/              # Backend test suite
 ├── frontend/
 │   ├── electron/           # Desktop process and backend lifecycle
 │   ├── src/                # React application
-│   └── scripts/            # Frontend tests and Windows packaging
+│   └── scripts/            # Frontend checks and project helpers
 ├── docs/                   # Architecture, policy, and phase reports
-├── packaging/              # Runtime manifest and Inno Setup definition
+├── packaging/              # Future distribution configuration
 └── shared/                 # Shared contracts and schemas
 ```
 
 ## ⚠️ Current Limitations
 
-- The project currently targets Windows; macOS and Linux packages are not provided.
+- The project currently targets Windows; macOS and Linux are not supported.
 - Automation workflow cards are previews, not executable multi-step automations.
 - Hosted AI quality depends on user-configured providers and their availability.
 - Free search fallbacks may be less comprehensive than paid search providers.
 - Online speech, YouTube, live search, hosted AI, and image generation require internet.
 - File modifications and automatic message sending are intentionally unsupported.
-- Public release executables are not yet code-signed.
 - UI unit/end-to-end coverage is still smaller than the backend test suite.
 
 ## 🧰 Troubleshooting
@@ -340,7 +344,6 @@ nexa_ai/
 | Voice input does not work | Check microphone permission, internet, Security Center, and selected STT engine. |
 | YouTube control does not work | Install/update Chrome and enable YouTube permissions. |
 | Hosted AI does not respond | Verify the selected provider key/model in `backend/.env`, then restart the backend. |
-| Windows warns about the app | Use only builds from this repository; code signing is remaining release work. |
 
 ## 📚 Documentation
 
@@ -349,7 +352,6 @@ nexa_ai/
 - [Memory policy](docs/MEMORY_POLICY.md)
 - [Safety policy](docs/SAFETY_POLICY.md)
 - [Tool/plugin contract](docs/TOOL_PLUGIN_CONTRACT.md)
-- [Windows packaging guide](docs/PACKAGING.md)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 ## 🤝 Contributing
