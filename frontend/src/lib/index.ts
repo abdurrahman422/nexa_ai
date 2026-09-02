@@ -9,4 +9,8 @@ export * from "./backendSystemStatusClient";
 export * from "./commandHistory";
 export * from "./useAutoRefresh";
 export * from "./commandPhrases";
+export * from "./speechRecognition";
+export * from "./useSpeechRecognition";
 export * from "./backendActionClient";
+export * from "./backendAssistantClient";
+export * from "./audioRecorder";

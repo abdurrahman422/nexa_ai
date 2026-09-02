@@ -1,0 +1,19 @@
+{
+  "ahim": {
+    "name": "ahim",
+    "phone_number": "8801762531333",
+    "nickname": null,
+    "created_at": "2026-06-12T14:09:59.140222+00:00",
+    "updated_at": "2026-06-12T14:09:59.140222+00:00"
+  },
+  "rahim": {
+    "name": "Rahim",
+    "phone_number": "8801762531333",
+    "nickname": null,
+    "aliases": [],
+    "relationship": "unknown",
+    "default_tone": "normal",
+    "created_at": "2026-06-12T21:57:22.182918+00:00",
+    "updated_at": "2026-06-12T21:57:22.182918+00:00"
+  }
+}

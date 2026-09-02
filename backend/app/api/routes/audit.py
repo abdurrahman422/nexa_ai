@@ -1,10 +1,15 @@
 """Audit preview API routes for the Nexa AI backend."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
+import csv
+import io
+import json
+from collections import Counter
 
 from app.audit import AuditRepository
 from app.audit import SQLiteAuditRepository
 from app.audit import get_audit_migration_preview
+from app.audit.event_log import get_audit_event_count, list_audit_events
 from app.schemas import AuditLogRequest
 from app.schemas import AuditLogResponse
 from app.schemas import AuditRouteHealth
@@ -64,6 +69,48 @@ def preview_audit_log(
     response.storage_backend = sqlite_result["storage_backend"]
     response.storage_message = sqlite_result["reason"]
     return response
+
+
+@router.get("/recent")
+def recent_audit_events(limit: int = 50) -> dict:
+    """Return the most recent real audit events (executed/blocked actions)."""
+    events = list_audit_events(limit=limit)
+    return {
+        "status": "ok",
+        "module": "audit_events",
+        "storage_enabled": True,
+        "total_events": get_audit_event_count(),
+        "events": events,
+        "message": f"{len(events)} audit event(s) loaded.",
+    }
+
+
+@router.get("/stats")
+def audit_statistics() -> dict:
+    events = list_audit_events(limit=200)
+    statuses = Counter(str(event.get("status", "unknown")) for event in events)
+    intents = Counter(str(event.get("intent", "unknown")) for event in events)
+    sources = Counter(str(event.get("source", "unknown")) for event in events)
+    return {
+        "status": "ok",
+        "total_events": get_audit_event_count(),
+        "sample_size": len(events),
+        "by_status": dict(statuses),
+        "by_intent": dict(intents.most_common(12)),
+        "by_source": dict(sources.most_common(12)),
+    }
+
+
+@router.get("/export")
+def export_audit_statistics(format: str = "csv") -> Response:
+    events = list_audit_events(limit=200)
+    if format.lower() == "json":
+        return Response(json.dumps(events, ensure_ascii=False, indent=2), media_type="application/json", headers={"Content-Disposition": "attachment; filename=nexa-audit.json"})
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=["id", "created_at", "source", "intent", "status", "risk_level", "target", "message"])
+    writer.writeheader()
+    writer.writerows(events)
+    return Response(output.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=nexa-audit.csv"})
 
 
 @router.get("/migration/preview", response_model=AuditMigrationPreviewResponse)

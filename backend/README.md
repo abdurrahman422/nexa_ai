@@ -1,124 +1,218 @@
 # Nexa AI Backend
 
-## 1. Backend Purpose
+## Optional Feature Configuration
 
-The backend will provide the local automation and business-logic layer for Nexa AI. It will interpret commands, enforce safety rules, manage local data, coordinate automation modules, expose APIs to the desktop UI, and support future integrations such as smart-home control.
+Advanced YouTube control uses Selenium with an installed Google Chrome. It is
+permission-gated through `youtube_skill` and `youtube_control`; every player
+command must come from a confirmed chat action or an explicit control-panel
+click.
 
-## 2. Planned Stack
+AI image generation is disabled by default. To enable it, set these values in
+`backend/.env`, then enable **AI Image Generation** in Security Center:
 
-- Python 3.11+
-- FastAPI
-- Uvicorn
-- SQLite
-- `rapidfuzz`
-- PyMuPDF
-- `requests`
-- `feedparser`
-- BeautifulSoup
-- `pyttsx3`
-- SpeechRecognition
+```env
+HUGGINGFACE_API_KEY=your_token_here
+HUGGINGFACE_IMAGE_MODEL=black-forest-labs/FLUX.1-schnell
+```
 
-## 3. Folder Responsibilities
+Generated images are stored only under `backend/data/generated_images` and
+served through safe opaque IDs. Windows volume/whitelisted app-close controls
+are also disabled by default and never allow arbitrary process names.
 
-- `app/api/` — future FastAPI routers and HTTP-facing API structure
-- `app/core/` — configuration, logging, startup, and shared backend foundations
-- `app/database/` — SQLite access, models, migrations, and repositories
-- `app/command_engine/` — normalization, fuzzy matching, intent detection, slot extraction, and execution planning
-- `app/automation/` — desktop automation capabilities and adapters
-- `app/voice/` — future speech-to-text and text-to-speech support
-- `app/files/` — file search and organization logic
-- `app/web/` — free-source web intelligence integrations
-- `app/pdf/` — PDF and document processing
-- `app/scheduler/` — reminders, tasks, and scheduled events
-- `app/contacts/` — contacts and message-draft support
-- `app/security/` — permission checks, confirmations, and audit logging
-- `app/smart_home/` — future ESP32 smart-home integrations
-- `app/events/` — WebSocket events and internal event dispatch
-- `app/utils/` — shared backend helper utilities
-- `tests/` — future backend test suite
-- `scripts/` — future backend setup, maintenance, and utility scripts
-- `data/` — local runtime data such as future SQLite files
-- `logs/` — backend log output
+Online Edge neural TTS is enabled for the voice workflow and remains
+permission-gated (`edge_tts`). Other optional extensions remain disabled by
+default: safe Markdown/TXT content export (`content_export`) and image
+generation (`image_generation`). Audit statistics/export and reminder
+editing remain local. Search uses the configured provider first and retains
+free DuckDuckGo/Wikipedia fallbacks.
 
-## 4. Backend Architecture Rules
+The Nexa AI backend is a local FastAPI service for the desktop frontend. It exposes health checks, permissions, safe action execution, voice/STT/TTS status, web answers, real safe chat, document preview, reminders, audit events, and database readiness/status.
 
-- Routers should only handle the HTTP layer.
-- Services should contain business logic.
-- Command engine must process raw user text before any execution.
-- Sensitive actions must pass through security checks.
-- No paid APIs in MVP.
-- No heavy local AI models in MVP.
-- Keep modules small.
+The Windows release uses `nexa_backend.spec` to produce a standalone PyInstaller
+one-folder executable. Electron owns its lifecycle and supplies writable
+`NEXA_DATA_DIR`, `NEXA_MODELS_DIR`, and `NEXA_ENV_FILE` paths under app data.
 
-## 5. Performance Rules
+This backend is no longer only a skeleton, but it is still an MVP foundation. Some routes perform real permission-gated work, while others are preview/status-only.
 
-- Avoid unnecessary background polling.
-- Use lightweight SQLite.
-- Defer expensive tasks.
-- Optimize for low-end Windows laptops.
+## Runtime
 
-## 6. Note
+- Python 3.11+ recommended.
+- FastAPI served by Uvicorn.
+- Default URL: `http://127.0.0.1:8000`.
+- No paid API is required for MVP features; hosted LLM/search providers are optional and configured only through local `.env`.
+- Voice STT uses an online recognition service and does not download a local model.
 
-This phase creates only the backend folder skeleton. Actual FastAPI implementation will be added in later phases.
+## Windows Setup
 
+From the project root:
 
-## Phase 03.1 Backend Setup
+```powershell
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai\backend"
+```
 
-Phase 03.1 created the basic Python backend setup files for Nexa AI.
+Check Python:
 
-### Created Files
+```powershell
+python --version
+```
 
-- `backend/requirements.txt`
-- `backend/requirements-dev.txt`
-- `backend/.env.example`
-- `backend/run_backend.py`
-- `backend/app/__init__.py`
+If needed:
 
-### Current Backend Dependencies
+```powershell
+py --version
+```
 
-The Phase 03 backend foundation currently includes only lightweight core dependencies:
+Create a fresh virtual environment:
 
-- `fastapi`
-- `uvicorn[standard]`
-- `python-dotenv`
-- `pydantic`
+```powershell
+python -m venv .venv
+```
 
-Development/testing dependencies:
+Activate it:
 
-- `pytest`
-- `httpx`
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
-### Important Notes
+Install dependencies:
 
-- The FastAPI application entrypoint will be created in Phase 03.2.
-- The `/api/health` endpoint will be created in Phase 03.2.
-- No voice system has been implemented yet.
-- No automation features have been implemented yet.
-- No database implementation has been added yet.
-- No command engine has been implemented yet.
-- No heavy AI models or paid APIs have been added.
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
 
-This step only prepares the backend setup foundation.
+Run the backend:
 
-## Phase 03.3 Backend Config System
+```powershell
+python run_backend.py
+```
 
-Phase 03.3 added the backend configuration foundation.
+Open:
 
-### Added
+```text
+http://127.0.0.1:8000/api/health
+```
 
-- `backend/app/core/config.py`
-- `Settings`
-- `get_settings()`
-- environment variable loading
-- feature flag defaults
-- root endpoint now includes environment information
-- `/api/health` now includes environment information and phase `03.3`
+## Troubleshooting
 
-### Current Scope
+| Problem | Meaning | Fix |
+|---|---|---|
+| `python` is not recognized | Python is missing from PATH | Install Python 3.11+ and select "Add python.exe to PATH", or use the Python launcher if available. |
+| `py` is not recognized | Python launcher is not installed | Install Python from python.org or repair the installation. |
+| `.venv\Scripts\python.exe` references an old path | The virtual environment was moved/copied or its base Python was removed | Recreate `.venv` with the currently installed Python. Do not depend on copied `.venv` folders. |
+| `pip` says "Unable to create process" | Pip launcher inside `.venv` points to a missing Python | Use `python -m pip ...` after recreating `.venv`. |
+| PowerShell blocks `Activate.ps1` | Execution policy blocks local scripts | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then reopen PowerShell. |
+| Frontend says backend offline | FastAPI is not running | Keep `python run_backend.py` open in a backend terminal. |
 
-- No database implementation yet
-- No WebSocket implementation yet
-- No voice system yet
-- No automation system yet
-- No command engine yet
-- No paid APIs or heavy AI models added
+## Smoke Test
+
+Start the backend first, then run:
+
+```powershell
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai\backend"
+.\.venv\Scripts\Activate.ps1
+python scripts\smoke_test_backend.py
+```
+
+The smoke script checks:
+
+- `/api/health`
+- `/api/permissions`
+- locked permission cannot be enabled
+- dangerous commands are blocked even with confirmation
+- unknown app and website targets are blocked
+- whitelisted dry-run action stays preview-only and does not execute
+- audit recent endpoint is available and shows recent action events when recorded
+
+## Pytest Route Tests
+
+Run the in-process route/safety test suite:
+
+```powershell
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai\backend"
+.\.venv\Scripts\Activate.ps1
+python -m pytest
+```
+
+These tests cover the same safety-critical route behavior as the smoke script without requiring a running server.
+
+## API Status
+
+| Feature | Status | Notes |
+|---|---|---|
+| Health | Working / Wired | Used by frontend backend status checks. |
+| Command preview | Preview only | No broad command execution engine yet. |
+| Safe website/app open | Working / Wired | Whitelist plus confirmation; unknown targets blocked. |
+| File search | Working / Wired | Read-only metadata search in safe folders. |
+| Document preview | Working / Wired | Read-only PDF/TXT/MD text preview. |
+| Permissions | Working / Wired | Toggleable safe features, locked dangerous features. |
+| Voice STT | Backend + internet required | Online Bangla push-to-talk; no local model. |
+| TTS | Backend + internet required | Edge neural Bangla/English voice, permission-gated. |
+| Web answers | Working / Wired | DuckDuckGo/Wikipedia style safe-source answers. |
+| Chat | Working / Wired | `/api/chat/message` detects weather, web search, normal chat, action previews, and dangerous requests. |
+| Smart task router | Working / Wired | Routes local persona, weather/time, search, LLM, YouTube, WhatsApp drafts, contacts, calculator, and safety blocks. |
+| Hosted LLM router | Optional / Wired | Gemini primary with Groq/OpenRouter/Cloudflare/Mistral/Cerebras fallback when local keys are configured. |
+| Reminders | Working / Wired | Local reminder records. |
+| Audit events | Working / Wired | Recent action events endpoint plus preview audit route. |
+| Database | Preview/status only | Readiness/status; not full memory system. |
+| AI Chat | Working / Wired | Weather uses Open-Meteo; web answers reuse safe public answer logic; chat never executes actions. |
+| Workflow automation | Missing / Future | No workflow executor. |
+| WhatsApp drafts | Working / Wired | Local contacts, aliases, relationship/tone, safe `wa.me` draft URLs only. Nexa never clicks Send. |
+| Email automation | Missing / Future | Not implemented. |
+
+## Optional Providers
+
+Copy `.env.example` to `.env` and set only local keys you want to use. Do not commit real keys.
+
+```env
+NEXA_SEARCH_PROVIDER=serper
+SERPER_API_KEY=your_serper_api_key_here
+
+NEXA_LLM_ROUTER_ENABLED=true
+NEXA_LLM_PRIMARY=gemini
+GEMINI_API_KEY=your_gemini_key_here
+GROQ_API_KEY=
+OPENROUTER_API_KEY=
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_API_TOKEN=
+MISTRAL_API_KEY=
+CEREBRAS_API_KEY=
+```
+
+Weather and time never need LLM. Live/current data uses search first; LLM may only summarize source data.
+
+## WhatsApp Contacts
+
+Local WhatsApp contacts are stored under backend local data and support:
+
+- `name`
+- `phone_number`
+- `aliases`
+- `relationship`: `boss`, `client`, `friend`, `family`, or `unknown`
+- `default_tone`: `formal`, `friendly`, or `normal`
+
+Trusted WhatsApp draft auto-open may open `https://wa.me/<phone>?text=<draft>`, but Nexa never clicks Send or reads chats.
+| Smart home | Future | Not implemented. |
+
+## Safety Rules
+
+- Unknown apps and websites are blocked.
+- Dangerous text such as delete, format, shutdown, registry, system32, cmd, and powershell is blocked by backend safety checks.
+- File write operations are intentionally not implemented.
+- TTS and other capabilities can be disabled through backend permissions.
+- Messages are not auto-sent.
+- WhatsApp messages are draft-only; the user manually presses Send.
+- The microphone flow is push-to-talk, not always-on.
+
+## Useful Commands
+
+```powershell
+# Import/bytecode compile check
+python -m compileall app scripts
+
+# Run backend
+python run_backend.py
+
+# Smoke-test a running backend
+python scripts\smoke_test_backend.py
+```

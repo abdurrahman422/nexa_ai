@@ -5,23 +5,36 @@
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
-    "dev": "concurrently \"vite --host 127.0.0.1 --port 5173 --strictPort\" \"npm run electron:dev\"",
-    "web:dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "dev": "concurrently \"vite --config vite.config.ts --host 127.0.0.1 --port 5173 --strictPort\" \"npm run electron:dev\"",
+    "web:dev": "vite --config vite.config.ts --host 127.0.0.1 --port 5173 --strictPort",
     "electron:dev": "wait-on http://127.0.0.1:5173 && cross-env NEXA_ELECTRON_DEV=1 NEXA_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
     "electron:build": "echo Electron CommonJS shell ready",
-    "build": "tsc -b && vite build && npm run electron:build",
-    "preview": "vite preview"
+    "check": "tsc -b",
+    "test": "npm run check && node scripts/dashboard-chat-contract-test.cjs",
+    "build": "tsc -b && vite build --config vite.config.ts && npm run electron:build",
+    "preview": "vite preview --config vite.config.ts",
+    "package:windows": "powershell -ExecutionPolicy Bypass -File scripts/package-windows.ps1"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "@react-three/postprocessing": "^3.0.4",
     "framer-motion": "^12.23.12",
+    "globe.gl": "^2.46.1",
     "lucide-react": "^0.468.0",
+    "postprocessing": "^6.39.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "three": "^0.185.1",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.171.0",
+    "@types/topojson-client": "^3.1.5",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.2",

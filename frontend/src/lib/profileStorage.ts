@@ -1,4 +1,4 @@
-export type AddressingPreference = "Sir" | "Madam" | "Boss" | "Name only";
+export type AddressingPreference = "Boss" | "Sir" | "Vai" | "Neutral";
 export type LanguageMode = "Bangla" | "English" | "Mixed";
 export type VoicePreference = "Male voice" | "Female voice" | "System default";
 
@@ -29,7 +29,7 @@ export function getDefaultProfile(): UserProfile {
   const timestamp = new Date().toISOString();
   return {
     userName: "",
-    addressingPreference: "Sir",
+    addressingPreference: "Boss",
     languageMode: "Mixed",
     voicePreference: "System default",
     hasCompletedOnboarding: false,
@@ -50,14 +50,23 @@ export function loadProfile(): UserProfile {
       return getDefaultProfile();
     }
 
-    const parsed = JSON.parse(raw) as Partial<UserProfile> | null;
+    const parsed = JSON.parse(raw) as (Partial<UserProfile> & Record<string, unknown>) | null;
     if (!parsed || typeof parsed !== "object") {
       return getDefaultProfile();
     }
+    const rawAddressing = parsed["addressingPreference"];
+    const legacyAddressing: string | undefined = typeof rawAddressing === "string" ? rawAddressing : undefined;
+    const addressingPreference: AddressingPreference =
+      legacyAddressing === "Madam" || legacyAddressing === "Name only"
+        ? "Neutral"
+        : legacyAddressing === "Sir" || legacyAddressing === "Vai" || legacyAddressing === "Boss"
+        ? legacyAddressing
+        : getDefaultProfile().addressingPreference;
 
     return {
       ...getDefaultProfile(),
       ...parsed,
+      addressingPreference,
       createdAt: typeof parsed.createdAt === "string" ? parsed.createdAt : getDefaultProfile().createdAt,
       updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : getDefaultProfile().updatedAt,
     };
@@ -113,7 +122,7 @@ export function formatAddressingName(profile: Pick<UserProfile, "userName" | "ad
     return "Your Name";
   }
 
-  if (profile.addressingPreference === "Name only") {
+  if (profile.addressingPreference === "Neutral") {
     return name;
   }
 

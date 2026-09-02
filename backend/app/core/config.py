@@ -4,6 +4,7 @@ import os
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from app.core.runtime_paths import env_file
 
 
 class Settings(BaseModel):
@@ -32,7 +33,7 @@ def _read_bool_env(name: str, default: bool) -> bool:
 
 def get_settings() -> Settings:
     """Load environment variables and return application settings."""
-    load_dotenv()
+    load_dotenv(env_file())
 
     return Settings(
         app_name=os.getenv("APP_NAME", "Nexa AI Backend"),

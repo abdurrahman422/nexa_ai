@@ -1,91 +1,111 @@
 # Nexa AI Frontend
 
-## 1. Frontend Purpose
+The Nexa AI frontend is a React/Electron/Vite desktop UI. It talks to the FastAPI backend at `http://127.0.0.1:8000` for backend-backed features. It is beyond the original skeleton phase, but not every screen is fully wired.
 
-The frontend will provide the desktop user interface for Nexa AI. It will present the futuristic assistant experience, capture user interaction, show live system status, and communicate with the Python FastAPI backend through local REST and WebSocket connections.
+## Stack
 
-## 2. Planned Stack
-
-- Electron
-- React
+- React 19
 - Vite
 - TypeScript
-- Tailwind CSS
+- Electron shell
 - Framer Motion
 - Lucide React
+- Custom dark assistant UI styles
 
-## 3. Folder Responsibilities
+## Setup on Windows
 
-- `electron/` — future Electron main-process and preload-layer files
-- `src/app/` — application bootstrap, routing, and top-level UI composition
-- `src/components/` — reusable UI, layout, and animation components
-- `src/pages/` — screen-level modules for major product areas
-- `src/hooks/` — reusable React hooks
-- `src/services/` — frontend API clients and WebSocket service wrappers
-- `src/state/` — shared client-side state management
-- `src/styles/` — global styles, theme definitions, and Tailwind-related styling
-- `src/types/` — shared TypeScript types used by the frontend
-- `src/utils/` — small reusable helper utilities
-- `tests/` — future frontend test files
+From the frontend folder:
 
-## 4. UI Design Goal
+```powershell
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai\frontend"
+npm.cmd install
+```
 
-- Futuristic cyberpunk/Jarvis-style desktop interface
-- Dark theme
-- Neon cyan and purple accents
-- Glassmorphism surfaces
-- Lightweight animation
+Use `npm.cmd` in PowerShell if plain `npm` is blocked by script execution policy.
 
-## 5. Performance Rules
+## Run
 
-- Avoid heavy 3D in MVP
-- Lazy-load large pages later
-- Keep animation efficient for low-end laptops
+Start the backend first in another terminal:
 
-## 6. Note
+```powershell
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai\backend"
+.\.venv\Scripts\Activate.ps1
+python run_backend.py
+```
 
-This phase creates only the frontend folder skeleton. Actual Electron, React, Vite, and Tailwind implementation will be added in later phases.
+Then start the desktop frontend:
 
+```powershell
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai\frontend"
+npm.cmd run dev
+```
 
-## Phase 04.2 Tailwind Theme Setup
+For browser-only frontend development:
 
-Phase 04.2 adds the Nexa AI frontend theme foundation.
+```powershell
+npm.cmd run web:dev
+```
 
-### Added
+Frontend URL:
 
-- Tailwind CSS setup
-- Nexa AI theme color tokens
-- PostCSS configuration
-- Global CSS utilities
-- Cyberpunk dark background
-- Neon cyan and purple accents
-- Glassmorphism utility classes
-- Lightweight visual foundation for future UI components
+```text
+http://127.0.0.1:5173
+```
 
-### Not Added Yet
+Backend URL expected by the UI:
 
-- Electron shell is not implemented yet.
-- Backend integration is not implemented yet.
-- Voice UI is not implemented yet.
-- Reusable UI component library will be added in Phase 04.3.
+```text
+http://127.0.0.1:8000
+```
 
-## Phase 04.3 Reusable UI Components
+## Checks
 
-Phase 04.3 adds the first reusable Nexa AI frontend UI component library.
+```powershell
+npm.cmd run test
+npm.cmd run build
+```
 
-### Added Components
+`npm.cmd run test` currently runs the TypeScript project check (`tsc -b`). It is a real automated check, but it is not a full unit or browser test suite yet.
 
-- `GlassCard`
-- `NeonButton`
-- `StatusBadge`
-- `MetricCard`
-- `SectionHeader`
+## Feature Status
 
-### Notes
+| Feature | Status | Notes |
+|---|---|---|
+| Dashboard command center | Working / Wired, Backend required | Routes whitelisted launch commands through backend confirmation. |
+| Launcher | Working / Wired, Backend required | Opens only backend-whitelisted apps/websites. |
+| Web answers | Working / Wired, Backend required | Calls backend safe answer endpoint. |
+| Files/document preview | Working / Wired, Backend required | Read-only search and preview only. |
+| Reminders | Working / Wired, Backend required | Local backend reminders. |
+| Permissions/security center | Working / Wired, Backend required | Uses backend permission endpoints. |
+| Voice STT | Backend + internet required | Push-to-talk calls online Bangla STT; no local model is needed. |
+| TTS | Backend required | Calls backend TTS status/speak endpoint; permission-gated. |
+| Audit/history | Working / Wired, Backend required | Shows local preview history and backend audit events. |
+| AI Chat / Dashboard assistant | Working / Wired, Backend required | Smart router with local persona, weather/time, search, optional LLM, safe YouTube actions, WhatsApp draft composer, and blocked dangerous commands. |
+| LLM provider chips | Working / Wired, Backend required | Shows provider chip only for LLM-backed answers. Local conversation stays clean. |
+| WhatsApp contacts | Working / Wired, Backend required | Settings form supports name, phone, aliases, relationship, and default tone. |
+| Automation workflow templates | Preview only | Templates do not execute workflows. |
+| Profile settings | Working / Wired locally | Stored in local browser storage; no backend profile route. |
+| Windows packaging | Working / Standalone | Bundles Electron plus the PyInstaller backend and manages backend start/stop automatically. |
 
-- Components are frontend-only.
-- Components use React, TypeScript, and Tailwind CSS.
-- Components follow the Nexa AI cyberpunk/Jarvis-style design language.
-- No backend integration has been added yet.
-- No Electron shell has been added yet.
-- Animated orb and waveform components will be added in Phase 04.4.
+## Honest Limitations
+
+- Backend-backed pages show errors or offline state unless FastAPI is running.
+- Hosted LLM providers are optional and require user-provided backend `.env` keys.
+- Search/live data quality depends on configured backend search provider. Serper is optional.
+- YouTube trusted open/search and WhatsApp trusted draft auto-open are backend permission settings.
+- WhatsApp is draft-only. Nexa never clicks Send, reads chats, or sends silently.
+- Workflow automation templates are preview-only.
+- Profile settings are local-only.
+- File write operations are intentionally disabled.
+- Public releases should still be code-signed to reduce Windows SmartScreen warnings.
+- Voice STT requires internet access and working microphone permissions.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `npm` is blocked by PowerShell | Use `npm.cmd` commands. |
+| Frontend says backend offline | Start `python run_backend.py` in the backend folder. |
+| Electron window does not launch | Run `npm.cmd run web:dev` first to confirm Vite works, then retry `npm.cmd run dev`. |
+| Build fails after dependency changes | Run `npm.cmd install`, then `npm.cmd run build`. |
+| Voice features fail | Confirm backend is running, permissions are enabled, microphone access is allowed, and internet works. |

@@ -2,3 +2,13 @@ fastapi
 uvicorn[standard]
 python-dotenv
 pydantic
+httpx
+pypdf
+python-multipart
+SpeechRecognition>=3.14,<4
+tzdata
+selenium>=4.25,<5
+huggingface_hub>=0.27,<2
+Pillow>=10,<13
+edge-tts>=7,<8
+google-cloud-speech>=2.30,<3

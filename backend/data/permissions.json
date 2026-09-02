@@ -1,0 +1,12 @@
+{
+  "actions_website": true,
+  "actions_app": true,
+  "trusted_quick_launch": false,
+  "file_search": true,
+  "voice_stt": true,
+  "voice_tts": true,
+  "edge_tts": true,
+  "web_answers": true,
+  "documents": true,
+  "reminders": true
+}

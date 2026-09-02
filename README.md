@@ -1,397 +1,240 @@
-# NEXA AI
-### NEXT-GENERATION DESKTOP INTELLIGENCE
+# Nexa AI
 
-<p align="center">
-  <img src="https://img.shields.io/badge/STATUS-ACTIVE-00E5FF?style=for-the-badge&logo=github&logoColor=white" alt="Status" />
-  <img src="https://img.shields.io/badge/PLATFORM-WINDOWS-111827?style=for-the-badge&logo=windows&logoColor=white" alt="Windows" />
-  <img src="https://img.shields.io/badge/ELECTRON-REACT-111827?style=for-the-badge&logo=electron&logoColor=9FEAF9" alt="Electron React" />
-  <img src="https://img.shields.io/badge/FASTAPI-PYTHON-111827?style=for-the-badge&logo=fastapi&logoColor=00D084" alt="FastAPI Python" />
-</p>
+Nexa AI is a local-first Windows desktop assistant project. It now has a React/Electron/Vite frontend and a Python FastAPI backend. The project is beyond the original Phase 01 planning skeleton, but it is still not a finished product: some screens are wired to real backend endpoints, while others are preview-only or not wired yet.
 
-<p align="center">
-  <a href="https://github.com/abdurrahman422/nexa_ai/issues"><img src="https://img.shields.io/badge/ISSUES-OPEN-111827?style=flat-square&logo=github&logoColor=white" alt="Issues" /></a>
-  <a href="https://github.com/abdurrahman422/nexa_ai"><img src="https://img.shields.io/github/stars/abdurrahman422/nexa_ai?style=flat-square&color=111827&logo=github" alt="Stars" /></a>
-</p>
+## Current Reality
 
-</div>
+- Frontend: React 19, TypeScript, Vite, Electron shell, custom dark assistant UI.
+- Backend: FastAPI at `http://127.0.0.1:8000`.
+- No paid API is required for the MVP.
+- Dashboard chat now supports local persona replies, smart task routing, weather/time, search-backed live answers, optional hosted LLM providers, safe YouTube open/search, and WhatsApp draft-only contact workflows.
+- Online voice features require an internet connection; no local speech model is downloaded.
+- The frontend and backend run separately during development.
+- The backend must be running before backend-backed UI controls will work.
 
-## ◈ THE IDEA
+## Quick Start on Windows
 
-> **Nexa AI is not designed to be another chatbot. It is being engineered as an intelligent operating layer for the desktop.**
-
-Nexa brings **AI interaction, automation, safe desktop actions, local discovery, voice, vision, multi-model routing, and a cinematic interface** into one extensible system.
-
-## ✦ CORE EXPERIENCE
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-### 🧠 INTELLIGENCE
-
-- AI command interpretation
-- Modular assistant architecture
-- Multi-model direction
-- Context-aware workflows
-- AI activity states
-
-</td>
-<td width="50%" valign="top">
-
-### ⚡ ACTION
-
-- Safe desktop commands
-- App launching
-- Website launching
-- Controlled file discovery
-- Command preview before execution
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### 👁 VISUAL SYSTEM
-
-- 3D AI core / Earth environment
-- Neural-network visual layer
-- Particles, orbits and energy systems
-- Holographic HUD
-- Reactive interface motion
-
-</td>
-<td width="50%" valign="top">
-
-### 🔐 TRUST LAYER
-
-- Whitelist-first execution
-- Confirmation gates
-- Dangerous-command blocking
-- Safe filesystem boundaries
-- Audit / history foundation
-
-</td>
-</tr>
-</table>
-
-<br/>
-
-## ◇ SYSTEM STATUS
-
-| State | Area | Current direction |
-|---|---|---|
-| 🔵 **IMPLEMENTED** | Desktop shell | Electron + React + TypeScript |
-| 🔵 **IMPLEMENTED** | Backend | FastAPI + Python |
-| 🔵 **IMPLEMENTED** | Safe actions | Preview + validation + confirmation |
-| 🔵 **IMPLEMENTED** | Visual engine | Three.js / React Three Fiber |
-| 🟡 **IN PROGRESS** | Multi-LLM | Provider routing + adapters |
-| 🟡 **IN PROGRESS** | Voice | Bangla STT/TTS + push-to-talk |
-| 🟡 **IN PROGRESS** | Memory | Long-term context architecture |
-| ⚪ **PLANNED** | RAG | Vector search + retrieval layer |
-| ⚪ **PLANNED** | Browser control | Controlled browser workflows |
-| ⚪ **PLANNED** | AI workspace | Code generation + project workflows |
-| ⚪ **PLANNED** | Agents | Multi-agent orchestration |
-
----
-
-## 🎬 EXPERIENCE MODEL
-
-Nexa is designed around a simple loop:
-
-**Input → Intelligence → Permission → Action → Feedback → Audit**
-
-The UI leans into motion, depth, holographic overlays, reactive visuals, floating elements, and AI state transitions so the application feels like a **system**, not a static dashboard.
-
-Target interaction languages:
-
-**🇧🇩 বাংলা · 🔤 Banglish · 🇬🇧 English**
-
----
-
-## 🧩 ARCHITECTURE
-
-```mermaid
-flowchart TD
-    NEXA["⟡ NEXA AI ⟡"]
-
-    CHAT["💬 CHAT"]
-    VOICE["🎙 VOICE"]
-    VISION["👁 VISION"]
-
-    ROUTER["🧠 AI ROUTER"]
-
-    OPENAI["OpenAI"]
-    GEMINI["Gemini"]
-    FUTURE["Future Models"]
-
-    TOOLS["⚡ TOOLS"]
-
-    FILES["📁 Files"]
-    WEB["🌐 Web"]
-    DESKTOP["🖥 Desktop"]
-
-    MEMORY["🧠 MEMORY"]
-    AUDIT["📜 AUDIT"]
-
-    NEXA --> CHAT
-    NEXA --> VOICE
-    NEXA --> VISION
-
-    CHAT --> ROUTER
-    VOICE --> ROUTER
-    VISION --> ROUTER
-
-    ROUTER --> OPENAI
-    ROUTER --> GEMINI
-    ROUTER --> FUTURE
-
-    OPENAI --> TOOLS
-    GEMINI --> TOOLS
-    FUTURE --> TOOLS
-
-    TOOLS --> FILES
-    TOOLS --> WEB
-    TOOLS --> DESKTOP
-
-    FILES --> MEMORY
-    WEB --> MEMORY
-    DESKTOP --> MEMORY
-
-    MEMORY --> AUDIT
-
-    classDef title fill:#0d1117,stroke:#00e5ff,color:#00e5ff,stroke-width:2px;
-    classDef node fill:#161b22,stroke:#30363d,color:#ffffff;
-    classDef core fill:#111827,stroke:#00e5ff,color:#ffffff,stroke-width:2px;
-
-    class NEXA title;
-    class CHAT,VOICE,VISION,OPENAI,GEMINI,FUTURE,FILES,WEB,DESKTOP,AUDIT node;
-    class ROUTER,TOOLS,MEMORY core;
-```
-
-Long-term direction:
-
-**AI assistant → intelligent automation layer → AI operating layer**
-
----
-
-## 🛠️ TECHNOLOGY
-
-| Layer | Stack |
-|---|---|
-| 🖥 Desktop | Electron |
-| 🎨 Frontend | React + TypeScript + Vite |
-| 🎞 Motion | Framer Motion + custom motion system |
-| 🌐 3D | Three.js + React Three Fiber + Drei |
-| 🐍 Backend | Python + FastAPI + Uvicorn + Pydantic |
-| 🤖 AI | Multi-LLM architecture |
-| 🎙 Voice | STT / TTS foundation |
-| 🔐 Security | Whitelists + validation + confirmation + audit |
-| ⚙️ Automation | REST / Webhooks / n8n roadmap |
-
----
-
-## 🛡️ SAFETY BY DESIGN
-
-Nexa is intended to **assist, not silently take over**.
-
-| Principle | Implementation direction |
-|---|---|
-| 🔐 Least privilege | Only expose actions the system actually needs |
-| 🧱 Whitelist-first | Explicitly allow supported actions |
-| ✅ Confirmation | Sensitive actions require user confirmation |
-| 🚫 Command blocking | Block dangerous execution patterns |
-| 📁 Safe boundaries | Restrict filesystem discovery to approved areas |
-| 📜 Auditability | Keep action/history foundations visible |
-| 👀 Preview | Show what will happen before execution where appropriate |
-
-> Sensitive automation should remain **permissioned, auditable, and explicit**.
-
----
-
-## 🚀 WINDOWS INSTALLATION
-
-### Requirements
-
-**Minimum practical setup**
-
-- Windows 10/11 — 64-bit
-- 8 GB RAM
-- 5 GB+ free storage
-- Modern 64-bit CPU
-- WebGL-capable graphics support
-- Git
-- Python
-- Node.js LTS
-- Internet connection for cloud AI / external services
-
-**Recommended**
-
-- 16 GB+ RAM
-- Modern Core i5 / Ryzen 5 class CPU or better
-- Dedicated GPU or strong integrated graphics
-- SSD
-- Stable broadband connection
-
-> These are practical recommendations for a smooth Electron + 3D experience. Exact runtime requirements should follow the repository manifests.
-
-### 1. Clone
+Open PowerShell in the project root:
 
 ```powershell
-git clone https://github.com/abdurrahman422/nexa_ai.git
-cd nexa_ai
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai"
 ```
 
-### 2. Backend
+### 1. Check Python
+
+```powershell
+python --version
+```
+
+If that fails, try:
+
+```powershell
+py --version
+```
+
+Install Python 3.11+ from `https://www.python.org/downloads/windows/` if neither command works. During installation, enable "Add python.exe to PATH".
+
+### 2. Create and Run the Backend
 
 ```powershell
 cd backend
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-```
-
-Optional:
-
-```powershell
 .\.venv\Scripts\Activate.ps1
-```
-
-### 3. Environment
-
-Create:
-
-```text
-backend/.env
-```
-
-Add the credentials for whichever providers you enable.
-
-**Never commit `.env`, API keys, tokens, passwords, or private certificates.**
-
-### 4. Start Backend
-
-```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 python run_backend.py
 ```
 
-Default local API:
+Backend URL:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-### 5. Start Frontend
+Health check:
 
-In another terminal:
+```text
+http://127.0.0.1:8000/api/health
+```
+
+### 3. Run the Frontend
+
+Open a second PowerShell terminal:
+
+```powershell
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai\frontend"
+npm.cmd install
+npm.cmd run dev
+```
+
+The web dev server runs at:
+
+```text
+http://127.0.0.1:5173
+```
+
+`npm.cmd` is recommended on Windows PowerShell because plain `npm` may be blocked by PowerShell script execution policy.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `python` is not recognized | Install Python 3.11+ and enable "Add python.exe to PATH", or use `py -3` if available. |
+| `.venv` points to an old/missing Python path | Deactivate the venv, rename or recreate `.venv`, then run `python -m venv .venv` again. Do not rely on a copied `.venv`. |
+| `pip` launcher points to the wrong path | Use `python -m pip install -r requirements.txt` instead of plain `pip`. |
+| PowerShell blocks activation script | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` in PowerShell, then reopen the terminal. |
+| `npm` is blocked by PowerShell policy | Use `npm.cmd install`, `npm.cmd run dev`, and `npm.cmd run build`. |
+| Backend UI says offline | Start `python run_backend.py` in the `backend` folder and keep it running. |
+| Online voice is unavailable | Confirm the backend is running, microphone permission is allowed, and the internet connection works. |
+
+## Feature Status
+
+| Feature | Status | Notes |
+|---|---|---|
+| Dashboard command center | Working / Wired, Backend required | Can route recognized launch commands to backend action endpoints after confirmation. |
+| Launcher | Working / Wired, Backend required | Whitelisted apps/websites only. Unknown targets are blocked backend-side. |
+| Web answers | Working / Wired, Backend required | Uses safe public sources through the backend. |
+| Files/document preview | Working / Wired, Backend required | Read-only search and preview. File write operations are intentionally disabled. |
+| Reminders | Working / Wired, Backend required | Local reminder records with confirmation. |
+| Permissions/security center | Working / Wired, Backend required | Toggleable backend permissions plus locked-off unsafe capabilities. |
+| Voice STT | Backend + internet required | Online Bangla push-to-talk through Google Web Speech; no local model. |
+| TTS | Backend + internet required | Online Edge neural Bangla/English voices, permission-gated. |
+| Audit/history | Working / Wired, Backend required | Backend audit events plus local preview history. |
+| AI Chat | Working / Wired, Backend required | Real chat UI with local history, Open-Meteo weather, DuckDuckGo/Wikipedia web answers, and no action execution. |
+| LLM provider router | Backend required, Optional keys | Gemini primary with Groq/OpenRouter/Cloudflare/Mistral/Cerebras fallback when configured in local `.env`. |
+| WhatsApp draft composer | Working / Wired, Backend required | Local contacts, aliases, relationship/tone, safe `wa.me` draft URLs only. Nexa never clicks Send. |
+| Automation workflow templates | Preview only | Template cards are not executable workflows. |
+| Profile settings | Working / Wired locally | Stored in frontend local storage, not backend profile API. |
+| Windows packaging | Working / Standalone | `npm.cmd run package:windows` bundles Electron and a PyInstaller backend; destination machines do not need Python or pip. Optional Inno Setup creates shortcuts and an installer. |
+
+## SmartVoice-Inspired Extensions
+
+Nexa includes selected, safety-adapted capabilities inspired by the MIT-licensed
+SmartVoice project. See `THIRD_PARTY_NOTICES.md` for attribution.
+
+- Advanced YouTube player: search/play, pause/resume, seek, volume/mute,
+  captions, fullscreen, theater mode, speed, next/previous, autoplay, sleep
+  timer, status, close, and microphone audio ducking.
+- Smart reminders: natural-language relative time, recurring schedules, and
+  snooze. Reminder writes still require explicit confirmation.
+- Optional AI Image Studio using Hugging Face Inference Providers. Set
+  `HUGGINGFACE_API_KEY` and enable the permission in Security Center. The UI
+  now includes a background queue and a local generated-image gallery.
+- Optional Windows media controls and normal-close for whitelisted apps.
+  This permission is off by default; force-close, shell access, shutdown, and
+  arbitrary process control remain blocked.
+- Content Writer exports confirmed Markdown/TXT files only to
+  `backend/data/generated_content`.
+- Performance Dashboard aggregates the local audit trail and exports CSV/JSON.
+- Reminder Center supports natural language, recurrence, snooze, and editing.
+- Edge neural Bangla/English voice output is permission-gated and needs an
+  internet connection.
+- Search already falls back across configured Serper, free DuckDuckGo/
+  Wikipedia, Brave, and SerpAPI providers.
+
+Advanced YouTube control needs Google Chrome and the Python `selenium` package
+from `backend/requirements.txt`. YouTube UI changes, consent dialogs, ads, or
+CAPTCHAs may occasionally require selector updates.
+
+## Windows Release Bundle
 
 ```powershell
 cd frontend
-npm install
-npm run dev
+npm.cmd run package:windows
 ```
 
-Use the scripts currently defined in `frontend/package.json` if they differ.
+This creates `release/NexaAI-Windows.zip`. With Inno Setup 6 installed, run
+`powershell -ExecutionPolicy Bypass -File scripts/package-windows.ps1 -BuildInstaller`
+to also build `release/installer/NexaAI-Setup.exe`. The packaged app includes
+its Python backend and dependencies, starts it automatically, and stops it when
+Nexa exits. Python is required only for development or rebuilding the package.
 
----
+## Backend Smoke Test
 
-## 🗂️ PROJECT MAP
-
-```text
-nexa_ai/
-├── backend/        🐍 FastAPI + AI services
-├── frontend/       ⚛️ Electron + React UI
-├── docs/           📚 Documentation
-├── scripts/        🛠 Development utilities
-├── shared/         🔗 Shared resources
-├── tools/          ⚙️ Tooling
-├── README.md       📖 Project overview
-└── .gitignore      🔐 Repository safety
-```
-
----
-
-## 🧪 DEVELOPMENT
-
-Backend checks:
+After starting the backend:
 
 ```powershell
-cd backend
-python -m compileall app
-python run_backend.py
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai\backend"
+.\.venv\Scripts\Activate.ps1
+python scripts\smoke_test_backend.py
 ```
 
-Frontend:
+This checks health, permissions, locked permissions, dangerous command blocking, unknown target blocking, dry-run safety, and recent audit events.
+
+## Optional Provider Configuration
+
+Copy `backend/.env.example` to `backend/.env` and set only the providers you want to use. Never commit real keys.
+
+```env
+NEXA_SEARCH_PROVIDER=serper
+SERPER_API_KEY=your_serper_api_key_here
+
+NEXA_LLM_ROUTER_ENABLED=true
+NEXA_LLM_PRIMARY=gemini
+GEMINI_API_KEY=your_gemini_key_here
+GROQ_API_KEY=
+OPENROUTER_API_KEY=
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_API_TOKEN=
+MISTRAL_API_KEY=
+CEREBRAS_API_KEY=
+```
+
+Live/current data such as gold price and news uses search first. LLM providers may summarize source results, but they must not invent live data.
+
+### Optional Google Cloud Streaming Voice Input
+
+Nexa's Voice Room uses Google Cloud streaming STT when configured and falls back
+to browser Web Speech automatically. Create a Google Cloud service account with
+Speech-to-Text access, download its JSON key outside the repository, and add the
+following local values to `backend/.env`:
+
+```env
+NEXA_GOOGLE_STT_ENABLED=true
+GOOGLE_APPLICATION_CREDENTIALS=C:\absolute\private\path\google-stt.json
+```
+
+Never commit the service-account JSON. In Settings → Voice, select `Auto` for
+Google-first recognition with browser fallback, or choose either engine directly.
+
+## Trusted Skill Settings
+
+In Settings/Security:
+
+- `Trusted YouTube Auto Open` lets recognized YouTube open/search commands open whitelisted YouTube URLs directly.
+- `Trusted WhatsApp Draft Auto Open` lets known-contact WhatsApp draft URLs open directly.
+- WhatsApp remains draft-only. Nexa does not click Send, read chats, scrape credentials, or send messages silently.
+- Local WhatsApp contacts support aliases, relationship, and default tone.
+
+## Frontend Checks
 
 ```powershell
-cd frontend
-npm install
-npm run build
-npm run dev
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\nexaai\nexaai\frontend"
+npm.cmd run test
+npm.cmd run build
 ```
 
-Before release, verify:
+`npm.cmd run test` is currently a TypeScript project check. It is not a full UI/unit test suite yet.
 
-- frontend build
-- Python compilation
-- API health
-- safety boundaries
-- desktop actions
-- WebGL / 3D runtime
-- environment configuration
+## Current Limitations
 
----
+- Hosted LLM providers are optional and require user-provided keys in local `.env`; the app still works in local/free-provider mode.
+- Live search quality depends on configured search providers. Serper is optional and key-based; free fallback providers are weaker.
+- Automation workflow templates are preview-only.
+- File delete/move/rename/edit is intentionally disabled.
+- WhatsApp is draft-only with local contacts. Email automation is not implemented.
+- Smart home/ESP32 support is future work.
+- Online YouTube, Edge TTS, search, and hosted image providers naturally need an internet connection while used.
+- Hugging Face image generation needs a user-provided token; Settings stores it only in Nexa's local app-data configuration.
 
-## 🛣️ ROADMAP
+## Documentation Links
 
-### Next milestones
+- [Product Vision](docs/product_vision.md)
+- [Feature Requirements](docs/feature_requirements.md)
+- [Technical Architecture](docs/technical_architecture.md)
+- [Packaging Plan](docs/PACKAGING.md)
+- [Full Audit Report](CODEX_FULL_PROJECT_AUDIT_REPORT.md)
 
-**🟡 Multi-LLM provider layer**  
-Provider selection, routing, adapter work, and automatic fallback.
+## Project Policy
 
-**🟡 Voice intelligence**  
-Bangla STT/TTS, push-to-talk, and natural voice response.
-
-**⚪ Browser & workflow automation**  
-Controlled browser actions, n8n workflows, email and other integrations.
-
-**⚪ Memory & retrieval**  
-Long-term context, RAG, vector search, and document intelligence.
-
-**⚪ AI development workspace**  
-Project generation, coding workflows, and sandboxed execution patterns.
-
-**⚪ Agent layer**  
-Multi-agent orchestration and higher-level autonomous workflows.
-
----
-
-## 🤝 CONTRIBUTING
-
-Good contributions should preserve:
-
-**🔐 Security · 🧩 Modularity · 🧪 Testability · ⚡ Performance · 🎨 UX · 🛠 Maintainability**
-
-For major architectural changes, open an issue or discussion before introducing breaking changes.
-
----
-
-## 🔐 SECURITY
-
-Never commit:
-
-```text
-API keys
-Access tokens
-Passwords
-Private certificates
-Production .env files
-```
-
-If a credential is ever exposed, **rotate it immediately**.
-
----
-
-## 📜 LICENSE
-
-No license is currently documented in the repository.
-
-Add a `LICENSE` file before distributing Nexa AI for public reuse.
+Nexa AI should remain local-first, safety-gated, low-end laptop friendly, and usable without paid APIs for the MVP.

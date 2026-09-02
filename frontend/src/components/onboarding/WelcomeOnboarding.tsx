@@ -12,7 +12,7 @@ type WelcomeOnboardingProps = {
   onContinue?: (profile?: UserProfile) => void;
 };
 
-const addressingOptions = ["Sir", "Madam", "Boss", "Name only"] as const;
+const addressingOptions = ["Boss", "Sir", "Vai", "Neutral"] as const;
 const languageModeOptions = ["Bangla", "English", "Mixed"] as const;
 const voicePreferenceOptions = ["Male voice", "Female voice", "System default"] as const;
 
@@ -22,7 +22,7 @@ type VoicePreferenceType = (typeof voicePreferenceOptions)[number] & VoicePrefer
 
 export function WelcomeOnboarding({ onContinue }: WelcomeOnboardingProps) {
   const [userName, setUserName] = useState("");
-  const [addressingPreference, setAddressingPreference] = useState<AddressingOption>("Sir");
+  const [addressingPreference, setAddressingPreference] = useState<AddressingOption>("Boss");
   const [languageMode, setLanguageMode] = useState<LanguageModeType>("Mixed");
   const [voicePreference, setVoicePreference] = useState<VoicePreferenceType>("System default");
 

@@ -1,0 +1,721 @@
+NEXA AI — MASTER PROMPT FOR CLAUDE CODE
+
+Use this as the master project prompt.
+First audit the project, then continue building Nexa AI phase by phase.
+Do not redesign the UI.
+Do not weaken safety.
+
+============================================================
+PROJECT PATH
+============================================================
+
+C:\Users\Abdur Rahman\Desktop\nexaai
+
+If this file exists, read it first:
+Nexa_AI_Project_Context_for_Claude_Code.txt
+
+============================================================
+ROLE
+============================================================
+
+You are Claude Code. You are now the lead full-stack engineer for my project named Nexa AI.
+
+You must understand the project deeply, preserve existing work, fix broken parts safely, and continue building the full product phase by phase.
+
+Do not rewrite the whole project.
+Do not delete existing work.
+Do not redesign the UI.
+Do not weaken safety.
+
+============================================================
+MAIN GOAL
+============================================================
+
+I want to build a complete production-quality Windows desktop AI assistant called Nexa AI.
+
+Nexa AI should work like a smart AI assistant for my laptop/PC. It must understand Bangla, Banglish, and English. It must support both text commands and voice commands. It must have a premium futuristic glass/neon desktop UI.
+
+This is not a small demo project. I want Nexa AI to become a real usable production-style Windows AI desktop assistant.
+
+============================================================
+WHAT NEXA AI SHOULD DO
+============================================================
+
+Nexa AI should allow me to type or speak commands like:
+
+- গুগল খোলো
+- ইউটিউব খোলো
+- ক্যালকুলেটর চালাও
+- নোটপ্যাড খোলো
+- Chrome খোলো
+- VS Code খোলো
+- ডাউনলোডে পিডিএফ খুঁজে দাও
+- ডেস্কটপে ছবি খুঁজে দাও
+- আজকের খবর বলো
+- Bitcoin price কত
+- আমার শেষ ডাউনলোড করা ফাইলটা খুঁজে দাও
+- আমাকে এই topic বুঝিয়ে বলো
+- আমাকে reminder দাও
+- পরে WhatsApp/email automation করতে হবে, but only with strict confirmation
+
+============================================================
+CORE PRODUCT VISION
+============================================================
+
+Build a local-first Windows AI assistant with:
+
+1. Premium desktop UI
+2. Text command input
+3. Voice command input
+4. Bangla/Banglish/English command understanding
+5. Safe website opening
+6. Safe app opening
+7. Read-only local file search
+8. Voice-to-text / STT
+9. Text-to-speech / TTS voice reply
+10. Web search answer engine
+11. Document/PDF assistant
+12. Reminder/scheduler
+13. Optional n8n workflow integration
+14. Safe WhatsApp/email automation later
+15. Security/permission center
+16. Windows packaging/installer
+
+============================================================
+TECH STACK
+============================================================
+
+Frontend:
+- Electron
+- Vite
+- React
+- TypeScript
+- Custom premium CSS
+
+Backend:
+- Python
+- FastAPI
+- Local API at:
+  http://127.0.0.1:8000
+
+Expected project structure:
+- backend/
+- frontend/
+
+Expected frontend commands:
+
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\frontend"
+npm install
+npm run build
+npm run dev
+
+Expected backend commands:
+
+cd "C:\Users\Abdur Rahman\Desktop\nexaai\backend"
+.\.venv\Scripts\Activate.ps1
+python -m compileall app
+python run_backend.py
+
+============================================================
+MOST IMPORTANT UI RULE
+============================================================
+
+Do not redesign the existing UI unless absolutely required.
+
+The existing Nexa AI UI is a premium futuristic glass/neon/cyberpunk style interface. It should look polished, animated, high-end, and production-level.
+
+Strict UI rules:
+
+- Keep the existing Nexa AI premium futuristic glass/neon UI intact.
+- Do not downgrade the design.
+- Do not replace it with a simple/basic layout.
+- Do not rewrite large CSS blocks.
+- Do not change the whole design system.
+- Only add minimal CSS when required for a feature.
+- Avoid breaking responsive layout.
+- Avoid breaking existing pages.
+- UI must remain premium, modern, futuristic, animated, and production-level.
+
+============================================================
+VERY IMPORTANT SAFETY RULES
+============================================================
+
+Nexa AI must be safe. Never make it dangerous.
+
+Strict rules:
+
+- Never execute dangerous system commands.
+- Never use shell=True.
+- Never allow arbitrary executable paths.
+- Never open unknown websites.
+- Never open unknown apps.
+- Never delete files.
+- Never move files.
+- Never rename files.
+- Never edit files without explicit user approval.
+- Never execute files found by file search.
+- Never send WhatsApp/email automatically.
+- Never attach/send files without explicit final confirmation.
+- Never add hidden automation.
+- Never add always-on microphone by default.
+- Never run background actions without user approval.
+- Never weaken existing safety logic.
+- Always use whitelists for real actions.
+- Always require explicit confirmation before real actions.
+- Dangerous commands must be blocked even if user_confirmed is true.
+
+Dangerous terms and actions that must be blocked:
+- delete
+- remove
+- wipe
+- format
+- shutdown
+- restart
+- system32
+- registry
+- regedit
+- powershell
+- cmd
+- command prompt
+- task manager
+- control panel
+- services
+- gpedit
+- .exe from unknown path
+- .bat
+- .cmd
+- .ps1
+- .vbs
+- .scr
+- .msi
+- Bangla/Banglish equivalents of dangerous operations
+
+============================================================
+CURRENT PROJECT STATUS
+============================================================
+
+This project already has work done. Do not rebuild everything from scratch if existing code is present.
+
+First inspect the current project and continue from existing code.
+
+Existing or expected completed features:
+
+1. Dashboard page
+2. Commands page
+3. Voice page
+4. History page
+5. Settings page
+6. System status cards
+7. Backend health/status endpoints
+8. Safe website open action
+9. Safe app open action
+10. Action preview and confirmation UI
+11. Read-only file search in Desktop/Downloads/Documents
+12. Bangla/Banglish command matching
+13. Vosk STT readiness foundation
+14. Audit/status foundation
+
+============================================================
+EXPECTED BACKEND ENDPOINTS
+============================================================
+
+The project should have or preserve these endpoints:
+
+- GET /api/health
+- GET /api/actions/health
+- GET /api/commands/health
+- POST /api/commands/preview
+- GET /api/audit/health
+- POST /api/audit/preview
+- GET /api/audit/migration/preview
+- GET /api/database/status
+- POST /api/actions/website/open
+- POST /api/actions/app/open
+- POST /api/actions/files/search
+- GET /api/voice/stt/status
+- GET /api/voice/stt/readiness
+- GET /api/voice/stt/test-transcription if implemented
+
+============================================================
+SAFE WEBSITE ACTIONS
+============================================================
+
+Allowed websites:
+
+- Google
+- YouTube
+- GitHub
+- Facebook
+- Gmail
+- ChatGPT
+- Stack Overflow
+
+Rules:
+
+- Frontend must not directly open websites.
+- Frontend must call backend action endpoint.
+- Backend must enforce whitelist.
+- Backend must require confirmation.
+- Unknown websites must be blocked.
+- Dangerous URL schemes must be blocked.
+
+Relevant endpoint:
+
+POST /api/actions/website/open
+
+============================================================
+SAFE APP ACTIONS
+============================================================
+
+Allowed desktop apps:
+
+- Notepad
+- Calculator
+- Chrome
+- File Explorer
+- VS Code
+
+Rules:
+
+- Frontend must not directly execute apps.
+- Frontend must call backend action endpoint.
+- Backend must enforce whitelist.
+- Backend must require confirmation.
+- Unknown apps must be blocked.
+- Arbitrary executable path must be blocked.
+- shell=True must never be used.
+
+Relevant endpoint:
+
+POST /api/actions/app/open
+
+============================================================
+REQUIRED COMMAND BEHAVIOR
+============================================================
+
+These behaviors must work and must not be broken:
+
+1. "গুগল খোলো"
+   -> detect open_website
+   -> target google
+   -> ask confirmation
+   -> open Google safely through backend
+
+2. "ইউটিউব খোলো"
+   -> detect open_website or youtube intent
+   -> target youtube
+   -> ask confirmation
+   -> open YouTube safely through backend
+
+3. "ক্যালকুলেটর চালাও"
+   -> detect open_app
+   -> target calculator
+   -> ask confirmation
+   -> open Calculator safely through backend
+
+4. "নোটপ্যাড খোলো"
+   -> detect open_app
+   -> target notepad
+   -> ask confirmation
+   -> open Notepad safely through backend
+
+5. "ডাউনলোডে পিডিএফ খুঁজে দাও"
+   -> read-only file search
+   -> scope Downloads
+   -> extension PDF
+
+6. "ডেস্কটপে ছবি খুঁজে দাও"
+   -> read-only file search
+   -> scope Desktop
+   -> image extensions
+
+7. "delete system32"
+   -> must be blocked server-side
+   -> must stay blocked even if user_confirmed is true
+
+Important:
+Dangerous command detection should happen before normal action detection.
+App detection should avoid false matches as YouTube/website.
+"ক্যালকুলেটর চালাও" must not be detected as YouTube search.
+
+============================================================
+FILE SEARCH RULES
+============================================================
+
+File search should be safe and read-only.
+
+Allowed safe folders:
+
+- Desktop
+- Downloads
+- Documents
+
+Rules:
+
+- Metadata-only search by default.
+- Do not open files.
+- Do not read file contents by default.
+- Do not delete files.
+- Do not move files.
+- Do not rename files.
+- Do not edit files.
+- Do not execute files.
+- Search results should only display safe metadata.
+- Dangerous file types must be blocked for future automation.
+
+Relevant endpoint:
+
+POST /api/actions/files/search
+
+============================================================
+VOICE / STT GOAL
+============================================================
+
+Nexa AI should support voice commands.
+
+Current foundation:
+- Vosk STT readiness may exist.
+- Vosk model may be classic or streaming ONNX type.
+- Current model path may be:
+  backend/models/vosk/bn
+
+Possible model structures:
+
+Classic Vosk:
+- am
+- conf
+- graph
+
+Streaming/ONNX style:
+- am-onnx
+- lang
+- decode.py
+- test.wav
+
+Rules:
+
+- If current Vosk model cannot transcribe with normal Python Vosk API, do not crash.
+- Return clean JSON error.
+- Explain that current model may need compatible runtime.
+- Consider Whisper/faster-whisper as a practical future STT engine if Vosk is not practical for Bangla.
+- Do not add always-on mic by default.
+- Start with push-to-talk only.
+- Do not execute commands directly from transcript without preview and confirmation.
+
+Expected endpoints:
+
+- GET /api/voice/stt/status
+- GET /api/voice/stt/readiness
+- GET /api/voice/stt/test-transcription if implemented
+
+============================================================
+TTS GOAL
+============================================================
+
+Nexa AI should later speak replies using text-to-speech.
+
+Requirements:
+
+- Add voice reply later.
+- Support Bangla/English voice reply if possible.
+- TTS should speak assistant responses.
+- TTS must not execute commands automatically.
+- User should be able to enable/disable voice reply.
+
+============================================================
+WEB ANSWER GOAL
+============================================================
+
+Later, user can ask:
+
+- আজকের খবর বলো
+- Bitcoin price কত
+- এই topic বুঝিয়ে বলো
+- Best laptop কোনটা
+- কোনো website/search based answer
+
+Nexa AI should safely get a web/search answer using a controlled backend service or n8n workflow, then summarize and optionally speak the answer.
+
+Rules:
+
+- Do not scrape unsafe sources blindly.
+- Use controlled API or safe n8n workflow.
+- Always separate answer generation from action execution.
+- Do not open random websites without confirmation.
+
+============================================================
+N8N GOAL
+============================================================
+
+n8n can be used later as an optional workflow automation layer.
+
+Use n8n for:
+- Web search workflows
+- Email draft workflows
+- Google Sheets style workflows
+- Notifications
+- External integrations
+
+Do not use n8n for:
+- Dangerous local command execution
+- Hidden automation
+- Arbitrary file execution
+- Auto-send without confirmation
+
+n8n rules:
+- Localhost n8n first.
+- Use webhook token/security.
+- Do not expose public admin.
+- Do not enable risky Execute Command workflows without explicit approval.
+
+============================================================
+WHATSAPP / EMAIL AUTOMATION GOAL
+============================================================
+
+Later, Nexa AI may support:
+
+- Find latest downloaded file
+- Confirm file
+- Confirm contact
+- Confirm message
+- Final confirmation before send
+
+Rules:
+
+- No auto-send.
+- No bulk spam.
+- No hidden sending.
+- Draft/preview first.
+- Confirm before send.
+- Confirm file before attach.
+- Confirm contact before sending.
+- Block dangerous file types:
+  .exe, .bat, .cmd, .ps1, .vbs, .scr, .msi, etc.
+
+============================================================
+WHAT TO DO NOW
+============================================================
+
+Take responsibility for completing the full project safely and professionally.
+
+First task:
+Full audit + safe fix.
+
+Steps:
+
+1. Audit the complete project.
+2. Read the project structure.
+3. Check backend build.
+4. Check frontend build.
+5. Check existing features.
+6. Create/update a project audit report.
+7. Identify broken/missing parts.
+8. Fix safe compile/build/runtime issues first.
+9. Preserve existing UI and features.
+10. Then implement missing features phase by phase.
+
+Before coding, run or check:
+
+Backend:
+
+cd backend
+python -m compileall app
+python run_backend.py
+
+Frontend:
+
+cd frontend
+npm install if needed
+npm run build
+npm run dev
+
+Create/update:
+
+PROJECT_AUDIT_REPORT.md
+
+The audit report must include:
+
+1. Project summary
+2. Current folder structure
+3. Backend status
+4. Frontend status
+5. Missing dependencies
+6. Build errors
+7. Runtime errors
+8. Broken imports
+9. API route issues
+10. Schema/export issues
+11. UI risk areas
+12. Safety/security status
+13. Voice/STT status
+14. File search status
+15. Website/app action status
+16. Recommended fixes
+17. Next implementation phases
+
+After audit:
+- Fix only safe build/runtime issues.
+- Do not start large feature work until audit is clean.
+- Preserve the UI.
+- Preserve safety.
+
+============================================================
+FULL PHASE PLAN
+============================================================
+
+Phase 1 — Project health and dependency cleanup
+- Make backend compile.
+- Make frontend build.
+- Fix missing imports/exports.
+- Fix requirements/package issues.
+- Do not change UI.
+
+Phase 2 — Backend endpoint consistency
+- Ensure all important routes are registered.
+- Ensure health/status endpoints work.
+- Ensure frontend API client types match backend responses.
+
+Phase 3 — Command understanding polish
+- Improve Bangla/Banglish/English command detection.
+- Keep dangerous commands blocked first.
+- App detection should happen before website/youtube false matches.
+- Add tests/examples if possible.
+
+Phase 4 — Safe actions hardening
+- Website whitelist.
+- App whitelist.
+- Confirmation required.
+- Server-side blocking.
+- Dry-run preview.
+- Audit trail.
+
+Phase 5 — File search polish
+- Safe folders only.
+- Metadata-only results.
+- Better extension detection.
+- Better Bangla/Banglish search phrases.
+- No file execution/open/delete.
+
+Phase 6 — Voice STT decision and implementation
+- Check current Vosk model.
+- If Vosk classic works, use it.
+- If Vosk ONNX cannot load, return clean error.
+- Consider Whisper/faster-whisper as practical STT engine.
+- No always-on mic by default.
+- Start with push-to-talk only.
+
+Phase 7 — TTS voice reply
+- Add safe text-to-speech.
+- Speak assistant replies.
+- Do not execute commands from TTS.
+
+Phase 8 — Web search answer engine
+- Add safe backend web answer abstraction.
+- Use controlled API or n8n later.
+- Summarize results.
+- Add voice answer support later.
+
+Phase 9 — n8n integration foundation
+- Localhost n8n integration.
+- Token-based webhook.
+- No risky execute-command workflows.
+- Clear status panel.
+
+Phase 10 — Document/PDF assistant
+- Safe document upload/read.
+- Summarize PDF/DOC/TXT.
+- No editing/deleting by default.
+
+Phase 11 — Reminder/scheduler
+- Add reminders.
+- Local schedule storage.
+- Confirmation before creating reminders.
+
+Phase 12 — WhatsApp/email automation foundation
+- Draft/preview first.
+- Confirm contact.
+- Confirm message/file.
+- Final confirmation before send.
+- No hidden automation.
+
+Phase 13 — Security/permission center
+- Feature toggles.
+- Action permissions.
+- Logs.
+- Safety warnings.
+- Dangerous actions disabled by default.
+
+Phase 14 — Production UI polish
+- Keep existing premium design.
+- Improve loading states.
+- Improve error states.
+- Improve empty states.
+- Improve responsive behavior.
+- Do not redesign everything.
+
+Phase 15 — Windows packaging
+- Build production Electron package.
+- Prepare installer.
+- Add run instructions.
+- Add release checklist.
+
+============================================================
+DEVELOPMENT RULES
+============================================================
+
+Follow these rules strictly:
+
+1. Work in small steps.
+2. Prefer 2 to 5 files per phase.
+3. Test after every phase.
+4. Do not do a massive rewrite.
+5. Do not remove existing working features.
+6. Do not weaken safety.
+7. Do not modify large CSS unless needed.
+8. Report exactly what changed.
+9. Report exact test results.
+10. If something is risky, ask before doing it.
+11. If a dependency is missing, install or document it clearly.
+12. If a feature cannot be implemented safely, explain why and suggest a safe alternative.
+13. Stop after each major phase and wait for approval unless instructed otherwise.
+
+============================================================
+FINAL EXPECTED PROJECT
+============================================================
+
+The final Nexa AI should be a working Windows desktop app where:
+
+1. User opens the desktop app.
+2. Dashboard shows system/backend/voice/action status.
+3. User types Bangla/Banglish/English commands.
+4. App previews understood intent.
+5. App asks confirmation for real actions.
+6. Backend safely opens whitelisted apps/websites.
+7. User can search local files safely.
+8. Voice command works through safe push-to-talk STT.
+9. Assistant can reply with voice using TTS.
+10. Assistant can answer web/search questions safely.
+11. Future automation is permission-based and confirmation-based.
+12. UI remains premium glass/neon and production-level.
+
+============================================================
+START NOW
+============================================================
+
+Start now by doing this:
+
+1. Read the project context file if it exists.
+2. Audit the project.
+3. Create/update PROJECT_AUDIT_REPORT.md.
+4. Fix only safe build/runtime issues.
+5. Preserve the existing UI.
+6. Preserve safety rules.
+7. Report what you scanned.
+8. Report what you changed.
+9. Report test results.
+10. Recommend the next phase.
+
+Do not redesign the UI.
+Do not weaken safety.
+Do not start dangerous automation.
+Do not continue to a new major phase without approval.

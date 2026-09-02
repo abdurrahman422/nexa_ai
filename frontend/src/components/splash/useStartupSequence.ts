@@ -79,8 +79,18 @@ export function useStartupSequence(): StartupSequenceState {
 
     frameId = requestAnimationFrame(tick);
 
+    // requestAnimationFrame is paused for hidden/background windows, which
+    // would leave the splash stuck forever. Guarantee completion on a timer.
+    const fallbackId = window.setTimeout(() => {
+      setProgress(100);
+      setActiveStep(DEFAULT_STEPS.length);
+      setStatusText(DEFAULT_STEPS[DEFAULT_STEPS.length - 1].label);
+      setIsComplete(true);
+    }, totalDuration + 600);
+
     return () => {
       cancelAnimationFrame(frameId);
+      window.clearTimeout(fallbackId);
     };
   }, []);
 

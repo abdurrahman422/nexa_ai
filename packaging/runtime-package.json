@@ -1,0 +1,5 @@
+{
+  "name": "nexaai-desktop",
+  "version": "0.2.0",
+  "main": "electron/main.cjs"
+}
