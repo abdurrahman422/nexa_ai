@@ -20,6 +20,7 @@ from app.api.routes.content import router as content_router
 from app.api.routes.setup import router as setup_router
 from app.api.routes.productivity import router as productivity_router
 from app.core.config import get_settings
+from app.api.routes.gmail import router as gmail_router
 
 settings = get_settings()
 
@@ -58,6 +59,7 @@ app.include_router(system_controls_router, prefix="/api")
 app.include_router(content_router, prefix="/api")
 app.include_router(setup_router, prefix="/api")
 app.include_router(productivity_router, prefix="/api")
+app.include_router(gmail_router, prefix="/api")
 
 
 @app.get("/")
