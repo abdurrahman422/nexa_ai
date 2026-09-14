@@ -52,6 +52,9 @@ async function ensureBackend() {
     stdio: "ignore",
     env: {
       ...process.env,
+      NEXA_GMAIL_PROVIDER: process.env.NEXA_GMAIL_PROVIDER || "google",
+      NEXA_GMAIL_CREDENTIALS_PATH: process.env.NEXA_GMAIL_CREDENTIALS_PATH || "D:\\NEXA-Secrets\\gmail\\credentials.json",
+      NEXA_GMAIL_TOKEN_PATH: process.env.NEXA_GMAIL_TOKEN_PATH || "C:\\Users\\mLc\\.nexa_ai\\gmail\\token.json",
       APP_ENV: "production",
       BACKEND_HOST: "127.0.0.1",
       BACKEND_PORT: "8000",

@@ -51,6 +51,40 @@ export type PermissionUpdateResponseDto = {
   message: string;
 };
 
+export type GmailAccountDto = {
+  account_id: string;
+  email: string;
+  display_name?: string;
+  token_path: string;
+  connected_at: string;
+  last_used_at: string;
+};
+
+export type GmailAccountsResponseDto = {
+  accounts: GmailAccountDto[];
+  active_account: GmailAccountDto | null;
+};
+
+export function getGmailAccounts(backendUrl = DEFAULT_BACKEND_URL) {
+  return getJson<GmailAccountsResponseDto>(`${backendUrl}/api/gmail/accounts`);
+}
+
+export function connectGmailAccount(backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<{ status: string; message?: string }>(`${backendUrl}/api/gmail/accounts/connect`, "POST", { open_browser: true });
+}
+
+export function getGmailConnectStatus(backendUrl = DEFAULT_BACKEND_URL) {
+  return getJson<{ provider: string; state: string; error?: string | null }>(`${backendUrl}/api/gmail/accounts/connect-status`);
+}
+
+export function switchGmailAccount(accountId: string, backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<Record<string, unknown>>(`${backendUrl}/api/gmail/accounts/switch`, "POST", { account_id: accountId });
+}
+
+export function disconnectGmailAccount(accountId: string, backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<Record<string, unknown>>(`${backendUrl}/api/gmail/accounts/disconnect`, "POST", { account_id: accountId });
+}
+
 export function getBackendPermissions(backendUrl = DEFAULT_BACKEND_URL) {
   return getJson<PermissionsResponseDto>(`${backendUrl}/api/permissions`);
 }

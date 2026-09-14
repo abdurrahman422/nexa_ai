@@ -30,11 +30,16 @@ class GmailRequest(BaseModel):
     body: str = ""
     attachments: list[dict[str, str]] = Field(default_factory=list)
     user_email: EmailStr | None = None
+    open_browser: bool = True
     limit: int = Field(default=20, ge=1, le=100)
 
 
 class GmailApprovalRequest(BaseModel):
     approved: bool = False
+
+
+class GmailAccountRequest(BaseModel):
+    account_id: str
 
 
 def _blocked(action: str, permission: str) -> dict:
@@ -52,10 +57,11 @@ def _blocked(action: str, permission: str) -> dict:
 @router.get("/capabilities")
 def gmail_capabilities() -> dict:
     enabled = is_permission_enabled("gmail_skill")
+    provider = get_gmail_agent().provider.__class__.__name__
     return {
         "available": True,
         "enabled": enabled,
-        "provider": "MockGmailProvider",
+        "provider": provider,
         "actions": [
             "search", "read", "thread", "unread", "sender", "subject", "date",
             "attachments", "download_attachment", "labels", "add_labels",
@@ -89,3 +95,59 @@ def approve_gmail_send(approval_id: str, request: GmailApprovalRequest) -> dict:
         }
     result = get_gmail_agent().approve_and_send(approval_id)
     return format_agent_result(result)
+
+
+@router.get("/accounts")
+def gmail_accounts() -> dict:
+    provider = get_gmail_agent().provider
+    accounts = provider.list_accounts() if hasattr(provider, "list_accounts") else []
+    active = provider.active_account() if hasattr(provider, "active_account") else None
+    return {"accounts": accounts, "active_account": active}
+
+
+@router.get("/accounts/active")
+def gmail_active_account() -> dict:
+    provider = get_gmail_agent().provider
+    active = provider.active_account() if hasattr(provider, "active_account") else None
+    return {"account": active}
+
+
+@router.get("/accounts/connect-status")
+def gmail_connect_status() -> dict:
+    provider = get_gmail_agent().provider
+    status = getattr(provider, "authorization_status", None)
+    return status() if status is not None else {"provider": provider.__class__.__name__, "state": "idle", "error": None}
+
+
+@router.post("/accounts/connect")
+def gmail_connect_account(request: GmailRequest | None = None) -> dict:
+    provider = get_gmail_agent().provider
+    begin_authorization = getattr(provider, "begin_authorization", None)
+    if begin_authorization is not None:
+        return {"status": "pending", "action": "authorize", "message": "Gmail authorization started in the default browser." , "metadata": begin_authorization()}
+    result = get_gmail_agent().execute("authorize", open_browser=request.open_browser if request else True)
+    return format_agent_result(result)
+
+
+@router.post("/accounts/switch")
+def gmail_switch_account(request: GmailAccountRequest) -> dict:
+    provider = get_gmail_agent().provider
+    try:
+        account = provider.switch_account(request.account_id)
+        return {"status": "completed", "account": account}
+    except AttributeError:
+        return {"status": "failed", "message": "Gmail account switching is available only for the Google provider.", "error": "unsupported_provider"}
+    except Exception as exc:
+        return {"status": "failed", "message": str(exc), "error": str(exc)}
+
+
+@router.post("/accounts/disconnect")
+def gmail_disconnect_account(request: GmailAccountRequest) -> dict:
+    provider = get_gmail_agent().provider
+    try:
+        provider.disconnect_account(request.account_id)
+        return {"status": "completed", "account_id": request.account_id}
+    except AttributeError:
+        return {"status": "failed", "message": "Gmail account disconnect is available only for the Google provider.", "error": "unsupported_provider"}
+    except Exception as exc:
+        return {"status": "failed", "message": str(exc), "error": str(exc)}

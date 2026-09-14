@@ -5,10 +5,12 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.agents.gmail_agent import GmailAgent, format_agent_result
+from app.agents import gmail_agent as gmail_agent_module
+from app.chat import service as chat_service
 from app.main import app
 from app.providers.gmail_provider import email_preview, normalize_google_message
 from app.providers.mock_gmail_provider import MockGmailProvider
-from app.schemas.gmail import PreparedEmail
+from app.schemas.gmail import GmailActionResult, GmailEmail, GmailThread, PreparedEmail
 from app.security import gmail_approvals
 
 
@@ -114,7 +116,8 @@ def test_google_message_normalization_does_not_return_html_as_raw_preview() -> N
     assert preview["snippet"] == "Hi"
 
 
-def test_gmail_chat_routing_and_api() -> None:
+def test_gmail_chat_routing_and_api(monkeypatch) -> None:
+    monkeypatch.setenv("NEXA_GMAIL_PROVIDER", "mock")
     client = TestClient(app)
     route = client.post("/api/chat/message", json={"message": "Show my unread emails"})
     assert route.status_code == 200
@@ -132,3 +135,114 @@ def test_gmail_permission_disabled_blocks(monkeypatch) -> None:
     client = TestClient(app)
     response = client.post("/api/gmail/command", json={"action": "unread"})
     assert response.json()["status"] == "blocked"
+
+
+def test_gmail_connect_returns_pending_without_exposing_oauth_data(monkeypatch) -> None:
+    class _PendingProvider:
+        def begin_authorization(self):
+            return {"provider": "google", "state": "authorization_pending"}
+
+    class _Agent:
+        provider = _PendingProvider()
+
+    monkeypatch.setattr("app.api.routes.gmail.get_gmail_agent", lambda: _Agent())
+    response = TestClient(app).post("/api/gmail/accounts/connect", json={"open_browser": True})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "pending",
+        "action": "authorize",
+        "message": "Gmail authorization started in the default browser.",
+        "metadata": {"provider": "google", "state": "authorization_pending"},
+    }
+    assert "authorization_url" not in response.text
+    assert "access_token" not in response.text
+    assert "refresh_token" not in response.text
+
+
+class _RecordingGmailAgent:
+    def __init__(self) -> None:
+        self.provider = MockGmailProvider()
+        self.calls: list[tuple[str, dict]] = []
+        self.emails = tuple(
+            GmailEmail(f"real-message-{index}", f"real-thread-{index}", "sender@example.com", (), (), f"Security {index}", "", "", "")
+            for index in range(1, 6)
+        )
+        self.email = self.emails[0]
+
+    def execute(self, action: str, **kwargs):
+        self.calls.append((action, kwargs))
+        if action in {"unread", "search"}:
+            return GmailActionResult("completed", action, "Found 5 email(s).", emails=self.emails)
+        if action == "read":
+            return GmailActionResult("completed", action, "Email loaded.", emails=(self.email,))
+        if action == "thread":
+            return GmailActionResult("completed", action, "Loaded 1 message.", thread=GmailThread(kwargs["thread_id"], (self.email,)))
+        return GmailActionResult("completed", action, "Done.")
+
+
+def test_gmail_chat_builds_real_queries_and_ids(monkeypatch) -> None:
+    agent = _RecordingGmailAgent()
+    monkeypatch.setattr(chat_service, "get_gmail_agent", lambda: agent)
+
+    chat_service._gmail_chat_response("Show my latest 5 unread emails", None)
+    assert agent.calls[0] == ("unread", {"limit": 5})
+    assert "message_id" not in agent.calls[0][1]
+    assert "thread_id" not in agent.calls[0][1]
+
+    agent.calls.clear()
+    chat_service._gmail_chat_response("Search my emails from Google", None)
+    assert agent.calls[0] == ("search", {"limit": 20, "query": "from:google"})
+
+    agent.calls.clear()
+    chat_service._gmail_chat_response("Show emails with subject security", None)
+    assert agent.calls[0] == ("search", {"limit": 20, "query": "subject:security"})
+
+    agent.calls.clear()
+    chat_service._gmail_chat_response("Read my latest email from Google", None)
+    assert agent.calls[0] == ("search", {"limit": 20, "query": "from:google"})
+    assert agent.calls[1] == ("read", {"message_id": "real-message-1", "full": True})
+
+    agent.calls.clear()
+    chat_service._gmail_chat_response("Open the latest unread email", None)
+    assert agent.calls[0] == ("unread", {"limit": 20})
+    assert agent.calls[1] == ("read", {"message_id": "real-message-1", "full": True})
+
+    agent.calls.clear()
+    chat_service._gmail_chat_response("Show the full thread of the latest email", None)
+    assert agent.calls[0] == ("search", {"limit": 20, "query": ""})
+    assert agent.calls[1] == ("thread", {"thread_id": "real-thread-1", "full": True})
+
+
+def test_gmail_chat_unread_latest_is_a_list_and_renders_all_results(monkeypatch) -> None:
+    agent = _RecordingGmailAgent()
+    monkeypatch.setattr(chat_service, "get_gmail_agent", lambda: agent)
+
+    response = chat_service._gmail_chat_response("Show my latest 5 unread emails", None)
+
+    assert agent.calls == [("unread", {"limit": 5})]
+    assert "msg-supervisor" not in response.answer
+    assert "msg-invoice" not in response.answer
+    for index in range(1, 6):
+        assert f"Security {index}" in response.answer
+
+    agent.calls.clear()
+    chat_service._gmail_chat_response("Show my latest unread emails", None)
+    assert agent.calls == [("unread", {"limit": 20})]
+
+
+def test_gmail_chat_provider_display_is_dynamic(monkeypatch) -> None:
+    agent = _RecordingGmailAgent()
+    monkeypatch.setattr(chat_service, "get_gmail_agent", lambda: agent)
+    response = chat_service._gmail_chat_response("Show my unread emails", None)
+    assert response.provider == "MockGmailProvider"
+
+
+def test_cached_agent_switches_explicit_provider_without_losing_approvals(monkeypatch) -> None:
+    monkeypatch.setenv("NEXA_GMAIL_PROVIDER", "mock")
+    mock_agent = gmail_agent_module.get_gmail_agent()
+    approvals = mock_agent.approvals
+    monkeypatch.setenv("NEXA_GMAIL_PROVIDER", "google")
+    google_agent = gmail_agent_module.get_gmail_agent()
+    assert google_agent.provider.__class__.__name__ == "GoogleGmailProvider"
+    assert google_agent.approvals is approvals

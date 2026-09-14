@@ -481,22 +481,34 @@ def _looks_like_gmail_request(text: str) -> bool:
 
 def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessageResponse:
     normalized = normalize_text(message)
-    action = (
-        "unread" if "unread" in normalized else
-        "attachments" if "show attachments" in normalized else
-        "sender" if "supervisor" in normalized else
-        "reply_all_draft" if "reply all" in normalized and "draft" in normalized else
-        "reply_draft" if "draft" in normalized or "reply" in normalized else
-        "summarize" if "summarize" in normalized or "summary" in normalized else
-        "search"
-    )
-    result = get_gmail_agent().execute(
-        action,
-        sender="supervisor@university.edu" if "supervisor" in normalized else None,
-        message_id="msg-invoice" if "show attachments" in normalized else "msg-supervisor",
-        thread_id="thread-report",
-        body="Thanks for the update.",
-    )
+    agent = get_gmail_agent()
+    limit_match = re.search(r"\b(\d+)\s+(?:unread\s+)?(?:emails?|messages?)\b", normalized)
+    limit = min(int(limit_match.group(1)), 100) if limit_match else 20
+    query = _gmail_query(normalized)
+    is_unread = "unread" in normalized
+    lookup_action = "unread" if is_unread and not query else "search"
+    lookup_kwargs = {"limit": limit}
+    if lookup_action == "search":
+        lookup_kwargs["query"] = query or ("is:unread" if is_unread else "")
+
+    if "show attachments" in normalized:
+        lookup = agent.execute("search", query="has:attachment", limit=limit)
+        result = agent.execute("attachments", message_id=lookup.emails[0].id) if lookup.emails else lookup
+    elif "thread" in normalized:
+        lookup = agent.execute(lookup_action, **lookup_kwargs)
+        result = agent.execute("thread", thread_id=lookup.emails[0].thread_id, full=True) if lookup.emails else lookup
+    elif _gmail_explicit_read_request(normalized):
+        lookup = agent.execute(lookup_action, **lookup_kwargs)
+        if lookup.emails:
+            result = agent.execute(
+                "summarize" if "summar" in normalized or "summary" in normalized else "read",
+                message_id=lookup.emails[0].id,
+                full=True,
+            )
+        else:
+            result = lookup
+    else:
+        result = agent.execute(lookup_action, **lookup_kwargs)
     answer = result.message
     if result.metadata.get("summary"):
         answer = f"{answer} {result.metadata['summary']}"
@@ -509,13 +521,35 @@ def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessage
         answer=_compose_reply(answer, address_style, _language_style(message)),
         blocked=result.status == "blocked",
         requires_confirmation=result.status == "pending_confirmation",
-        provider="NEXA GmailAgent (mock provider)",
+        provider=agent.provider.__class__.__name__,
         source="GmailAgent",
         source_type="tool",
         gmail_preview=result.preview.__dict__ if result.preview else None,
         approval_id=result.approval_id,
         untrusted_content=bool(result.preview and result.preview.untrusted_content),
         error=result.error,
+    )
+
+
+def _gmail_query(normalized: str) -> str:
+    sender = re.search(r"\bfrom\s+(.+?)(?=\s+(?:email|emails|message|messages)\b|$)", normalized)
+    if sender:
+        return f"from:{sender.group(1).strip()}"
+    subject = re.search(r"\bsubject\s+(.+?)(?=\s+(?:email|emails|message|messages)\b|$)", normalized)
+    if subject:
+        return f"subject:{subject.group(1).strip()}"
+    return ""
+
+
+def _gmail_explicit_read_request(normalized: str) -> bool:
+    return (
+        re.search(r"\b(?:open|read)\b", normalized) is not None
+        or "show me the contents" in normalized
+        or "show me the body" in normalized
+        or "email body" in normalized
+        or "full email" in normalized
+        or "summarize" in normalized
+        or "summary" in normalized
     )
 
 

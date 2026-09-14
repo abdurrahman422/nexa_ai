@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import os
 from typing import Any
 
 from app.audit.event_log import record_audit_event
 from app.permissions import is_permission_enabled, permission_denied_message
 from app.providers.gmail_provider import GmailProvider, GmailProviderError, email_preview, prompt_injection_flags, safe_text
 from app.providers.mock_gmail_provider import MockGmailProvider
+from app.providers.google_gmail_provider import GoogleGmailProvider
 from app.schemas.gmail import GmailActionResult, GmailPreview, PreparedEmail
 from app.security.gmail_approvals import EmailApprovalController
 
@@ -24,6 +26,19 @@ class GmailAgent:
         if not is_permission_enabled("gmail_skill"):
             return GmailActionResult("blocked", action, permission_denied_message("gmail_skill"), error="permission_disabled")
         try:
+            if action == "auth_status":
+                raw_status = getattr(self.provider, "auth_status", lambda: {"provider": "mock", "authenticated": True, "state": "offline"})()
+                status = {
+                    key: raw_status[key]
+                    for key in ("provider", "authenticated", "state", "scope")
+                    if key in raw_status
+                }
+                return GmailActionResult("completed", action, "Gmail authentication status loaded.", metadata=status)
+            if action == "authorize":
+                authorize = getattr(self.provider, "start_authorization", None)
+                if authorize is None:
+                    return GmailActionResult("completed", action, "Mock Gmail provider does not require OAuth.", metadata={"provider": "mock", "authenticated": True, "state": "offline"})
+                return GmailActionResult("completed", action, "Gmail authorization completed.", metadata=self._public_auth_status(authorize(open_browser=bool(kwargs.get("open_browser", True)))))
             if action == "search":
                 emails = tuple(self.provider.search_emails(str(kwargs.get("query", "")), int(kwargs.get("limit", 20))))
                 return GmailActionResult("completed", action, f"Found {len(emails)} email(s).", emails=emails)
@@ -136,19 +151,59 @@ class GmailAgent:
             return "Email facts are available, but instruction-like content was treated as untrusted data."
         return safe_text(email.body_text, 500) or email.snippet
 
+    @staticmethod
+    def _public_auth_status(status: dict[str, Any]) -> dict[str, Any]:
+        return {
+            key: status[key]
+            for key in ("provider", "authenticated", "state", "scope")
+            if key in status
+        }
+
 
 def format_agent_result(result: GmailActionResult) -> dict[str, Any]:
     data = asdict(result)
     data["emails"] = [asdict(email) for email in result.emails]
+    for email in data["emails"]:
+        email["body_text"] = safe_text(email.get("body_text", ""))
     if result.thread:
         data["thread"] = {"id": result.thread.id, "messages": [asdict(email) for email in result.thread.messages]}
+        for email in data["thread"]["messages"]:
+            email["body_text"] = safe_text(email.get("body_text", ""))
     if result.preview:
         data["preview"] = asdict(result.preview)
     return data
 
 
-_DEFAULT_AGENT = GmailAgent()
+def build_gmail_provider() -> GmailProvider:
+    """Build the explicitly selected provider; mock remains the default."""
+    provider_name = os.getenv("NEXA_GMAIL_PROVIDER", "mock").strip().lower()
+    if provider_name == "mock":
+        return MockGmailProvider()
+    if provider_name == "google":
+        return GoogleGmailProvider()
+    raise ValueError("NEXA_GMAIL_PROVIDER must be 'mock' or 'google'.")
+
+
+_DEFAULT_AGENT: GmailAgent | None = None
+_DEFAULT_PROVIDER_CONFIG: tuple[str, str, str] | None = None
+_DEFAULT_APPROVALS = EmailApprovalController()
+
+
+def _provider_config() -> tuple[str, str, str]:
+    return (
+        os.getenv("NEXA_GMAIL_PROVIDER", "mock").strip().lower(),
+        os.getenv("NEXA_GMAIL_CREDENTIALS_PATH", ""),
+        os.getenv("NEXA_GMAIL_TOKEN_PATH", ""),
+    )
 
 
 def get_gmail_agent() -> GmailAgent:
+    global _DEFAULT_AGENT, _DEFAULT_PROVIDER_CONFIG
+    config = _provider_config()
+    if _DEFAULT_AGENT is None:
+        _DEFAULT_AGENT = GmailAgent(build_gmail_provider(), approvals=_DEFAULT_APPROVALS)
+        _DEFAULT_PROVIDER_CONFIG = config
+    elif config != _DEFAULT_PROVIDER_CONFIG:
+        _DEFAULT_AGENT.provider = build_gmail_provider()
+        _DEFAULT_PROVIDER_CONFIG = config
     return _DEFAULT_AGENT

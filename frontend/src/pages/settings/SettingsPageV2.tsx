@@ -24,6 +24,7 @@ import { PageHero } from "@/components/ui";
 import { AiModelsSettings } from "@/components/settings/AiModelsSettings";
 import { VoiceSettings } from "@/components/settings/VoiceSettings";
 import { BackgroundSettings } from "@/components/settings/BackgroundSettings";
+import { GmailAccountsSettings } from "@/components/settings/GmailAccountsSettings";
 import { EdgeTtsSettings } from "@/components/settings/EdgeTtsSettings";
 import { RuntimeReadinessSettings } from "@/components/settings/RuntimeReadinessSettings";
 import {
@@ -681,6 +682,8 @@ export function SettingsPageV2({
           <EdgeTtsSettings />
 
           <RuntimeReadinessSettings />
+
+          <GmailAccountsSettings />
 
           <BackgroundSettings />
         </div>
