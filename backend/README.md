@@ -160,6 +160,31 @@ These tests cover the same safety-critical route behavior as the smoke script wi
 | WhatsApp drafts | Working / Wired | Local contacts, aliases, relationship/tone, safe `wa.me` draft URLs only. Nexa never clicks Send. |
 | Email automation | Missing / Future | Not implemented. |
 
+## Gmail Phase 2A (Read-only)
+
+Gmail uses `MockGmailProvider` by default. To opt into the NEXA-owned Google
+provider, set `NEXA_GMAIL_PROVIDER=google`, configure
+`NEXA_GMAIL_CREDENTIALS_PATH` and `NEXA_GMAIL_TOKEN_PATH` to files outside the
+source tree, then start the backend. The provider requests only
+`https://www.googleapis.com/auth/gmail.readonly`.
+
+Check status with:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/gmail/command `
+	-ContentType "application/json" -Body '{"action":"auth_status"}'
+```
+
+Start the local OAuth flow only after Google Cloud credentials are configured:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/gmail/command `
+	-ContentType "application/json" -Body '{"action":"authorize","open_browser":true}'
+```
+
+Phase 2A does not create drafts, modify labels, archive, or send mail through
+the Google provider.
+
 ## Optional Providers
 
 Copy `.env.example` to `.env` and set only local keys you want to use. Do not commit real keys.
