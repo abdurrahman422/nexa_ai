@@ -57,6 +57,7 @@ from app.youtube import parse_youtube_command
 from app.nlu.normalizer import detect_language_style
 from app.nlu.banglish import normalize_banglish
 from app.productivity import productivity_chat_response
+from app.agents.gmail_agent import get_gmail_agent
 
 WEATHER_ALLOWED_HOSTS = {"api.open-meteo.com"}
 SEARCH_ALLOWED_HOSTS = {"en.wikipedia.org", "bn.wikipedia.org"}
@@ -460,6 +461,64 @@ def _looks_like_search_request(text: str) -> bool:
     return any(marker in text for marker in search_markers)
 
 
+def _looks_like_gmail_request(text: str) -> bool:
+    gmail_markers = (
+        "gmail",
+        "email",
+        "emails",
+        "inbox",
+        "unread emails",
+        "supervisor's latest email",
+        "supervisors latest email",
+        "attachment in this email",
+        "reply to this email",
+        "reply all",
+        "draft a reply",
+        "show attachments",
+    )
+    return any(marker in text for marker in gmail_markers)
+
+
+def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessageResponse:
+    normalized = normalize_text(message)
+    action = (
+        "unread" if "unread" in normalized else
+        "attachments" if "show attachments" in normalized else
+        "sender" if "supervisor" in normalized else
+        "reply_all_draft" if "reply all" in normalized and "draft" in normalized else
+        "reply_draft" if "draft" in normalized or "reply" in normalized else
+        "summarize" if "summarize" in normalized or "summary" in normalized else
+        "search"
+    )
+    result = get_gmail_agent().execute(
+        action,
+        sender="supervisor@university.edu" if "supervisor" in normalized else None,
+        message_id="msg-invoice" if "show attachments" in normalized else "msg-supervisor",
+        thread_id="thread-report",
+        body="Thanks for the update.",
+    )
+    answer = result.message
+    if result.metadata.get("summary"):
+        answer = f"{answer} {result.metadata['summary']}"
+    if result.emails:
+        answer += " " + "; ".join(f"{email.sender}: {email.subject}" for email in result.emails)
+    return ChatMessageResponse(
+        status=result.status,
+        intent="gmail_skill",
+        message=message,
+        answer=_compose_reply(answer, address_style, _language_style(message)),
+        blocked=result.status == "blocked",
+        requires_confirmation=result.status == "pending_confirmation",
+        provider="NEXA GmailAgent (mock provider)",
+        source="GmailAgent",
+        source_type="tool",
+        gmail_preview=result.preview.__dict__ if result.preview else None,
+        approval_id=result.approval_id,
+        untrusted_content=bool(result.preview and result.preview.untrusted_content),
+        error=result.error,
+    )
+
+
 def _looks_like_local_conversation(text: str) -> bool:
     return (
         _has_phrase_or_token(text, GREETING_HINTS)
@@ -669,6 +728,14 @@ def classify_task(message: str) -> SmartTaskRoute:
             confidence="high",
             route="file_selection_required",
             reason="File/PDF summary requires explicit user file selection.",
+        )
+    if _looks_like_gmail_request(normalized):
+        return SmartTaskRoute(
+            intent="gmail_skill",
+            confidence="high",
+            route="gmail_agent",
+            reason="Explicit Gmail or email request uses the controlled GmailAgent.",
+            needs_action="draft" in normalized or "reply" in normalized,
         )
     if _looks_like_location_question(normalized):
         return SmartTaskRoute("location_permission", "high", "local_persona", "Exact location requires browser/device permission.")
@@ -3285,6 +3352,9 @@ def handle_chat_message(request: ChatMessageRequest) -> ChatMessageResponse:
 
     if intent == "file_summary_request":
         return _with_route_debug(_file_summary_request_response(message, request.address_style), route)
+
+    if intent == "gmail_skill":
+        return _with_route_debug(_gmail_chat_response(message, request.address_style), route)
 
     if intent == "app_planning":
         return _with_route_debug(_app_planning_response(message, request.address_style), route)

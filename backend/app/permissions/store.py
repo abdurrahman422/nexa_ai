@@ -125,6 +125,16 @@ TOGGLEABLE_PERMISSIONS: dict[str, dict] = {
         "label": "Online Edge TTS",
         "description": "Use Microsoft Edge online neural voices, including Bangla voices.",
     },
+    "gmail_skill": {
+        "default": True,
+        "label": "Gmail Skill Enabled",
+        "description": "Read and organize Gmail through the controlled NEXA Gmail agent.",
+    },
+    "email_control": {
+        "default": True,
+        "label": "Email Draft and Approval Control",
+        "description": "Prepare email drafts and show send previews; direct sending remains locked off.",
+    },
 }
 
 # These can never be enabled. They exist so the security center can show

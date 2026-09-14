@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 python-dotenv
 pydantic
+email-validator>=2.0.0
 httpx
 pypdf
 python-multipart
@@ -11,4 +12,8 @@ selenium>=4.25,<5
 huggingface_hub>=0.27,<2
 Pillow>=10,<13
 edge-tts>=7,<8
+google-api-python-client>=2.168.0
+google-auth>=2.0.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.2
 google-cloud-speech>=2.30,<3

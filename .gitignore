@@ -47,3 +47,11 @@ backend/data/*.sqlite
 backend/data/*.sqlite3
 backend/data/generated_images/
 backend/data/generated_content/
+
+# Gmail and OAuth secrets/runtime state
+credentials.json
+token.json
+client_secret.json
+client_secrets.json
+oauth_states.json
+*.token.json

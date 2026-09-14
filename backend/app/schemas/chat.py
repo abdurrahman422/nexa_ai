@@ -81,4 +81,7 @@ class ChatMessageResponse(BaseModel):
     fallback_used: bool = False
     source_type: str = "local"
     route_debug: dict[str, object] | None = None
+    gmail_preview: dict[str, object] | None = None
+    approval_id: str | None = None
+    untrusted_content: bool = False
     error: str | None = None
