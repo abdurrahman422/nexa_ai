@@ -93,9 +93,9 @@ def test_google_provider_search_thread_labels_and_attachment_download(tmp_path: 
     assert destination.parent == tmp_path.resolve()
 
 
-def test_google_provider_rejects_all_phase_2a_write_operations() -> None:
+def test_google_provider_rejects_disabled_non_draft_write_operations() -> None:
     provider = GoogleGmailProvider(service=_service())
-    with pytest.raises(GmailProviderError, match="disabled in Phase 2A"):
+    with pytest.raises(GmailProviderError, match="disabled in Phase 2B"):
         provider.archive_email("m1")
     with pytest.raises(GmailProviderError, match="draft creation is disabled"):
         provider.create_draft(Mock())

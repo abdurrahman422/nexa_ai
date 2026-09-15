@@ -12,6 +12,8 @@ class GmailAttachment:
     mime_type: str
     size: int
     attachment_id: str
+    local_path: str = ""
+    safe_status: str = ""
 
 
 @dataclass(frozen=True)

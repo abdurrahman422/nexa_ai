@@ -12,6 +12,7 @@ from datetime import datetime
 import os
 import re
 import urllib.parse
+from email.utils import parseaddr
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -58,6 +59,9 @@ from app.nlu.normalizer import detect_language_style
 from app.nlu.banglish import normalize_banglish
 from app.productivity import productivity_chat_response
 from app.agents.gmail_agent import get_gmail_agent
+from app.attachments import resolve_attachments
+from app.email_drafting import compose_missing_fields
+from app.providers.gmail_provider import GmailProviderError
 
 WEATHER_ALLOWED_HOSTS = {"api.open-meteo.com"}
 SEARCH_ALLOWED_HOSTS = {"en.wikipedia.org", "bn.wikipedia.org"}
@@ -475,13 +479,90 @@ def _looks_like_gmail_request(text: str) -> bool:
         "reply all",
         "draft a reply",
         "show attachments",
+        "write an email",
+        "draft an email",
+        "create a gmail draft",
+        "prepare an email",
+        "create a mail",
+        "send an email",
     )
     return any(marker in text for marker in gmail_markers)
 
 
 def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessageResponse:
-    normalized = normalize_text(message)
     agent = get_gmail_agent()
+    attachment_paths, cleaned_message = _extract_attachment_paths(message)
+    try:
+        attachments = resolve_attachments(attachment_paths)
+    except GmailProviderError as exc:
+        return ChatMessageResponse(
+            status="failed",
+            intent="gmail_skill",
+            message=message,
+            answer=str(exc),
+            provider=agent.provider.__class__.__name__,
+            source="GmailAgent",
+            source_type="tool",
+            error="invalid_attachment",
+        )
+    normalized = normalize_text(cleaned_message)
+    reply_request = _parse_reply_or_forward_request(cleaned_message)
+    if reply_request is not None:
+        if reply_request["action"] == "forward_draft" and not reply_request.get("to"):
+            return ChatMessageResponse(status="failed", intent="gmail_skill", message=message, answer="Please provide a valid forwarding email address.", provider=agent.provider.__class__.__name__, source="GmailAgent", source_type="tool", error="invalid_forward_recipient")
+        lookup = agent.execute("search", query=reply_request["query"], limit=20)
+        if lookup.status != "completed" or not lookup.emails:
+            return ChatMessageResponse(status="failed", intent="gmail_skill", message=message, answer="No matching email was found.", provider=agent.provider.__class__.__name__, source="GmailAgent", source_type="tool", error="no_matching_email")
+        received = tuple(email for email in lookup.emails if not {"DRAFT", "SENT", "TRASH", "SPAM"}.intersection(email.labels))
+        sender_constraint = reply_request.get("sender")
+        if sender_constraint:
+            received = tuple(email for email in received if _sender_matches(email, str(sender_constraint)))
+        if not received:
+            suffix = f" from {sender_constraint}" if sender_constraint else ""
+            return ChatMessageResponse(status="failed", intent="gmail_skill", message=message, answer=f"No matching received email{suffix} was found.", provider=agent.provider.__class__.__name__, source="GmailAgent", source_type="tool", error="no_matching_received_email")
+        if len(received) > 1 and "latest" not in normalized:
+            return ChatMessageResponse(status="failed", intent="gmail_skill", message=message, answer="More than one matching email was found. Please specify which email to use.", provider=agent.provider.__class__.__name__, source="GmailAgent", source_type="tool", error="ambiguous_email")
+        source = received[0]
+        action = reply_request["action"]
+        reply_body = str(reply_request["body"] or compose_missing_fields(cleaned_message, to=()).body)
+        draft_kwargs = {"thread_id": source.thread_id, "body": reply_body, "attachments": attachments, "open_browser": True}
+        if action == "forward_draft":
+            draft_kwargs = {"message_id": source.id, "to": reply_request["to"], "body": reply_request["body"], "attachments": attachments, "open_browser": True}
+        result = agent.execute(action, **draft_kwargs)
+        draft_metadata = dict(result.metadata)
+        draft_metadata["operation"] = action
+        draft_metadata["selected_source"] = {
+            "message_id": source.id,
+            "thread_id": source.thread_id,
+            "sender": source.sender,
+            "reply_to": source.reply_to,
+            "recipients": list(source.recipients),
+            "cc": list(source.cc),
+            "subject": source.subject,
+            "message_id_header": source.message_id,
+            "references": list(source.references),
+            "date": source.date,
+        }
+        draft_metadata["reply_subject"] = f"Re: {source.subject}" if not source.subject.lower().startswith("re:") else source.subject
+        return ChatMessageResponse(status=result.status, intent="gmail_skill", message=message, answer=_compose_reply(result.message, address_style, _language_style(message)), blocked=result.status == "blocked", provider=agent.provider.__class__.__name__, source="GmailAgent", source_type="tool", gmail_draft=draft_metadata or None, error=result.error)
+    compose = _parse_english_email_compose(cleaned_message)
+    if compose is not None:
+        composition = compose_missing_fields(cleaned_message, **compose)
+        draft_kwargs = composition.as_kwargs()
+        draft_kwargs["attachments"] = attachments
+        result = agent.execute("draft", **draft_kwargs, open_browser=True)
+        return ChatMessageResponse(
+            status=result.status,
+            intent="gmail_skill",
+            message=message,
+            answer=_compose_reply(result.message, address_style, _language_style(message)),
+            blocked=result.status == "blocked",
+            provider=agent.provider.__class__.__name__,
+            source="GmailAgent",
+            source_type="tool",
+            gmail_draft=result.metadata or None,
+            error=result.error,
+        )
     limit_match = re.search(r"\b(\d+)\s+(?:unread\s+)?(?:emails?|messages?)\b", normalized)
     limit = min(int(limit_match.group(1)), 100) if limit_match else 20
     query = _gmail_query(normalized)
@@ -531,7 +612,215 @@ def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessage
     )
 
 
+def _parse_english_email_compose(normalized: str) -> dict[str, object] | None:
+    if not re.search(r"\b(?:write|draft|prepare|create|send)\b", normalized, re.IGNORECASE) or not re.search(r"\b(?:email|mail)\b", normalized, re.IGNORECASE):
+        return None
+    recipient_match = re.search(
+        r"\bto\s+(.+?)(?=\s+(?:about|because|confirming|saying|with\s+subject|subject\s*:?)\b|\s*\.\s*(?:subject|body|cc|bcc|to)\s*:|$)",
+        normalized,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not recipient_match:
+        return None
+    recipients = tuple(
+        item.strip() for item in re.split(r"\s*,\s*|\s+and\s+", recipient_match.group(1)) if item.strip()
+    )
+    if not recipients:
+        return None
+    subject_markers = list(re.finditer(r"\b(?:with\s+)?subject\s*(?::|\s)", normalized, re.IGNORECASE))
+    subject_match = subject_markers[-1] if subject_markers else None
+    body_match = re.search(
+        r"\b(?:saying|that\s+says)\s+(.+?)(?=\s+subject\s*:|(?:^|[.!?\n]\s*)(?:body|cc|bcc|to)\s*:|$)",
+        normalized,
+        re.IGNORECASE | re.DOTALL,
+    )
+    explicit_body_match = re.search(r"\bbody\s*:\s*(.+)$", normalized, re.IGNORECASE | re.DOTALL)
+    subject = ""
+    if subject_match:
+        subject_start = subject_match.end()
+        subject_boundary = re.search(
+            r"(?:\s*\.\s*(?:write|draft|create)\b|\s+(?:saying|that\s+says)\b|\s+(?:body|cc|bcc|to)\s*:)",
+            normalized[subject_start:],
+            re.IGNORECASE,
+        )
+        subject_end = subject_start + subject_boundary.start() if subject_boundary else len(normalized)
+        subject = normalized[subject_start:subject_end].strip().strip(".")
+    body = (
+        explicit_body_match.group(1).strip()
+        if explicit_body_match
+        else body_match.group(1).strip()
+        if body_match
+        else ""
+    )
+    if body_match and subject_match and subject_match.start() > body_match.start() and body.endswith("."):
+        body = body[:-1].rstrip()
+    return {
+        "to": recipients,
+        "subject": subject,
+        "body": body,
+    }
+
+
+def _parse_reply_or_forward_request(message: str) -> dict[str, str | object] | None:
+    normalized = normalize_text(message)
+    if re.search(r"\b(?:reply|forward)\b", normalized) is None:
+        return None
+    action = "forward_draft" if re.search(r"\bforward\b", normalized) else "reply_all_draft" if re.search(r"\breply\s+all\b", normalized) else "reply_draft"
+    if action == "forward_draft":
+        recipient_match = re.search(r"\bto\s+(.+?)\s*$", message, re.IGNORECASE | re.DOTALL)
+        if not recipient_match:
+            return {"action": action, "query": _source_query(message), "to": (), "body": "", "sender": _sender_constraint(message)}
+        recipients = tuple(item.strip().rstrip(".,;:") for item in recipient_match.group(1).split(","))
+        if not recipients or not all(_valid_forward_recipient(item) for item in recipients):
+            recipients = ()
+        query = _source_query(message)
+        return {"action": action, "query": query, "to": recipients, "body": "", "sender": _sender_constraint(message)}
+    body_match = re.search(r"\b(?:say|saying|with)\s*:?[\s]*(.+)$", message, re.IGNORECASE | re.DOTALL)
+    return {"action": action, "query": _source_query(message), "body": body_match.group(1).strip() if body_match else "", "sender": _sender_constraint(message)}
+
+
+def _valid_forward_recipient(value: str) -> bool:
+    return re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value) is not None
+
+
+def _source_query(message: str) -> str:
+    sender = _sender_constraint(message)
+    return f"from:{sender}" if sender else ""
+
+
+def _sender_constraint(message: str) -> str | None:
+    address_match = re.search(r"\bfrom\s+([^\s,]+@[^\s,]+)", message, re.IGNORECASE)
+    if address_match:
+        return address_match.group(1).strip()
+    sender_match = re.search(
+        r"\bfrom\s+(.+?)(?=\s+(?:and\s+)?(?:say|saying|with)\b|\s+(?:to|say|saying|with)\b|\s*[,.;]\s*|$)",
+        message,
+        re.IGNORECASE,
+    )
+    if not sender_match:
+        return None
+    return sender_match.group(1).strip()
+
+
+def _sender_matches(email: object, constraint: str) -> bool:
+    normalized_constraint = normalize_text(constraint).strip(".,")
+    explicit_address = re.fullmatch(r"[^\s@]+@[^\s@]+", normalized_constraint)
+    sender_values = [str(getattr(email, "sender", "")), str(getattr(email, "reply_to", "") or "")]
+    parsed_values = [parseaddr(value) for value in sender_values if value]
+    if explicit_address:
+        return any(address.casefold() == normalized_constraint.casefold() for _, address in parsed_values)
+    for display_name, address in parsed_values:
+        domain = address.rsplit("@", 1)[-1].casefold() if "@" in address else ""
+        display_words = {word.casefold() for word in re.findall(r"[\w]+", display_name)}
+        if normalized_constraint.casefold() == display_name.strip().casefold() or normalized_constraint.casefold() in display_words:
+            return True
+        if domain == f"{normalized_constraint.casefold()}.com" or domain.endswith(f".{normalized_constraint.casefold()}"):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Attachment path extraction helpers
+# ---------------------------------------------------------------------------
+
+# Matches the attachment keyword and the argument segment that follows.
+_ATTACH_KW_RE = re.compile(
+    r"(?:^|(?<=[.!?\n])\s*|\s+)"
+    r"(?:with\s+)?(?:attachments?|attaching|attach)\b(?:\s+(?:files?|documents?))?"
+    r"\s*:?\s*"
+    r"(?=(?:\"[^\"]+\"|'[^']+'|[A-Za-z]:[\\/][^\s,]+|[^\s,]+\.[A-Za-z0-9_-]{1,10}(?:\s|$)))",
+    re.IGNORECASE,
+)
+
+# Stops the argument scan at a recognised email-field sentence boundary.
+_ATTACH_STOP_RE = re.compile(
+    r"(?:[.!?\n]\s*(?:subject|body|to|cc|bcc)\s*:)"
+    r"|(?:\s+(?:with\s+)?subject\s*(?::|\s))"
+    r"|(?:\s+(?:saying|that\s+says)\b)"
+    r"|(?:\s*\.\s*(?:write|draft|create|reply|forward|send)\b)",
+    re.IGNORECASE,
+)
+
+_PATH_TOKEN_RE = re.compile(r'"([^"]+)"|\'([^\']+)\'|(\S+)')
+_PATH_INDICATOR_RE = re.compile(r"[:/\\]|\.[A-Za-z0-9_-]{1,10}$")
+
+def _extract_attachment_paths(message: str) -> tuple[tuple[str, ...], str]:
+    """Extract explicit attachment paths and remove the directive from the message.
+
+    Returns:
+        (paths, cleaned_message)
+
+    Supported examples:
+        Attach D:\\Test\\sample.txt
+        Attach "D:\\My Files\\sample.txt"
+        Attach D:\\Test\\a.txt and D:\\Test\\b.pdf
+        Attach "D:\\My Files\\a.txt", "D:\\My Files\\b.pdf"
+
+    When no valid attachment directive is found, returns:
+        ((), original_message)
+    """
+    match = _ATTACH_KW_RE.search(message)
+    if match is None:
+        return (), message
+
+    kw_start = match.start()
+    kw_end = match.end()
+    remainder = message[kw_end:]
+
+    stop = _ATTACH_STOP_RE.search(remainder)
+
+    if stop is not None:
+        arg_text = remainder[:stop.start()]
+        suffix = remainder[stop.start():]
+    else:
+        arg_text = remainder
+        suffix = ""
+
+    candidates: list[str] = []
+
+    for token_match in _PATH_TOKEN_RE.finditer(arg_text):
+        quoted = token_match.group(1) or token_match.group(2)
+
+        if quoted is not None:
+            value = quoted.strip()
+            if value:
+                candidates.append(value)
+            continue
+
+        value = (token_match.group(3) or "").strip()
+        value = value.rstrip(".,;:")
+
+        if not value:
+            continue
+
+        if value.lower() in {"and", "&"}:
+            continue
+
+        # Ignore ordinary prose. Keep only path-like or filename-like values.
+        if _PATH_INDICATOR_RE.search(value) is None:
+            continue
+
+        candidates.append(value)
+
+    if not candidates:
+        return (), message
+
+    prefix = message[:kw_start].rstrip()
+    prefix = re.sub(r"\s+(?:and|&)\s*$", "", prefix, flags=re.IGNORECASE)
+    suffix = suffix.lstrip()
+
+    if prefix and suffix:
+        cleaned_message = f"{prefix} {suffix}".strip()
+    elif prefix:
+        cleaned_message = prefix.strip()
+    else:
+        cleaned_message = suffix.strip()
+
+    return tuple(candidates), cleaned_message
+
+
 def _gmail_query(normalized: str) -> str:
+
     sender = re.search(r"\bfrom\s+(.+?)(?=\s+(?:email|emails|message|messages)\b|$)", normalized)
     if sender:
         return f"from:{sender.group(1).strip()}"

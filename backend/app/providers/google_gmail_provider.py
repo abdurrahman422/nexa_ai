@@ -1,13 +1,18 @@
-"""Read-only Gmail API provider owned by NEXA.
+"""Gmail API provider owned by NEXA.
 
-OAuth is opt-in and configuration-driven. This provider never requests write
-scopes and never implements draft creation or sending.
+OAuth remains opt-in and configuration-driven. Draft creation is the only
+Gmail write operation enabled in this phase; sending remains unavailable.
 """
 
 from __future__ import annotations
 
+import base64
 import json
 import os
+from email.message import EmailMessage
+from email.policy import SMTP
+from email.parser import BytesParser
+from email.utils import getaddresses
 from pathlib import Path
 from threading import Lock, Thread
 from typing import Any, Iterable
@@ -22,16 +27,19 @@ from app.providers.gmail_provider import (
     GmailProviderError,
     _decode_data,
     normalize_google_message,
+    safe_text,
 )
+from app.attachments import resolve_attachments, sanitize_attachment
 from app.schemas.gmail import GmailAttachment, GmailEmail, GmailThread, PreparedEmail
 
 
 GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
-GMAIL_SCOPES = (GMAIL_READONLY_SCOPE,)
+GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose"
+GMAIL_SCOPES = (GMAIL_READONLY_SCOPE, GMAIL_COMPOSE_SCOPE)
 
 
 class GoogleGmailProvider(GmailProvider):
-    """Google Gmail implementation for Phase 2A read-only operations."""
+    """Google Gmail provider for read operations and Phase 2B draft creation."""
 
     def __init__(
         self,
@@ -54,6 +62,7 @@ class GoogleGmailProvider(GmailProvider):
         self._authorization_lock = Lock()
         self._authorization_state = "idle"
         self._authorization_error: str | None = None
+        self.last_draft_metadata: dict[str, Any] = {}
 
     @property
     def service(self) -> Resource:
@@ -74,6 +83,7 @@ class GoogleGmailProvider(GmailProvider):
                 "authenticated": False,
                 "state": authorization_state if authorization_state != "idle" else "authorization_required",
                 "scope": GMAIL_READONLY_SCOPE,
+                "scopes": list(GMAIL_SCOPES),
                 "account_id": self.account_id,
                 "error": authorization_error,
             }
@@ -95,6 +105,7 @@ class GoogleGmailProvider(GmailProvider):
             "credentials_path": str(self.credentials_path),
             "token_path": str(self.token_path),
             "scope": GMAIL_READONLY_SCOPE,
+            "scopes": list(GMAIL_SCOPES),
             "account_id": self.account_id,
             "authorization_state": authorization_state,
         }
@@ -130,7 +141,7 @@ class GoogleGmailProvider(GmailProvider):
                 self._authorization_error = None
 
     def start_authorization(self, *, open_browser: bool = True) -> dict[str, Any]:
-        """Run the local OAuth flow using only the Gmail read-only scope."""
+        """Run the local OAuth flow with read and draft scopes."""
         if not self.credentials_path.is_file():
             raise GmailProviderError(
                 "Gmail OAuth client credentials were not found at the configured path."
@@ -229,22 +240,137 @@ class GoogleGmailProvider(GmailProvider):
         ]
 
     def add_labels(self, message_id: str, label_ids: Iterable[str]) -> GmailEmail:
-        raise GmailProviderError("Gmail write operations are disabled in Phase 2A.")
+        raise GmailProviderError("Gmail label mutations are disabled in Phase 2B.")
 
     def remove_labels(self, message_id: str, label_ids: Iterable[str]) -> GmailEmail:
-        raise GmailProviderError("Gmail write operations are disabled in Phase 2A.")
+        raise GmailProviderError("Gmail label mutations are disabled in Phase 2B.")
 
     def archive_email(self, message_id: str) -> GmailEmail:
-        raise GmailProviderError("Gmail write operations are disabled in Phase 2A.")
+        raise GmailProviderError("Gmail archive mutations are disabled in Phase 2B.")
 
     def create_draft(self, prepared: PreparedEmail) -> str:
-        raise GmailProviderError("Gmail draft creation is disabled in Phase 2A.")
+        self._validate_outgoing_recipients(prepared)
+        credentials = self._get_credentials(require_compose=True)
+        message = self._build_plain_draft_message(prepared)
+        raw = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii")
+        payload: dict[str, Any] = {"message": {"raw": raw}}
+        if prepared.thread_id:
+            payload["message"]["threadId"] = prepared.thread_id
+        response = self.service.users().drafts().create(userId="me", body=payload).execute()
+        api_draft_id = str(response.get("id", ""))
+        if not api_draft_id:
+            raise GmailProviderError("Gmail did not return a draft identifier.")
+        draft_message = response.get("message", {}) or {}
+        readback = self.service.users().drafts().get(
+            userId="me", id=api_draft_id, format="raw"
+        ).execute()
+        readback_message = readback.get("message", {}) or {}
+        raw_message = readback_message.get("raw")
+        if not isinstance(raw_message, str) or not raw_message:
+            raise GmailProviderError("Gmail draft verification did not return the stored MIME message.")
+        try:
+            parsed_message = BytesParser(policy=SMTP).parsebytes(_decode_data(raw_message))
+            stored_body = parsed_message.get_body(preferencelist=("plain", "html"))
+            stored_body_text = stored_body.get_content() if stored_body else ""
+            stored_subject = str(parsed_message.get("Subject", ""))
+        except (ValueError, TypeError) as exc:
+            raise GmailProviderError("Gmail draft verification returned malformed MIME data.") from exc
+        expected_body = prepared.body.replace("\r\n", "\n")
+        normalized_stored_body = stored_body_text.replace("\r\n", "\n")
+        body_present = expected_body in normalized_stored_body
+        if not body_present:
+            raise GmailProviderError("Gmail draft verification could not find the stored reply body.")
+        message_id = str(readback_message.get("id", "") or draft_message.get("id", "")) or None
+        thread_id = str(readback_message.get("threadId", "") or draft_message.get("threadId", "") or prepared.thread_id) or None
+        active_account = self.active_account() or {}
+        self.last_draft_metadata = {
+            "draft_id": api_draft_id,
+            "api_draft_id": api_draft_id,
+            "message_id": message_id,
+            "thread_id": thread_id,
+            "body_present": body_present,
+            "body_preview": safe_text(stored_body_text, 160),
+            "subject": stored_subject or prepared.subject,
+            "active_account": {
+                "account_id": str(active_account.get("account_id", "")) or None,
+                "email": str(active_account.get("email", "")) or None,
+            },
+            "to": list(prepared.to),
+            "cc": list(prepared.cc),
+            "bcc": list(prepared.bcc),
+            "subject": prepared.subject,
+            "attachment_metadata": [
+                sanitize_attachment(item) for item in prepared.attachments
+            ],
+        }
+        return api_draft_id
+
+    @staticmethod
+    def _build_plain_draft_message(prepared: PreparedEmail) -> EmailMessage:
+        message = EmailMessage(policy=SMTP)
+        message["To"] = ", ".join(prepared.to)
+
+        if prepared.cc:
+            message["Cc"] = ", ".join(prepared.cc)
+
+        if prepared.bcc:
+            message["Bcc"] = ", ".join(prepared.bcc)
+
+        message["Subject"] = prepared.subject
+
+        if prepared.in_reply_to:
+            message["In-Reply-To"] = prepared.in_reply_to
+
+        if prepared.references:
+            message["References"] = " ".join(prepared.references)
+
+        # Keep the normal email/reply body as the primary editable body.
+        message.set_content(prepared.body, subtype="plain")
+
+        # Revalidate every local attachment immediately before reading it.
+        if prepared.attachments:
+            local_paths: list[str] = []
+
+            for attachment in prepared.attachments:
+                if not attachment.local_path:
+                    raise GmailProviderError(
+                        f"Attachment has no validated local file path: {attachment.filename}."
+                    )
+                local_paths.append(attachment.local_path)
+
+            validated_attachments = resolve_attachments(local_paths)
+
+            for attachment in validated_attachments:
+                path = Path(attachment.local_path)
+
+                try:
+                    file_bytes = path.read_bytes()
+                except OSError as exc:
+                    raise GmailProviderError(
+                        f"Attachment is not readable: {attachment.filename}."
+                    ) from exc
+
+                mime_type = attachment.mime_type or "application/octet-stream"
+
+                if "/" in mime_type:
+                    maintype, subtype = mime_type.split("/", 1)
+                else:
+                    maintype, subtype = "application", "octet-stream"
+
+                message.add_attachment(
+                    file_bytes,
+                    maintype=maintype,
+                    subtype=subtype,
+                    filename=attachment.filename,
+                )
+
+        return message
 
     def prepare_email(self, email: PreparedEmail) -> PreparedEmail:
-        raise GmailProviderError("Outgoing email preparation is disabled for the Google provider in Phase 2A.")
+        raise GmailProviderError("Separate outgoing preparation is not supported; create a Gmail draft instead.")
 
     def send_prepared(self, email: PreparedEmail) -> str:
-        raise GmailProviderError("Gmail sending is disabled in Phase 2A.")
+        raise GmailProviderError("Gmail sending is disabled in Phase 2B; review and send the draft manually in Gmail.")
 
     def _list_message_references(self, query: str, limit: int) -> list[dict[str, str]]:
         remaining = max(1, min(limit, 100))
@@ -265,7 +391,7 @@ class GoogleGmailProvider(GmailProvider):
                 break
         return references[: max(1, min(limit, 100))]
 
-    def _get_credentials(self) -> Credentials:
+    def _get_credentials(self, *, require_compose: bool = False) -> Credentials:
         self._ensure_active_account()
         credentials: Credentials | None = None
         if self.token_path.is_file():
@@ -273,6 +399,10 @@ class GoogleGmailProvider(GmailProvider):
                 credentials = Credentials.from_authorized_user_file(str(self.token_path), list(GMAIL_SCOPES))
             except (OSError, ValueError, json.JSONDecodeError) as exc:
                 raise GmailProviderError("The configured Gmail token file is invalid.") from exc
+        if require_compose and credentials and not self._has_compose_scope(credentials):
+            raise GmailProviderError("Gmail draft creation requires reconnecting this account to grant Gmail compose access.")
+        if require_compose and credentials and GMAIL_COMPOSE_SCOPE not in self._stored_scopes():
+            raise GmailProviderError("Gmail draft creation requires reconnecting this account to grant Gmail compose access.")
         if credentials and credentials.expired and credentials.refresh_token:
             try:
                 credentials.refresh(Request())
@@ -282,6 +412,35 @@ class GoogleGmailProvider(GmailProvider):
         if credentials and credentials.valid:
             return credentials
         raise GmailProviderError("Gmail authorization is required. Start the NEXA Gmail OAuth flow first.")
+
+    @staticmethod
+    def _has_compose_scope(credentials: Credentials) -> bool:
+        return GMAIL_COMPOSE_SCOPE in set(credentials.scopes or ())
+
+    def _stored_scopes(self) -> set[str]:
+        try:
+            data = json.loads(self.token_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            raise GmailProviderError("The configured Gmail token file is invalid.") from exc
+        scopes = data.get("scopes", []) if isinstance(data, dict) else []
+        return {str(scope) for scope in scopes} if isinstance(scopes, list) else set()
+
+    @staticmethod
+    def _validate_outgoing_recipients(prepared: PreparedEmail) -> None:
+        try:
+            addresses = (*prepared.to, *prepared.cc, *prepared.bcc)
+        except TypeError as exc:
+            raise GmailProviderError("Gmail draft creation is disabled for invalid prepared email input.") from exc
+        if not addresses:
+            raise GmailProviderError("At least one recipient is required.")
+        for value in addresses:
+            if any(character in value for character in ("\r", "\n")):
+                raise GmailProviderError("Email headers must not contain line breaks.")
+            parsed = getaddresses([value])
+            if len(parsed) != 1 or not parsed[0][1] or parsed[0][1] != value.strip() or "@" not in parsed[0][1]:
+                raise GmailProviderError("Invalid recipient email address.")
+        if any(character in prepared.subject for character in ("\r", "\n")):
+            raise GmailProviderError("Email content must not contain header line breaks.")
 
     def _store_credentials(self, credentials: Credentials) -> None:
         self.token_path.parent.mkdir(parents=True, exist_ok=True)

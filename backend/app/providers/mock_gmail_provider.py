@@ -168,6 +168,13 @@ class MockGmailProvider(GmailProvider):
             self._drafts[draft_id] = prepared
         return draft_id
 
+    def get_draft(self, draft_id: str) -> PreparedEmail:
+        with self._lock:
+            draft = self._drafts.get(draft_id)
+        if draft is None:
+            raise GmailProviderError("Draft was not found.")
+        return draft
+
     def create_reply_draft(self, thread_id: str, body: str, **kwargs: object) -> str:
         target = _reply_target(self.get_thread(thread_id))
         return self.create_draft(_reply_message(target, body, to=(target.reply_to or target.sender,), **kwargs))

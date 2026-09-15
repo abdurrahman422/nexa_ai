@@ -65,7 +65,7 @@ def gmail_capabilities() -> dict:
         "actions": [
             "search", "read", "thread", "unread", "sender", "subject", "date",
             "attachments", "download_attachment", "labels", "add_labels",
-            "remove_labels", "archive", "draft", "reply_draft", "reply_all_draft",
+            "remove_labels", "archive", "draft", "reply_draft", "reply_all_draft", "forward_draft",
             "prepare_send",
         ],
         "direct_send": False,

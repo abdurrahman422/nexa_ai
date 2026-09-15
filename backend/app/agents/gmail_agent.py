@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import asdict
 import os
+import re
+import webbrowser
 from typing import Any
 
 from app.audit.event_log import record_audit_event
@@ -13,6 +15,9 @@ from app.providers.mock_gmail_provider import MockGmailProvider
 from app.providers.google_gmail_provider import GoogleGmailProvider
 from app.schemas.gmail import GmailActionResult, GmailPreview, PreparedEmail
 from app.security.gmail_approvals import EmailApprovalController
+
+GMAIL_DRAFTS_URL = "https://mail.google.com/mail/u/0/#drafts"
+_GMAIL_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 class GmailAgent:
@@ -80,9 +85,38 @@ class GmailAgent:
             if action == "archive":
                 email = self.provider.archive_email(str(kwargs["message_id"]))
                 return GmailActionResult("completed", action, "Email archived.", emails=(email,))
-            if action in {"draft", "reply_draft", "reply_all_draft"}:
+            if action in {"draft", "reply_draft", "reply_all_draft", "forward_draft"}:
                 draft_id = self._create_draft(action, kwargs)
-                return GmailActionResult("completed", action, "Draft created.", draft_id=draft_id)
+                metadata = dict(getattr(self.provider, "last_draft_metadata", {}))
+                metadata.setdefault("draft_id", draft_id)
+                metadata["operation"] = action
+                if kwargs.get("draft_tone"):
+                    metadata["tone"] = str(kwargs["draft_tone"])
+                if kwargs.get("draft_styles"):
+                    metadata["styles"] = list(kwargs["draft_styles"])
+                metadata["browser_opened"] = False
+                metadata["browser_url"] = GMAIL_DRAFTS_URL
+                metadata["navigation"] = "drafts_fallback"
+                metadata["navigation_identifier_used"] = None
+                metadata["navigation_strategy"] = "drafts_fallback"
+                if bool(kwargs.get("open_browser", True)):
+                    exact_url = self._exact_draft_url(metadata) if action not in {"reply_draft", "reply_all_draft"} and metadata.get("body_present") is True else None
+                    if exact_url:
+                        try:
+                            metadata["browser_opened"] = bool(webbrowser.open(exact_url))
+                        except Exception:
+                            metadata["browser_opened"] = False
+                        if metadata["browser_opened"]:
+                            metadata["browser_url"] = exact_url
+                            metadata["navigation"] = "exact_draft"
+                            metadata["navigation_identifier_used"] = metadata.get("message_id")
+                            metadata["navigation_strategy"] = "message_id_draft_route"
+                    if not metadata["browser_opened"]:
+                        try:
+                            metadata["browser_opened"] = bool(webbrowser.open(GMAIL_DRAFTS_URL))
+                        except Exception:
+                            metadata["browser_opened"] = False
+                return GmailActionResult("completed", action, "Draft created. Review it in Gmail before sending.", draft_id=draft_id, metadata=metadata)
             if action == "prepare_send":
                 return self._prepare_send(kwargs)
             if action == "send":
@@ -108,8 +142,28 @@ class GmailAgent:
         if action == "reply_draft":
             return self.provider.create_reply_draft(str(kwargs["thread_id"]), body, attachments=kwargs.get("attachments", ()))
         if action == "reply_all_draft":
-            return self.provider.create_reply_all_draft(str(kwargs["thread_id"]), body, user_email=kwargs.get("user_email", "student@example.com"), attachments=kwargs.get("attachments", ()))
+            user_email = kwargs.get("user_email")
+            if not user_email:
+                account = self.provider.active_account() if hasattr(self.provider, "active_account") else None
+                user_email = account.get("email", "") if account else ""
+            return self.provider.create_reply_all_draft(str(kwargs["thread_id"]), body, user_email=user_email, attachments=kwargs.get("attachments", ()))
+        if action == "forward_draft":
+            return self.provider.create_forward_draft(str(kwargs["message_id"]), kwargs.get("to", ()), body, attachments=kwargs.get("attachments", ()))
         return self.provider.create_draft(self._prepared_from_kwargs(kwargs))
+
+    @staticmethod
+    def _exact_draft_url(metadata: dict[str, Any]) -> str | None:
+        message_id = metadata.get("message_id")
+        if isinstance(message_id, str) and _GMAIL_ID_RE.fullmatch(message_id):
+            return f"https://mail.google.com/mail/u/0/#drafts/{message_id}"
+        return None
+
+    @staticmethod
+    def _exact_thread_url(metadata: dict[str, Any]) -> str | None:
+        thread_id = metadata.get("thread_id")
+        if isinstance(thread_id, str) and _GMAIL_ID_RE.fullmatch(thread_id):
+            return f"https://mail.google.com/mail/u/0/#all/{thread_id}"
+        return None
 
     def _prepare_send(self, kwargs: dict[str, Any]) -> GmailActionResult:
         if not is_permission_enabled("email_control"):

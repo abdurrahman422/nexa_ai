@@ -579,6 +579,7 @@ export type ChatMessageResponseDto = {
   llm_provider?: string | null;
   fallback_used: boolean;
   source_type: "local" | "search" | "tool" | "llm" | "hybrid" | string;
+  gmail_draft?: Record<string, unknown> | null;
   error?: string | null;
 };
 

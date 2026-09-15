@@ -98,6 +98,29 @@ class GmailProvider(ABC):
         cc = recipients[1:]
         return self.create_draft(_reply_message(target, body, to=to, cc=cc, **kwargs))
 
+    def create_forward_draft(self, message_id: str, to: Iterable[str], body: str = "", **kwargs: Any) -> str:
+        source = self.get_email(message_id, include_body=True)
+        subject = source.subject if source.subject.lower().startswith("fwd:") else f"Fwd: {source.subject}"
+        forwarded = (
+            body.strip()
+            + ("\n\n" if body.strip() else "")
+            + "---------- Forwarded message ----------\n"
+            + f"From: {source.sender}\n"
+            + f"Date: {source.date}\n"
+            + f"Subject: {source.subject}\n\n"
+            + safe_text(source.body_text, 12000)
+        )
+        return self.create_draft(
+            PreparedEmail(
+                to=_unique_addresses(to),
+                cc=_unique_addresses(kwargs.pop("cc", ())),
+                bcc=_unique_addresses(kwargs.pop("bcc", ())),
+                subject=subject,
+                body=forwarded,
+                attachments=tuple(kwargs.pop("attachments", ())),
+            )
+        )
+
     @abstractmethod
     def prepare_email(self, email: PreparedEmail) -> PreparedEmail: ...
 
@@ -171,15 +194,16 @@ def email_preview(email: GmailEmail) -> dict[str, Any]:
 def _reply_target(thread: GmailThread) -> GmailEmail:
     if not thread.messages:
         raise GmailProviderError("The thread has no replyable messages.")
+    excluded_labels = {"DRAFT", "SENT", "TRASH", "SPAM"}
     for message in reversed(thread.messages):
-        if "DRAFT" not in message.labels and "TRASH" not in message.labels:
+        if not excluded_labels.intersection(message.labels):
             return message
-    return thread.messages[-1]
+    raise GmailProviderError("No matching received email was found in the thread.")
 
 
 def _unique_addresses(addresses: Iterable[str]) -> tuple[str, ...]:
     result: list[str] = []
-    for _, address in getaddresses([(address, "") for address in addresses if address]):
+    for _, address in getaddresses([address for address in addresses if address]):
         normalized = address.strip()
         if normalized and normalized.lower() not in {item.lower() for item in result}:
             result.append(normalized)
