@@ -104,6 +104,10 @@ class GmailAgent:
                 draft_id = self._create_draft(action, kwargs)
                 metadata = dict(getattr(self.provider, "last_draft_metadata", {}))
                 metadata.setdefault("draft_id", draft_id)
+                prepared = self._approval_email(kwargs, metadata)
+                approval = self.request_draft_approval(draft_id, prepared)
+                metadata["approval_id"] = approval.approval_id
+                metadata["approval"] = self._approval_preview(approval, prepared)
                 metadata["operation"] = action
                 if kwargs.get("draft_tone"):
                     metadata["tone"] = str(kwargs["draft_tone"])
@@ -131,7 +135,7 @@ class GmailAgent:
                             metadata["browser_opened"] = bool(webbrowser.open(GMAIL_DRAFTS_URL))
                         except Exception:
                             metadata["browser_opened"] = False
-                return GmailActionResult("completed", action, "Draft created. Review it in Gmail before sending.", draft_id=draft_id, metadata=metadata)
+                return GmailActionResult("completed", action, "Draft created. Review it in Gmail before sending.", draft_id=draft_id, approval_id=approval.approval_id, metadata=metadata)
             if action == "prepare_send":
                 return self._prepare_send(kwargs)
             if action == "send":
@@ -165,6 +169,41 @@ class GmailAgent:
         if action == "forward_draft":
             return self.provider.create_forward_draft(str(kwargs["message_id"]), kwargs.get("to", ()), body, attachments=kwargs.get("attachments", ()))
         return self.provider.create_draft(self._prepared_from_kwargs(kwargs))
+
+    def _approval_email(self, kwargs: dict[str, Any], metadata: dict[str, Any]) -> PreparedEmail:
+        return PreparedEmail(
+            to=tuple(metadata.get("to") or kwargs.get("to", ())),
+            cc=tuple(metadata.get("cc") or kwargs.get("cc", ())),
+            bcc=tuple(metadata.get("bcc") or kwargs.get("bcc", ())),
+            subject=str(metadata.get("subject") or kwargs.get("subject", "")),
+            body=str(kwargs.get("body", "")),
+            attachments=tuple(kwargs.get("attachments", ())),
+            thread_id=metadata.get("thread_id") or kwargs.get("thread_id"),
+        )
+
+    @staticmethod
+    def _approval_preview(approval: GmailApproval, email: PreparedEmail) -> dict[str, Any]:
+        return {
+            "approval_id": approval.approval_id,
+            "draft_id": approval.draft_id,
+            "active_account_id": approval.active_account_id,
+            "to": list(approval.to),
+            "cc": list(approval.cc),
+            "bcc": list(approval.bcc),
+            "subject": approval.subject,
+            "body": email.body,
+            "attachment_metadata": [
+                {
+                    "file_name": item.get("filename", ""),
+                    "mime_type": item.get("mime_type", ""),
+                    "size_bytes": item.get("size", 0),
+                }
+                for item in approval.attachment_metadata
+            ],
+            "created_at": approval.created_at,
+            "expires_at": approval.expires_at,
+            "status": approval.status,
+        }
 
     @staticmethod
     def _exact_draft_url(metadata: dict[str, Any]) -> str | None:

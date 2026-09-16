@@ -65,6 +65,47 @@ export type GmailAccountsResponseDto = {
   active_account: GmailAccountDto | null;
 };
 
+export type GmailApprovalStatus = "pending" | "approved" | "cancelled" | "expired" | "invalidated";
+
+export type GmailApprovalAttachmentDto = {
+  file_name: string;
+  mime_type?: string;
+  size_bytes?: number;
+};
+
+export type GmailApprovalDto = {
+  approval_id: string;
+  draft_id: string;
+  active_account_id: string;
+  to: string[];
+  cc: string[];
+  bcc: string[];
+  subject: string;
+  body?: string;
+  attachment_metadata: GmailApprovalAttachmentDto[];
+  created_at: string;
+  expires_at: string;
+  status: GmailApprovalStatus;
+};
+
+export type GmailApprovalResponseDto = {
+  status: string;
+  approval: GmailApprovalDto | null;
+  error?: string;
+};
+
+export function getGmailDraftApproval(approvalId: string, backendUrl = DEFAULT_BACKEND_URL) {
+  return getJson<GmailApprovalResponseDto>(`${backendUrl}/api/gmail/draft-approvals/${encodeURIComponent(approvalId)}`);
+}
+
+export function approveGmailDraft(approvalId: string, backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<GmailApprovalResponseDto>(`${backendUrl}/api/gmail/draft-approvals/${encodeURIComponent(approvalId)}/approve`, "POST");
+}
+
+export function cancelGmailDraftApproval(approvalId: string, backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<GmailApprovalResponseDto>(`${backendUrl}/api/gmail/draft-approvals/${encodeURIComponent(approvalId)}/cancel`, "POST");
+}
+
 export function getGmailAccounts(backendUrl = DEFAULT_BACKEND_URL) {
   return getJson<GmailAccountsResponseDto>(`${backendUrl}/api/gmail/accounts`);
 }
@@ -580,6 +621,7 @@ export type ChatMessageResponseDto = {
   fallback_used: boolean;
   source_type: "local" | "search" | "tool" | "llm" | "hybrid" | string;
   gmail_draft?: Record<string, unknown> | null;
+  gmail_approval?: GmailApprovalDto | null;
   error?: string | null;
 };
 

@@ -3,7 +3,9 @@ import { Bot, CloudSun, Eraser, Search, Send, ShieldCheck, User } from "lucide-r
 import { chat } from "@/lib/llm";
 import type { ChatResult, ChatTurn } from "@/lib/llm";
 import { loadProfile } from "@/lib";
+import type { GmailApprovalDto } from "@/lib/backendAssistantClient";
 import { PageHero } from "@/components/ui";
+import { GmailApprovalCard } from "@/components/gmail-approval/GmailApprovalCard";
 import { useInteraction, VoiceOrb, ThinkingIndicator, PremiumButton } from "@/interaction";
 
 type ChatRole = "user" | "assistant";
@@ -19,6 +21,7 @@ type ChatEntry = {
   source?: string | null;
   sourceUrl?: string | null;
   chips?: string[];
+  gmailApproval?: GmailApprovalDto | null;
 };
 
 const STORAGE_KEY = "nexa.aiChat.history";
@@ -53,6 +56,7 @@ function resultToEntry(result: ChatResult): ChatEntry {
     source: result.extras?.source ?? null,
     sourceUrl: result.extras?.sourceUrl ?? null,
     chips,
+    gmailApproval: result.extras?.gmailApproval ?? null,
   });
 }
 
@@ -194,6 +198,16 @@ export function ChatPage() {
                 )}
                 {item.sourceUrl && (
                   <div className="chat-source">Source: {item.sourceUrl}</div>
+                )}
+                {item.gmailApproval && (
+                  <GmailApprovalCard
+                    approval={item.gmailApproval}
+                    onChange={(approval) => {
+                      setMessages((previous) => previous.map((message) => (
+                        message.id === item.id ? { ...message, gmailApproval: approval } : message
+                      )));
+                    }}
+                  />
                 )}
               </div>
             </article>

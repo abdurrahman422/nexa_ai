@@ -544,7 +544,7 @@ def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessage
             "date": source.date,
         }
         draft_metadata["reply_subject"] = f"Re: {source.subject}" if not source.subject.lower().startswith("re:") else source.subject
-        return ChatMessageResponse(status=result.status, intent="gmail_skill", message=message, answer=_compose_reply(result.message, address_style, _language_style(message)), blocked=result.status == "blocked", provider=agent.provider.__class__.__name__, source="GmailAgent", source_type="tool", gmail_draft=draft_metadata or None, error=result.error)
+        return ChatMessageResponse(status=result.status, intent="gmail_skill", message=message, answer=_compose_reply(result.message, address_style, _language_style(message)), blocked=result.status == "blocked", provider=agent.provider.__class__.__name__, source="GmailAgent", source_type="tool", gmail_draft=draft_metadata or None, gmail_approval=draft_metadata.get("approval"), approval_id=result.approval_id, error=result.error)
     compose = _parse_english_email_compose(cleaned_message)
     if compose is not None:
         composition = compose_missing_fields(cleaned_message, **compose)
@@ -561,6 +561,8 @@ def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessage
             source="GmailAgent",
             source_type="tool",
             gmail_draft=result.metadata or None,
+            gmail_approval=result.metadata.get("approval"),
+            approval_id=result.approval_id,
             error=result.error,
         )
     limit_match = re.search(r"\b(\d+)\s+(?:unread\s+)?(?:emails?|messages?)\b", normalized)

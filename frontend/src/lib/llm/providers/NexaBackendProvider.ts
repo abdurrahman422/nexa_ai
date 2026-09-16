@@ -52,6 +52,7 @@ export class NexaBackendProvider extends BaseProvider {
           sourceUrl: response.source_url,
           chips: response.chips,
           backendProvider: response.provider ?? response.llm_provider ?? null,
+          gmailApproval: response.gmail_approval ?? null,
         },
       };
     } catch (err) {

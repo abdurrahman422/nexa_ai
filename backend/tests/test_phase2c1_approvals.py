@@ -109,3 +109,21 @@ def test_draft_approval_api_never_sends(monkeypatch: pytest.MonkeyPatch) -> None
     approved = client.post(f"/api/gmail/draft-approvals/{approval_id}/approve")
     assert approved.json()["status"] == "approved"
     assert provider.sent_messages == ()
+
+
+def test_gmail_draft_execution_includes_sanitized_pending_approval() -> None:
+    provider = MockGmailProvider()
+    result = GmailAgent(provider).execute(
+        "draft",
+        to=("to@example.com",),
+        subject="Subject",
+        body="Body",
+        open_browser=False,
+    )
+    approval = result.metadata["approval"]
+    assert result.approval_id == approval["approval_id"]
+    assert approval["status"] == "pending"
+    assert approval["body"] == "Body"
+    assert "local_path" not in repr(approval)
+    assert "content_sha256" not in repr(approval)
+    assert provider.sent_messages == ()

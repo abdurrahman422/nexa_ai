@@ -36,6 +36,7 @@ import {
   requestTtsSpeak,
   requestYouTubeCommand,
 } from "@/lib/backendAssistantClient";
+import type { GmailApprovalDto } from "@/lib/backendAssistantClient";
 import { ALL_TARGETS, APP_TARGETS, SafeTarget, WEBSITE_TARGETS } from "@/lib/safeTargets";
 import { PushToTalkPanel } from "@/components/voice/PushToTalkPanel";
 import { YouTubeControlPanel } from "@/components/youtube";
@@ -43,6 +44,7 @@ import { ImageGenerationPanel } from "@/components/images";
 import { SystemControlsPanel } from "@/components/system";
 import { ContentWriterPanel } from "@/components/content";
 import { PerformancePanel } from "@/components/analytics";
+import { GmailApprovalCard } from "@/components/gmail-approval/GmailApprovalCard";
 import type { NavId } from "@/components/shell/Sidebar";
 import { useInteraction, PremiumButton, VoiceOrb } from "@/interaction";
 
@@ -76,6 +78,7 @@ type DashboardChatEntry = {
   llmProvider?: string | null;
   pendingAction?: PendingAction | null;
   pendingTask?: ChatMessageResponseDto["pending_task"] | null;
+  gmailApproval?: GmailApprovalDto | null;
   actionResult?: string | null;
   actionError?: string | null;
   speaking?: boolean;
@@ -227,6 +230,7 @@ function chatResponseToEntry(
     llmProvider: response.llm_provider,
     pendingAction,
     pendingTask: response.pending_task,
+    gmailApproval: response.gmail_approval ?? null,
     actionResult: response.auto_execute_safe && response.action?.executed ? response.answer : response.action?.executed ? response.action.message : null,
   });
 }
@@ -637,6 +641,13 @@ export function CommandCenterPage({
                       </div>
 
                       {entry.speakMessage && <div className="nx-result-ok">{entry.speakMessage}</div>}
+
+                      {entry.gmailApproval && (
+                        <GmailApprovalCard
+                          approval={entry.gmailApproval}
+                          onChange={(approval) => updateMessage(entry.id, { gmailApproval: approval })}
+                        />
+                      )}
 
                       {entry.pendingAction && (
                         <div className="nx-confirm dashboard-inline-confirm">

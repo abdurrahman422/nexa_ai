@@ -115,6 +115,7 @@ export interface ChatExtras {
   sourceUrl?: string | null;
   chips?: string[];
   backendProvider?: string | null;
+  gmailApproval?: import("../backendAssistantClient").GmailApprovalDto | null;
 }
 
 /** The unified result every provider returns. */

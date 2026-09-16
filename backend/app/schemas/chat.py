@@ -83,6 +83,7 @@ class ChatMessageResponse(BaseModel):
     route_debug: dict[str, object] | None = None
     gmail_preview: dict[str, object] | None = None
     gmail_draft: dict[str, object] | None = None
+    gmail_approval: dict[str, object] | None = None
     approval_id: str | None = None
     untrusted_content: bool = False
     error: str | None = None

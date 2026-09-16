@@ -122,7 +122,14 @@ def _draft_approval_response(approval: object | None) -> dict:
     data["to"] = list(data["to"])
     data["cc"] = list(data["cc"])
     data["bcc"] = list(data["bcc"])
-    data["attachment_metadata"] = list(data["attachment_metadata"])
+    data["attachment_metadata"] = [
+        {
+            "file_name": item.get("filename", ""),
+            "mime_type": item.get("mime_type", ""),
+            "size_bytes": item.get("size", 0),
+        }
+        for item in data["attachment_metadata"]
+    ]
     return {"status": data["status"], "approval": data}
 
 
