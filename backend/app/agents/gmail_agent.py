@@ -14,7 +14,7 @@ from app.providers.gmail_provider import GmailProvider, GmailProviderError, emai
 from app.providers.mock_gmail_provider import MockGmailProvider
 from app.providers.google_gmail_provider import GoogleGmailProvider
 from app.schemas.gmail import GmailActionResult, GmailPreview, PreparedEmail
-from app.security.gmail_approvals import EmailApprovalController
+from app.security.gmail_approvals import EmailApprovalController, GmailApproval, GmailApprovalController
 
 GMAIL_DRAFTS_URL = "https://mail.google.com/mail/u/0/#drafts"
 _GMAIL_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -23,9 +23,24 @@ _GMAIL_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 class GmailAgent:
     """Accept structured Gmail actions and never expose provider credentials."""
 
-    def __init__(self, provider: GmailProvider | None = None, approvals: EmailApprovalController | None = None) -> None:
+    def __init__(self, provider: GmailProvider | None = None, approvals: EmailApprovalController | None = None, draft_approvals: GmailApprovalController | None = None) -> None:
         self.provider = provider or MockGmailProvider()
         self.approvals = approvals or EmailApprovalController()
+        self.draft_approvals = draft_approvals or GmailApprovalController()
+
+    def request_draft_approval(self, draft_id: str, email: PreparedEmail) -> GmailApproval:
+        active_account = self.provider.active_account() if hasattr(self.provider, "active_account") else None
+        account_id = str((active_account or {}).get("account_id", "mock"))
+        return self.draft_approvals.create_approval(draft_id, account_id, email)
+
+    def get_draft_approval(self, approval_id: str) -> GmailApproval | None:
+        return self.draft_approvals.get_approval(approval_id)
+
+    def approve_draft(self, approval_id: str) -> GmailApproval:
+        return self.draft_approvals.approve(approval_id)
+
+    def cancel_draft(self, approval_id: str) -> GmailApproval:
+        return self.draft_approvals.cancel(approval_id)
 
     def execute(self, action: str, **kwargs: Any) -> GmailActionResult:
         if not is_permission_enabled("gmail_skill"):

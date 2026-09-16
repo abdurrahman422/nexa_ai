@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr, Field
 from app.agents.gmail_agent import format_agent_result, get_gmail_agent
 from app.audit.event_log import record_audit_event
 from app.permissions import is_permission_enabled, permission_denied_message
+from app.schemas.gmail import GmailAttachment, PreparedEmail
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
@@ -36,6 +37,16 @@ class GmailRequest(BaseModel):
 
 class GmailApprovalRequest(BaseModel):
     approved: bool = False
+
+
+class GmailDraftApprovalRequest(BaseModel):
+    draft_id: str = Field(min_length=1)
+    to: list[EmailStr] = Field(default_factory=list)
+    cc: list[EmailStr] = Field(default_factory=list)
+    bcc: list[EmailStr] = Field(default_factory=list)
+    subject: str = ""
+    body: str = ""
+    attachments: list[dict[str, object]] = Field(default_factory=list)
 
 
 class GmailAccountRequest(BaseModel):
@@ -95,6 +106,74 @@ def approve_gmail_send(approval_id: str, request: GmailApprovalRequest) -> dict:
         }
     result = get_gmail_agent().approve_and_send(approval_id)
     return format_agent_result(result)
+
+
+def _draft_approval_response(approval: object | None) -> dict:
+    if approval is None:
+        return {"status": "not_found", "approval": None}
+    data = {
+        key: getattr(approval, key)
+        for key in (
+            "approval_id", "draft_id", "active_account_id", "to", "cc", "bcc",
+            "subject", "draft_fingerprint", "attachment_metadata", "created_at",
+            "expires_at", "status",
+        )
+    }
+    data["to"] = list(data["to"])
+    data["cc"] = list(data["cc"])
+    data["bcc"] = list(data["bcc"])
+    data["attachment_metadata"] = list(data["attachment_metadata"])
+    return {"status": data["status"], "approval": data}
+
+
+def _prepared_email(request: GmailDraftApprovalRequest) -> PreparedEmail:
+    attachments = tuple(
+        GmailAttachment(
+            filename=str(item.get("filename", "")),
+            mime_type=str(item.get("mime_type", "application/octet-stream")),
+            size=int(item.get("size", 0)),
+            attachment_id=str(item.get("attachment_id", "")),
+            local_path=str(item.get("local_path", "")),
+        )
+        for item in request.attachments
+    )
+    return PreparedEmail(
+        to=tuple(str(item) for item in request.to),
+        cc=tuple(str(item) for item in request.cc),
+        bcc=tuple(str(item) for item in request.bcc),
+        subject=request.subject,
+        body=request.body,
+        attachments=attachments,
+    )
+
+
+@router.post("/draft-approvals")
+def request_gmail_draft_approval(request: GmailDraftApprovalRequest) -> dict:
+    if not is_permission_enabled("gmail_skill"):
+        return _blocked("draft_approval", "gmail_skill")
+    approval = get_gmail_agent().request_draft_approval(request.draft_id, _prepared_email(request))
+    return _draft_approval_response(approval)
+
+
+@router.get("/draft-approvals/{approval_id}")
+def get_gmail_draft_approval(approval_id: str) -> dict:
+    return _draft_approval_response(get_gmail_agent().get_draft_approval(approval_id))
+
+
+@router.post("/draft-approvals/{approval_id}/approve")
+def approve_gmail_draft(approval_id: str) -> dict:
+    try:
+        return _draft_approval_response(get_gmail_agent().approve_draft(approval_id))
+    except PermissionError as exc:
+        return {"status": "blocked", "approval": None, "error": str(exc)}
+
+
+@router.post("/draft-approvals/{approval_id}/cancel")
+def cancel_gmail_draft_approval(approval_id: str) -> dict:
+    try:
+        return _draft_approval_response(get_gmail_agent().cancel_draft(approval_id))
+    except PermissionError as exc:
+        return {"status": "blocked", "approval": None, "error": str(exc)}
 
 
 @router.get("/accounts")
