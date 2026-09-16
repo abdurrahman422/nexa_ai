@@ -43,7 +43,7 @@ class GmailAgent:
 
     def get_draft_approval(self, approval_id: str) -> GmailApproval | None:
         approval = self.draft_approvals.get_approval(approval_id)
-        if approval is None or approval.status in {"cancelled", "expired", "invalidated"}:
+        if approval is None or approval.status in {"cancelled", "expired", "invalidated", "sending", "sent"}:
             return approval
         return self._revalidate_draft_approval(approval)
 
@@ -60,6 +60,34 @@ class GmailAgent:
 
     def cancel_draft(self, approval_id: str) -> GmailApproval:
         return self.draft_approvals.cancel(approval_id)
+
+    def send_approved_draft(self, approval_id: str) -> tuple[GmailApproval, str | None]:
+        if not is_permission_enabled("email_control"):
+            raise PermissionError(permission_denied_message("email_control"))
+        approval = self.draft_approvals.get_approval(approval_id)
+        if approval is None:
+            raise PermissionError("Approval was not found.")
+        if approval.status != "approved":
+            return approval, None
+
+        # Gmail has no conditional compare-and-send transaction for drafts.send.
+        # Keep this final read immediately before the local claim; Gmail web UI
+        # edits can still occur in the tiny interval before the provider call.
+        revalidated = self._revalidate_draft_approval(approval)
+        if revalidated.status != "approved":
+            return revalidated, None
+        claimed = self.draft_approvals.claim_for_send(approval_id)
+        if claimed.status != "sending":
+            return claimed, None
+        try:
+            message_id = self.provider.send_draft(claimed.draft_id)
+        except GmailProviderError as exc:
+            self.draft_approvals.invalidate(approval_id)
+            record_audit_event("gmail", "draft_send", "blocked", "high", "", str(exc))
+            raise
+        sent = self.draft_approvals.mark_sent(approval_id)
+        record_audit_event("gmail", "draft_send", "executed", "high", ",".join(sent.to), "Approved Gmail draft sent.")
+        return sent, message_id
 
     def execute(self, action: str, **kwargs: Any) -> GmailActionResult:
         if not is_permission_enabled("gmail_skill"):
@@ -172,16 +200,12 @@ class GmailAgent:
             return GmailActionResult("failed", action, str(exc), error=str(exc))
 
     def approve_and_send(self, approval_id: str) -> GmailActionResult:
-        if not is_permission_enabled("email_control"):
-            return GmailActionResult("blocked", "send", permission_denied_message("email_control"), error="permission_disabled")
-        try:
-            pending = self.approvals.approve(approval_id, approved_by_user=True)
-            message_id = self.provider.send_prepared(pending.email)
-            record_audit_event("gmail", "email_send", "executed", "high", ",".join(pending.email.to), "Approved email sent.")
-            return GmailActionResult("executed", "send", "Approved email sent.", metadata={"message_id": message_id})
-        except (PermissionError, GmailProviderError) as exc:
-            record_audit_event("gmail", "email_send", "blocked", "high", "", str(exc))
-            return GmailActionResult("blocked", "send", str(exc), error=str(exc))
+        return GmailActionResult(
+            "blocked",
+            "send",
+            "Legacy prepared-email sending is disabled; send only through the controlled approved-draft flow.",
+            error="legacy_send_path_disabled",
+        )
 
     def _create_draft(self, action: str, kwargs: dict[str, Any]) -> str:
         body = str(kwargs.get("body", ""))

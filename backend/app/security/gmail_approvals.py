@@ -240,7 +240,7 @@ class GmailApprovalController:
         approval = self.get_approval(approval_id)
         if approval is None:
             raise PermissionError("Approval was not found.")
-        if approval.status in {"cancelled", "expired", "invalidated"}:
+        if approval.status in {"cancelled", "expired", "invalidated", "sending", "sent"}:
             return approval
         if (
             email is None
@@ -292,6 +292,32 @@ class GmailApprovalController:
             invalidated = GmailApproval(**{**approval.__dict__, "status": "invalidated"})
             self._approvals[approval_id] = invalidated
             return invalidated
+
+    def claim_for_send(self, approval_id: str) -> GmailApproval:
+        with self._lock:
+            approval = self._approvals.get(approval_id)
+            if approval is None:
+                raise PermissionError("Approval was not found.")
+            if approval.status != "approved":
+                return approval
+            if datetime.now(timezone.utc) >= datetime.fromisoformat(approval.expires_at):
+                expired = GmailApproval(**{**approval.__dict__, "status": "expired"})
+                self._approvals[approval_id] = expired
+                return expired
+            sending = GmailApproval(**{**approval.__dict__, "status": "sending"})
+            self._approvals[approval_id] = sending
+            return sending
+
+    def mark_sent(self, approval_id: str) -> GmailApproval:
+        with self._lock:
+            approval = self._approvals.get(approval_id)
+            if approval is None:
+                raise PermissionError("Approval was not found.")
+            if approval.status != "sending":
+                return approval
+            sent = GmailApproval(**{**approval.__dict__, "status": "sent"})
+            self._approvals[approval_id] = sent
+            return sent
 
     def _transition_pending(self, approval_id: str, status: str) -> GmailApproval:
         with self._lock:

@@ -2,6 +2,7 @@ import { useState, type FC } from "react";
 import {
   approveGmailDraft,
   cancelGmailDraftApproval,
+  sendApprovedGmailDraft,
   type GmailApprovalDto,
 } from "@/lib/backendAssistantClient";
 
@@ -13,6 +14,8 @@ type GmailApprovalCardProps = {
 const statusLabels: Record<GmailApprovalDto["status"], string> = {
   pending: "Pending approval",
   approved: "Approved",
+  sending: "Sending...",
+  sent: "Sent",
   cancelled: "Cancelled",
   expired: "Expired",
   invalidated: "Draft changed - approval invalidated",
@@ -30,9 +33,25 @@ function recipients(values: string[]): string {
 }
 
 export const GmailApprovalCard: FC<GmailApprovalCardProps> = ({ approval, onChange }) => {
-  const [loading, setLoading] = useState<"approve" | "cancel" | null>(null);
+  const [loading, setLoading] = useState<"approve" | "cancel" | "send" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isPending = approval.status === "pending";
+
+  const sendApprovedDraft = async () => {
+    if (approval.status !== "approved" || loading) return;
+    setLoading("send");
+    setErrorMessage(null);
+    try {
+      const response = await sendApprovedGmailDraft(approval.approval_id);
+      if (!response.approval) throw new Error(response.error || "Draft could not be sent.");
+      onChange({ ...approval, ...response.approval });
+      if (response.status !== "sent") setErrorMessage(response.error || "Draft could not be sent.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Draft could not be sent.");
+    } finally {
+      setLoading(null);
+    }
+  };
 
   const changeApproval = async (action: "approve" | "cancel") => {
     if (!isPending || loading) return;
@@ -127,7 +146,19 @@ export const GmailApprovalCard: FC<GmailApprovalCardProps> = ({ approval, onChan
       )}
 
       {approval.status === "approved" && (
-        <p className="gmail-approval-note">Sending is not enabled in this phase.</p>
+        <>
+          <p className="gmail-approval-note">This will send the exact approved Gmail draft.</p>
+          <div className="gmail-approval-actions">
+            <button
+              type="button"
+              className="gmail-approval-approve"
+              onClick={() => void sendApprovedDraft()}
+              disabled={loading !== null}
+            >
+              {loading === "send" ? "Sending..." : "Send Approved Draft"}
+            </button>
+          </div>
+        </>
       )}
       {errorMessage && <p className="gmail-approval-error">{errorMessage}</p>}
     </section>

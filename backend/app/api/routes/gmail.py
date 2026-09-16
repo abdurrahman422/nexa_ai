@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr, Field
 from app.agents.gmail_agent import format_agent_result, get_gmail_agent
 from app.audit.event_log import record_audit_event
 from app.permissions import is_permission_enabled, permission_denied_message
+from app.providers.gmail_provider import GmailProviderError
 from app.schemas.gmail import GmailAttachment, PreparedEmail
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
@@ -96,16 +97,13 @@ def gmail_command(request: GmailRequest) -> dict:
 
 @router.post("/approvals/{approval_id}/approve")
 def approve_gmail_send(approval_id: str, request: GmailApprovalRequest) -> dict:
-    if not request.approved:
-        return {
-            "status": "blocked",
-            "action": "send",
-            "executed": False,
-            "message": "Explicit user approval is required; no email was sent.",
-            "error": "approval_required",
-        }
-    result = get_gmail_agent().approve_and_send(approval_id)
-    return format_agent_result(result)
+    return {
+        "status": "blocked",
+        "action": "send",
+        "executed": False,
+        "message": "Legacy prepared-email sending is disabled; approve and send a Gmail draft through the controlled draft approval flow.",
+        "error": "legacy_send_path_disabled",
+    }
 
 
 def _draft_approval_response(approval: object | None) -> dict:
@@ -180,6 +178,26 @@ def cancel_gmail_draft_approval(approval_id: str) -> dict:
     try:
         return _draft_approval_response(get_gmail_agent().cancel_draft(approval_id))
     except PermissionError as exc:
+        return {"status": "blocked", "approval": None, "error": str(exc)}
+
+
+@router.post("/draft-approvals/{approval_id}/send")
+def send_gmail_approved_draft(approval_id: str) -> dict:
+    try:
+        approval, message_id = get_gmail_agent().send_approved_draft(approval_id)
+        response = _draft_approval_response(approval)
+        if message_id:
+            response["message_id"] = message_id
+        if approval.status != "sent":
+            response["error"] = {
+                "pending": "Draft approval is required before sending.",
+                "sending": "Draft send is already in progress.",
+                "invalidated": "Draft changed after approval. Review and approve a new version.",
+                "expired": "Draft approval has expired.",
+                "cancelled": "Draft approval was cancelled.",
+            }.get(approval.status, "Draft could not be sent.")
+        return response
+    except (PermissionError, GmailProviderError) as exc:
         return {"status": "blocked", "approval": None, "error": str(exc)}
 
 

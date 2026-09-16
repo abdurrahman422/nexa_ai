@@ -63,6 +63,8 @@ class MockGmailProvider(GmailProvider):
         }
         self._drafts: dict[str, PreparedEmail] = {}
         self._sent: list[PreparedEmail] = []
+        self.send_draft_call_count = 0
+        self.sent_draft_ids: list[str] = []
         self._labels = {
             "INBOX": "INBOX",
             "UNREAD": "UNREAD",
@@ -217,3 +219,13 @@ class MockGmailProvider(GmailProvider):
         with self._lock:
             self._sent.append(email)
         return f"sent-{len(self._sent)}"
+
+    def send_draft(self, draft_id: str) -> str:
+        with self._lock:
+            draft = self._drafts.pop(draft_id, None)
+            if draft is None:
+                raise GmailProviderError("Draft was not found.")
+            self.send_draft_call_count += 1
+            self.sent_draft_ids.append(draft_id)
+            self._sent.append(draft)
+            return f"message-{len(self.sent_draft_ids)}"

@@ -131,6 +131,9 @@ class GmailProvider(ABC):
     @abstractmethod
     def send_prepared(self, email: PreparedEmail) -> str: ...
 
+    @abstractmethod
+    def send_draft(self, draft_id: str) -> str: ...
+
 
 class _VisibleTextParser(HTMLParser):
     def __init__(self) -> None:

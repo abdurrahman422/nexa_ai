@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import Mock
 
 from fastapi.testclient import TestClient
 
@@ -65,7 +66,7 @@ def test_prompt_injection_is_context_only_and_does_not_send() -> None:
     assert not agent.provider.sent_messages
 
 
-def test_no_approval_blocks_and_explicit_approval_sends(monkeypatch) -> None:
+def test_legacy_approve_and_send_is_permanently_blocked(monkeypatch) -> None:
     provider = MockGmailProvider()
     agent = GmailAgent(provider)
     monkeypatch.setattr("app.agents.gmail_agent.is_permission_enabled", lambda key: True)
@@ -80,9 +81,22 @@ def test_no_approval_blocks_and_explicit_approval_sends(monkeypatch) -> None:
     assert not provider.sent_messages
     rejected = agent.approve_and_send("missing-approval")
     assert rejected.status == "blocked"
-    sent = agent.approve_and_send(pending.approval_id)
-    assert sent.status == "executed"
-    assert len(provider.sent_messages) == 1
+    assert rejected.error == "legacy_send_path_disabled"
+    blocked = agent.approve_and_send(pending.approval_id)
+    assert blocked.status == "blocked"
+    assert len(provider.sent_messages) == 0
+
+
+def test_legacy_approve_and_send_never_calls_send_prepared(monkeypatch) -> None:
+    provider = MockGmailProvider()
+    agent = GmailAgent(provider)
+    send_prepared = Mock(wraps=provider.send_prepared)
+    monkeypatch.setattr(provider, "send_prepared", send_prepared)
+
+    result = agent.approve_and_send("historical-approval")
+
+    assert result.error == "legacy_send_path_disabled"
+    send_prepared.assert_not_called()
 
 
 def test_approval_controller_rejects_unapproved_request() -> None:

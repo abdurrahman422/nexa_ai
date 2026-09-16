@@ -1,8 +1,4 @@
-"""Gmail API provider owned by NEXA.
-
-OAuth remains opt-in and configuration-driven. Draft creation is the only
-Gmail write operation enabled in this phase; sending remains unavailable.
-"""
+"""Gmail API provider owned by NEXA."""
 
 from __future__ import annotations
 
@@ -415,6 +411,24 @@ class GoogleGmailProvider(GmailProvider):
 
     def send_prepared(self, email: PreparedEmail) -> str:
         raise GmailProviderError("Gmail sending is disabled in Phase 2B; review and send the draft manually in Gmail.")
+
+    def send_draft(self, draft_id: str) -> str:
+        try:
+            self._get_credentials(require_compose=True)
+            response = self.service.users().drafts().send(
+                userId="me", body={"id": draft_id}
+            ).execute()
+        except Exception as exc:
+            # The request may have reached Gmail even when the response failed.
+            # Never retry automatically or expose provider exception details.
+            raise GmailProviderError(
+                "Gmail send failed or the send result could not be confirmed. "
+                "Check Gmail Sent before attempting any further action."
+            ) from exc
+        message_id = str(response.get("id", ""))
+        if not message_id:
+            raise GmailProviderError("Gmail did not return a sent message identifier.")
+        return message_id
 
     def _list_message_references(self, query: str, limit: int) -> list[dict[str, str]]:
         remaining = max(1, min(limit, 100))
