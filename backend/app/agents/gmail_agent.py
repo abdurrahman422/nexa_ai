@@ -18,6 +18,10 @@ from app.security.gmail_approvals import EmailApprovalController, GmailApproval,
 
 GMAIL_DRAFTS_URL = "https://mail.google.com/mail/u/0/#drafts"
 _GMAIL_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+_SEND_RESULT_UNCERTAIN = (
+    "Gmail send failed or the send result could not be confirmed. "
+    "Check Gmail Sent before attempting any further action."
+)
 
 
 class GmailAgent:
@@ -34,15 +38,19 @@ class GmailAgent:
         email: PreparedEmail,
         attachment_metadata: tuple[dict[str, Any], ...] = (),
     ) -> GmailApproval:
-        return self.draft_approvals.create_approval(
+        approval = self.draft_approvals.create_approval(
             draft_id,
             self._active_account_id(),
             email,
             attachment_metadata=attachment_metadata or None,
         )
+        self._audit_approval("approval_created", "pending", approval, "approval_created")
+        return approval
 
     def get_draft_approval(self, approval_id: str) -> GmailApproval | None:
         approval = self.draft_approvals.get_approval(approval_id)
+        if approval is not None and approval.status == "expired":
+            self._audit_approval("approval_expired", "blocked", approval, "approval_expired")
         if approval is None or approval.status in {"cancelled", "expired", "invalidated", "sending", "sent"}:
             return approval
         return self._revalidate_draft_approval(approval)
@@ -52,22 +60,42 @@ class GmailAgent:
         if approval is None:
             raise PermissionError("Approval was not found.")
         if approval.status in {"cancelled", "expired", "invalidated"}:
+            if approval.status == "expired":
+                self._audit_approval("approval_expired", "blocked", approval, "approval_expired")
             raise PermissionError(f"Approval cannot be approved from status '{approval.status}'.")
         revalidated = self._revalidate_draft_approval(approval)
         if revalidated.status != "pending":
             return revalidated
-        return self.draft_approvals.approve(approval_id)
+        approved = self.draft_approvals.approve(approval_id)
+        self._audit_approval("approval_approved", "approved", approved, "approval_approved")
+        return approved
 
     def cancel_draft(self, approval_id: str) -> GmailApproval:
-        return self.draft_approvals.cancel(approval_id)
+        approval = self.draft_approvals.get_approval(approval_id)
+        if approval is not None and approval.status == "expired":
+            self._audit_approval("approval_expired", "blocked", approval, "approval_expired")
+        cancelled = self.draft_approvals.cancel(approval_id)
+        self._audit_approval("approval_cancelled", "cancelled", cancelled, "approval_cancelled")
+        return cancelled
 
     def send_approved_draft(self, approval_id: str) -> tuple[GmailApproval, str | None]:
         if not is_permission_enabled("email_control"):
             raise PermissionError(permission_denied_message("email_control"))
         approval = self.draft_approvals.get_approval(approval_id)
         if approval is None:
+            self._audit_event("send_blocked", "blocked", "approval_missing", approval_id=approval_id)
             raise PermissionError("Approval was not found.")
         if approval.status != "approved":
+            reason = {
+                "pending": "approval_required",
+                "cancelled": "approval_cancelled",
+                "expired": "approval_expired",
+                "invalidated": "approval_invalidated",
+                "sending": "send_in_progress",
+                "sent": "duplicate_send",
+            }.get(approval.status, "approval_invalid")
+            event = "duplicate_send" if approval.status in {"sending", "sent"} else "send_blocked"
+            self._audit_approval(event, "blocked", approval, reason)
             return approval, None
 
         # Gmail has no conditional compare-and-send transaction for drafts.send.
@@ -75,18 +103,24 @@ class GmailAgent:
         # edits can still occur in the tiny interval before the provider call.
         revalidated = self._revalidate_draft_approval(approval)
         if revalidated.status != "approved":
+            self._audit_approval("send_blocked", "blocked", revalidated, "approval_invalidated")
             return revalidated, None
         claimed = self.draft_approvals.claim_for_send(approval_id)
         if claimed.status != "sending":
+            self._audit_approval("duplicate_send", "blocked", claimed, "duplicate_send")
             return claimed, None
+        self._audit_approval("send_claimed", "started", claimed, "send_claimed")
         try:
             message_id = self.provider.send_draft(claimed.draft_id)
         except GmailProviderError as exc:
             self.draft_approvals.invalidate(approval_id)
-            record_audit_event("gmail", "draft_send", "blocked", "high", "", str(exc))
-            raise
+            failed = self.draft_approvals.get_approval(approval_id)
+            if failed is not None:
+                self._audit_approval("provider_send_failure", "blocked", failed, "provider_send_failed")
+                self._audit_approval("send_blocked", "blocked", failed, "send_result_uncertain")
+            raise GmailProviderError(_SEND_RESULT_UNCERTAIN) from exc
         sent = self.draft_approvals.mark_sent(approval_id)
-        record_audit_event("gmail", "draft_send", "executed", "high", ",".join(sent.to), "Approved Gmail draft sent.")
+        self._audit_approval("send_succeeded", "executed", sent, "send_succeeded")
         return sent, message_id
 
     def execute(self, action: str, **kwargs: Any) -> GmailActionResult:
@@ -237,17 +271,64 @@ class GmailAgent:
         return str((active_account or {}).get("account_id", "mock"))
 
     def _revalidate_draft_approval(self, approval: GmailApproval) -> GmailApproval:
+        active_account_id = self._active_account_id()
         try:
             snapshot = self.provider.get_draft_snapshot(approval.draft_id)
         except GmailProviderError:
-            snapshot = None
-        return self.draft_approvals.revalidate_approval(
+            invalidated = self.draft_approvals.invalidate(approval.approval_id)
+            self._audit_approval("draft_missing", "blocked", invalidated, "draft_unavailable")
+            self._audit_approval("approval_invalidated", "invalidated", invalidated, "draft_unavailable")
+            return invalidated
+        if active_account_id != approval.active_account_id:
+            invalidated = self.draft_approvals.invalidate(approval.approval_id)
+            self._audit_approval("account_mismatch", "blocked", invalidated, "account_mismatch")
+            self._audit_approval("approval_invalidated", "invalidated", invalidated, "account_mismatch")
+            return invalidated
+        current = self.draft_approvals.revalidate_approval(
             approval.approval_id,
-            active_account_id=self._active_account_id(),
+            active_account_id=active_account_id,
             draft_id=approval.draft_id,
             email=snapshot.email if snapshot is not None else None,
             attachment_metadata=snapshot.attachment_metadata if snapshot is not None else (),
         )
+        if current.status == "invalidated":
+            self._audit_approval("draft_changed", "blocked", current, "draft_changed")
+            self._audit_approval("approval_invalidated", "invalidated", current, "draft_changed")
+        return current
+
+    def _audit_approval(self, event: str, status: str, approval: GmailApproval, reason: str) -> None:
+        self._audit_event(
+            event,
+            status,
+            reason,
+            approval_id=approval.approval_id,
+            draft_id=approval.draft_id,
+            account_id=approval.active_account_id,
+            recipient_count=len(approval.to) + len(approval.cc) + len(approval.bcc),
+            attachment_count=len(approval.attachment_metadata),
+        )
+
+    @staticmethod
+    def _audit_event(
+        event: str,
+        status: str,
+        reason: str,
+        *,
+        approval_id: str = "",
+        draft_id: str = "",
+        account_id: str = "",
+        recipient_count: int = 0,
+        attachment_count: int = 0,
+    ) -> None:
+        target = ":".join(
+            part for part in (
+                f"approval={approval_id}" if approval_id else "",
+                f"draft={draft_id}" if draft_id else "",
+                f"account={account_id}" if account_id else "",
+            ) if part
+        )
+        message = f"reason={reason};recipient_count={recipient_count};attachment_count={attachment_count}"
+        record_audit_event("gmail", event, status, "high", target, message)
 
     @staticmethod
     def _approval_preview(approval: GmailApproval, email: PreparedEmail) -> dict[str, Any]:
@@ -293,7 +374,14 @@ class GmailAgent:
         prepared = self.provider.prepare_email(self._prepared_from_kwargs(kwargs))
         preview = self._outgoing_preview(prepared)
         pending = self.approvals.create_pending(prepared, preview)
-        record_audit_event("gmail", "email_send", "pending_confirmation", "high", ",".join(prepared.to), "Email preview created; not sent.")
+        self._audit_event(
+            "email_send",
+            "pending_confirmation",
+            "approval_pending",
+            approval_id=pending.approval_id,
+            recipient_count=len(prepared.to) + len(prepared.cc) + len(prepared.bcc),
+            attachment_count=len(prepared.attachments),
+        )
         return GmailActionResult("pending_confirmation", "prepare_send", "Email preview created. Explicit user approval is required before sending.", preview=preview, approval_id=pending.approval_id)
 
     @staticmethod
