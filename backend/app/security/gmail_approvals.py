@@ -120,18 +120,29 @@ class GmailApprovalController:
         email: PreparedEmail,
         attachment_metadata: tuple[dict[str, Any], ...],
     ) -> str:
+        normalize_text = lambda value: str(value or "").replace("\r\n", "\n").replace("\r", "\n")
+        normalize_recipients = lambda values: sorted(str(value).strip().casefold() for value in values)
+        normalized_attachments = sorted(
+            (dict(item) for item in attachment_metadata),
+            key=lambda item: (
+                str(item.get("filename", "")).casefold(),
+                str(item.get("mime_type", "")).casefold(),
+                int(item.get("size", 0)),
+                str(item.get("content_sha256", "")),
+            ),
+        )
         canonical = {
             "active_account_id": active_account_id,
             "draft_id": draft_id,
-            "to": list(email.to),
-            "cc": list(email.cc),
-            "bcc": list(email.bcc),
-            "subject": email.subject,
-            "body": email.body,
+            "to": normalize_recipients(email.to),
+            "cc": normalize_recipients(email.cc),
+            "bcc": normalize_recipients(email.bcc),
+            "subject": normalize_text(email.subject),
+            "body": normalize_text(email.body),
             "thread_id": email.thread_id,
             "in_reply_to": email.in_reply_to,
             "references": list(email.references),
-            "attachments": list(attachment_metadata),
+            "attachments": normalized_attachments,
         }
         encoded = json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return sha256(encoded).hexdigest()
@@ -163,11 +174,17 @@ class GmailApprovalController:
             )
         return tuple(metadata)
 
-    def create_approval(self, draft_id: str, active_account_id: str, email: PreparedEmail) -> GmailApproval:
+    def create_approval(
+        self,
+        draft_id: str,
+        active_account_id: str,
+        email: PreparedEmail,
+        attachment_metadata: tuple[dict[str, Any], ...] | None = None,
+    ) -> GmailApproval:
         if not draft_id or not active_account_id:
             raise ValueError("Draft and active Gmail account identifiers are required.")
         now = datetime.now(timezone.utc)
-        attachment_metadata = self._attachment_metadata(email.attachments)
+        attachment_metadata = attachment_metadata or self._attachment_metadata(email.attachments)
         approval = GmailApproval(
             approval_id=token_urlsafe(32),
             draft_id=draft_id,
@@ -199,7 +216,7 @@ class GmailApprovalController:
     def expire_if_needed(self, approval_id: str) -> GmailApproval | None:
         with self._lock:
             approval = self._approvals.get(approval_id)
-            if approval is None or approval.status != "pending":
+            if approval is None or approval.status not in {"pending", "approved"}:
                 return approval
             if datetime.now(timezone.utc) < datetime.fromisoformat(approval.expires_at):
                 return approval
@@ -210,6 +227,36 @@ class GmailApprovalController:
     def is_valid(self, approval_id: str) -> bool:
         approval = self.get_approval(approval_id)
         return approval is not None and approval.status == "pending"
+
+    def revalidate_approval(
+        self,
+        approval_id: str,
+        *,
+        active_account_id: str,
+        draft_id: str,
+        email: PreparedEmail | None,
+        attachment_metadata: tuple[dict[str, Any], ...] = (),
+    ) -> GmailApproval:
+        approval = self.get_approval(approval_id)
+        if approval is None:
+            raise PermissionError("Approval was not found.")
+        if approval.status in {"cancelled", "expired", "invalidated"}:
+            return approval
+        if (
+            email is None
+            or active_account_id != approval.active_account_id
+            or draft_id != approval.draft_id
+        ):
+            return self.invalidate(approval_id)
+        current_fingerprint = self.fingerprint(
+            active_account_id=active_account_id,
+            draft_id=draft_id,
+            email=email,
+            attachment_metadata=attachment_metadata or self._attachment_metadata(email.attachments),
+        )
+        if current_fingerprint != approval.draft_fingerprint:
+            return self.invalidate(approval_id)
+        return approval
 
     def approve(self, approval_id: str) -> GmailApproval:
         with self._lock:

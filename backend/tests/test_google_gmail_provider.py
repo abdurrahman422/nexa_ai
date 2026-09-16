@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -91,6 +92,36 @@ def test_google_provider_search_thread_labels_and_attachment_download(tmp_path: 
     destination = provider.download_attachment("m1", "a1", tmp_path)
     assert destination.read_bytes() == b"test"
     assert destination.parent == tmp_path.resolve()
+
+
+def test_google_provider_draft_snapshot_is_read_only_and_sanitized(monkeypatch) -> None:
+    message = EmailMessage()
+    message["To"] = "to@example.com"
+    message["Cc"] = "cc@example.com"
+    message["Bcc"] = "bcc@example.com"
+    message["Subject"] = "Draft subject"
+    message.set_content("Draft body")
+    message.add_attachment(b"attachment bytes", maintype="text", subtype="plain", filename="note.txt")
+    raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    service = _service()
+    service.users.return_value.drafts.return_value.get.return_value.execute.return_value = {
+        "id": "draft-1",
+        "message": {"id": "message-1", "threadId": "thread-1", "raw": raw},
+    }
+    provider = GoogleGmailProvider(service=service)
+    monkeypatch.setattr(provider, "_get_credentials", lambda **kwargs: object())
+    snapshot = provider.get_draft_snapshot("draft-1")
+    assert snapshot.draft_id == "draft-1"
+    assert snapshot.email.to == ("to@example.com",)
+    assert snapshot.email.subject == "Draft subject"
+    assert snapshot.email.body.strip() == "Draft body"
+    assert snapshot.attachment_metadata[0]["filename"] == "note.txt"
+    assert snapshot.attachment_metadata[0]["size"] == len(b"attachment bytes")
+    assert "raw" not in repr(snapshot)
+    assert b"attachment bytes".decode() not in repr(snapshot)
+    assert service.users.return_value.drafts.return_value.get.call_args.kwargs == {
+        "userId": "me", "id": "draft-1", "format": "raw"
+    }
 
 
 def test_google_provider_rejects_disabled_non_draft_write_operations() -> None:

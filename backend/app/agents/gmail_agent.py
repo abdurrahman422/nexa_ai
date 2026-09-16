@@ -28,15 +28,34 @@ class GmailAgent:
         self.approvals = approvals or EmailApprovalController()
         self.draft_approvals = draft_approvals or GmailApprovalController()
 
-    def request_draft_approval(self, draft_id: str, email: PreparedEmail) -> GmailApproval:
-        active_account = self.provider.active_account() if hasattr(self.provider, "active_account") else None
-        account_id = str((active_account or {}).get("account_id", "mock"))
-        return self.draft_approvals.create_approval(draft_id, account_id, email)
+    def request_draft_approval(
+        self,
+        draft_id: str,
+        email: PreparedEmail,
+        attachment_metadata: tuple[dict[str, Any], ...] = (),
+    ) -> GmailApproval:
+        return self.draft_approvals.create_approval(
+            draft_id,
+            self._active_account_id(),
+            email,
+            attachment_metadata=attachment_metadata or None,
+        )
 
     def get_draft_approval(self, approval_id: str) -> GmailApproval | None:
-        return self.draft_approvals.get_approval(approval_id)
+        approval = self.draft_approvals.get_approval(approval_id)
+        if approval is None or approval.status in {"cancelled", "expired", "invalidated"}:
+            return approval
+        return self._revalidate_draft_approval(approval)
 
     def approve_draft(self, approval_id: str) -> GmailApproval:
+        approval = self.draft_approvals.get_approval(approval_id)
+        if approval is None:
+            raise PermissionError("Approval was not found.")
+        if approval.status in {"cancelled", "expired", "invalidated"}:
+            raise PermissionError(f"Approval cannot be approved from status '{approval.status}'.")
+        revalidated = self._revalidate_draft_approval(approval)
+        if revalidated.status != "pending":
+            return revalidated
         return self.draft_approvals.approve(approval_id)
 
     def cancel_draft(self, approval_id: str) -> GmailApproval:
@@ -105,7 +124,15 @@ class GmailAgent:
                 metadata = dict(getattr(self.provider, "last_draft_metadata", {}))
                 metadata.setdefault("draft_id", draft_id)
                 prepared = self._approval_email(kwargs, metadata)
-                approval = self.request_draft_approval(draft_id, prepared)
+                attachment_metadata: tuple[dict[str, Any], ...] = ()
+                try:
+                    snapshot = self.provider.get_draft_snapshot(draft_id)
+                except GmailProviderError:
+                    snapshot = None
+                if snapshot is not None:
+                    prepared = snapshot.email
+                    attachment_metadata = snapshot.attachment_metadata
+                approval = self.request_draft_approval(draft_id, prepared, attachment_metadata)
                 metadata["approval_id"] = approval.approval_id
                 metadata["approval"] = self._approval_preview(approval, prepared)
                 metadata["operation"] = action
@@ -179,6 +206,23 @@ class GmailAgent:
             body=str(kwargs.get("body", "")),
             attachments=tuple(kwargs.get("attachments", ())),
             thread_id=metadata.get("thread_id") or kwargs.get("thread_id"),
+        )
+
+    def _active_account_id(self) -> str:
+        active_account = self.provider.active_account() if hasattr(self.provider, "active_account") else None
+        return str((active_account or {}).get("account_id", "mock"))
+
+    def _revalidate_draft_approval(self, approval: GmailApproval) -> GmailApproval:
+        try:
+            snapshot = self.provider.get_draft_snapshot(approval.draft_id)
+        except GmailProviderError:
+            snapshot = None
+        return self.draft_approvals.revalidate_approval(
+            approval.approval_id,
+            active_account_id=self._active_account_id(),
+            draft_id=approval.draft_id,
+            email=snapshot.email if snapshot is not None else None,
+            attachment_metadata=snapshot.attachment_metadata if snapshot is not None else (),
         )
 
     @staticmethod

@@ -115,7 +115,7 @@ def _draft_approval_response(approval: object | None) -> dict:
         key: getattr(approval, key)
         for key in (
             "approval_id", "draft_id", "active_account_id", "to", "cc", "bcc",
-            "subject", "draft_fingerprint", "attachment_metadata", "created_at",
+            "subject", "attachment_metadata", "created_at",
             "expires_at", "status",
         )
     }

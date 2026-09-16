@@ -54,6 +54,13 @@ class PreparedEmail:
 
 
 @dataclass(frozen=True)
+class GmailDraftSnapshot:
+    draft_id: str
+    email: PreparedEmail
+    attachment_metadata: tuple[dict[str, Any], ...] = ()
+
+
+@dataclass(frozen=True)
 class GmailPreview:
     sender: str
     recipients: tuple[str, ...]

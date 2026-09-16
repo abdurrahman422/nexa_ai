@@ -7,6 +7,7 @@ Gmail write operation enabled in this phase; sending remains unavailable.
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
 from email.message import EmailMessage
@@ -30,7 +31,7 @@ from app.providers.gmail_provider import (
     safe_text,
 )
 from app.attachments import resolve_attachments, sanitize_attachment
-from app.schemas.gmail import GmailAttachment, GmailEmail, GmailThread, PreparedEmail
+from app.schemas.gmail import GmailAttachment, GmailDraftSnapshot, GmailEmail, GmailThread, PreparedEmail
 
 
 GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
@@ -304,6 +305,49 @@ class GoogleGmailProvider(GmailProvider):
             ],
         }
         return api_draft_id
+
+    def get_draft_snapshot(self, draft_id: str) -> GmailDraftSnapshot:
+        self._get_credentials()
+        response = self.service.users().drafts().get(
+            userId="me", id=draft_id, format="raw"
+        ).execute()
+        message = response.get("message", {}) or {}
+        raw_message = message.get("raw")
+        if not isinstance(raw_message, str) or not raw_message:
+            raise GmailProviderError("Gmail draft verification did not return the stored MIME message.")
+        try:
+            parsed = BytesParser(policy=SMTP).parsebytes(_decode_data(raw_message))
+            body_part = parsed.get_body(preferencelist=("plain", "html"))
+            body = body_part.get_content() if body_part else ""
+            attachments: list[dict[str, Any]] = []
+            for part in parsed.iter_attachments():
+                payload = part.get_payload(decode=True) or b""
+                filename = str(part.get_filename() or "")
+                mime_type = part.get_content_type()
+                attachments.append({
+                    "filename": filename,
+                    "mime_type": mime_type,
+                    "size": len(payload),
+                    "attachment_id": "",
+                    "content_sha256": hashlib.sha256(payload).hexdigest(),
+                })
+            email = PreparedEmail(
+                to=tuple(address for _, address in getaddresses([str(parsed.get("To", ""))]) if address),
+                cc=tuple(address for _, address in getaddresses([str(parsed.get("Cc", ""))]) if address),
+                bcc=tuple(address for _, address in getaddresses([str(parsed.get("Bcc", ""))]) if address),
+                subject=str(parsed.get("Subject", "")),
+                body=body,
+                attachments=tuple(
+                    GmailAttachment(item["filename"], item["mime_type"], item["size"], item["attachment_id"])
+                    for item in attachments
+                ),
+                thread_id=str(message.get("threadId", "")) or None,
+                in_reply_to=str(parsed.get("In-Reply-To", "")) or None,
+                references=tuple(str(parsed.get("References", "")).split()),
+            )
+        except (TypeError, ValueError) as exc:
+            raise GmailProviderError("Gmail draft verification returned malformed MIME data.") from exc
+        return GmailDraftSnapshot(draft_id, email, tuple(attachments))
 
     @staticmethod
     def _build_plain_draft_message(prepared: PreparedEmail) -> EmailMessage:

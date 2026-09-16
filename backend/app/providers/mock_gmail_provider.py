@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,7 +11,7 @@ from threading import Lock
 from typing import Iterable
 
 from app.providers.gmail_provider import GmailProvider, GmailProviderError, _reply_message, _reply_target, _unique_addresses
-from app.schemas.gmail import GmailAttachment, GmailEmail, GmailThread, PreparedEmail
+from app.schemas.gmail import GmailAttachment, GmailDraftSnapshot, GmailEmail, GmailThread, PreparedEmail
 
 
 class MockGmailProvider(GmailProvider):
@@ -174,6 +175,25 @@ class MockGmailProvider(GmailProvider):
         if draft is None:
             raise GmailProviderError("Draft was not found.")
         return draft
+
+    def get_draft_snapshot(self, draft_id: str) -> GmailDraftSnapshot:
+        draft = self.get_draft(draft_id)
+        metadata = []
+        for attachment in draft.attachments:
+            content_hash = None
+            if attachment.local_path:
+                try:
+                    content_hash = hashlib.sha256(Path(attachment.local_path).read_bytes()).hexdigest()
+                except OSError:
+                    content_hash = None
+            metadata.append({
+                "filename": attachment.filename,
+                "mime_type": attachment.mime_type,
+                "size": attachment.size,
+                "attachment_id": attachment.attachment_id,
+                "content_sha256": content_hash,
+            })
+        return GmailDraftSnapshot(draft_id, draft, tuple(metadata))
 
     def create_reply_draft(self, thread_id: str, body: str, **kwargs: object) -> str:
         target = _reply_target(self.get_thread(thread_id))

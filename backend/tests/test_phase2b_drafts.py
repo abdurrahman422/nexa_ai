@@ -496,6 +496,21 @@ def test_english_chat_compose_creates_gmail_draft(monkeypatch) -> None:
     assert response.json()["gmail_draft"]["draft_id"] == "draft-1"
 
 
+def test_explicit_gmail_compose_bypasses_productivity_email_draft(monkeypatch) -> None:
+    monkeypatch.setenv("NEXA_GMAIL_PROVIDER", "mock")
+    monkeypatch.setattr("app.agents.gmail_agent.webbrowser.open", lambda url: True)
+    response = TestClient(app).post(
+        "/api/chat/message",
+        json={"message": "Create a Gmail draft to test@example.com Subject: Test Body: hello"},
+    )
+    data = response.json()
+    assert response.status_code == 200
+    assert data["intent"] == "gmail_skill"
+    assert data["gmail_draft"]["draft_id"].startswith("draft-")
+    assert data["gmail_approval"]["status"] == "pending"
+    assert data["approval_id"] == data["gmail_approval"]["approval_id"]
+
+
 @pytest.mark.parametrize(
     ("command", "subject", "body"),
     [

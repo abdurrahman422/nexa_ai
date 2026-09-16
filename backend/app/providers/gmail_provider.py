@@ -22,6 +22,7 @@ from typing import Any, Iterable
 from app.schemas.gmail import (
     GmailAttachment,
     GmailEmail,
+    GmailDraftSnapshot,
     GmailThread,
     PreparedEmail,
 )
@@ -80,6 +81,9 @@ class GmailProvider(ABC):
 
     @abstractmethod
     def create_draft(self, prepared: PreparedEmail) -> str: ...
+
+    def get_draft_snapshot(self, draft_id: str) -> GmailDraftSnapshot:
+        raise GmailProviderError("Gmail draft revalidation is unavailable for this provider.")
 
     def create_reply_draft(self, thread_id: str, body: str, **kwargs: Any) -> str:
         thread = self.get_thread(thread_id)

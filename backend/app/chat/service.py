@@ -468,7 +468,6 @@ def _looks_like_search_request(text: str) -> bool:
 def _looks_like_gmail_request(text: str) -> bool:
     gmail_markers = (
         "gmail",
-        "email",
         "emails",
         "inbox",
         "unread emails",
@@ -615,7 +614,7 @@ def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessage
 
 
 def _parse_english_email_compose(normalized: str) -> dict[str, object] | None:
-    if not re.search(r"\b(?:write|draft|prepare|create|send)\b", normalized, re.IGNORECASE) or not re.search(r"\b(?:email|mail)\b", normalized, re.IGNORECASE):
+    if not re.search(r"\b(?:write|draft|prepare|create|send)\b", normalized, re.IGNORECASE) or not re.search(r"\b(?:email|mail|gmail)\b", normalized, re.IGNORECASE):
         return None
     recipient_match = re.search(
         r"\bto\s+(.+?)(?=\s+(?:about|because|confirming|saying|with\s+subject|subject\s*:?)\b|\s*\.\s*(?:subject|body|cc|bcc|to)\s*:|$)",
@@ -3657,6 +3656,9 @@ def handle_chat_message(request: ChatMessageRequest) -> ChatMessageResponse:
     if pending_whatsapp is not None:
         return pending_whatsapp
 
+    if intent == "gmail_skill":
+        return _with_route_debug(_gmail_chat_response(message, request.address_style), route)
+
     productivity_response = productivity_chat_response(request)
     if productivity_response is not None:
         _record_chat_event(productivity_response.intent, productivity_response.status, message, productivity_response.answer)
@@ -3677,9 +3679,6 @@ def handle_chat_message(request: ChatMessageRequest) -> ChatMessageResponse:
 
     if intent == "file_summary_request":
         return _with_route_debug(_file_summary_request_response(message, request.address_style), route)
-
-    if intent == "gmail_skill":
-        return _with_route_debug(_gmail_chat_response(message, request.address_style), route)
 
     if intent == "app_planning":
         return _with_route_debug(_app_planning_response(message, request.address_style), route)
