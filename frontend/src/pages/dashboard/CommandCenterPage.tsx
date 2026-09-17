@@ -325,12 +325,14 @@ export function CommandCenterPage({
       } catch {
         whatsappDraftOpenTarget = "auto";
       }
+      const profile = loadProfile();
       const response = await requestChatMessage(
         text,
         backendHistory,
-        loadProfile().addressingPreference,
+        profile.addressingPreference,
         whatsappDraftOpenTarget,
         options.source ?? "dashboard_text",
+        profile.userName?.trim() || "",
       );
       const assistantEntry = chatResponseToEntry(response, text);
       setMessages((prev) => [...prev, assistantEntry]);

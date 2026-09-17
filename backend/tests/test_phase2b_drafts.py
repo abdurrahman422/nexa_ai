@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 from datetime import datetime, timedelta, timezone
 from email import policy
 from email.parser import BytesParser
@@ -604,6 +605,122 @@ def test_email_drafting_does_not_invent_unsupplied_details() -> None:
     assert "2026" not in composition.body
     assert "tomorrow" not in composition.body.lower()
     assert "because" not in composition.body.lower()
+
+
+def test_active_profile_name_prefers_real_user_profile_over_gmail_account() -> None:
+    class FakeProvider:
+        profile = {"display_name": "Supti Das Medha"}
+        active_account = lambda self: {"display_name": "Suptidasmedha", "email": "suptidasmedha@gmail.com"}
+
+    assert chat_service._active_profile_name(FakeProvider()) == "Supti Das Medha"
+
+
+def test_active_profile_name_never_guess_from_email_local_part() -> None:
+    class FakeProvider:
+        active_account = lambda self: {"display_name": "", "email": "suptidasmedha@gmail.com"}
+
+    assert chat_service._active_profile_name(FakeProvider()) == ""
+
+
+def test_email_drafting_uses_neutral_signoff_when_no_display_name_is_available() -> None:
+    command = "Write a polite email to professor@example.com asking for guidance on the next steps for the assignment."
+    parsed = chat_service._parse_english_email_compose(command)
+    assert parsed is not None
+    body = compose_missing_fields(command, **parsed, profile_name="").body
+    assert body.rstrip().endswith("Best regards,")
+    assert "Suptidasmedha" not in body
+
+
+def test_gmail_draft_uses_explicit_profile_name_in_signature_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    command = "Write a professional email to colleague@example.com about the meeting schedule."
+
+    class FakeAgent:
+        provider = type("Provider", (), {})()
+
+        def execute(self, action: str, **kwargs: object) -> object:
+            assert action == "draft"
+            body = str(kwargs["body"])
+            assert "Supti Das Medha" in body
+            assert body.rstrip().endswith("Supti Das Medha")
+            return type("Result", (), {"status": "drafted", "message": "Draft created.", "metadata": {}, "approval_id": None, "error": None})()
+
+    monkeypatch.setattr(chat_service, "get_gmail_agent", lambda: FakeAgent())
+    response = chat_service._gmail_chat_response(command, "professional", "Supti Das Medha")
+
+    assert response.status == "drafted"
+    assert "Draft created." in response.answer
+
+
+def test_email_drafting_avoids_unrequested_meeting_offers() -> None:
+    command = "Write a polite email to professor@example.com asking for guidance on the next steps for the assignment."
+    parsed = chat_service._parse_english_email_compose(command)
+    assert parsed is not None
+    body = compose_missing_fields(command, **parsed).body.lower()
+    assert "if needed, i can provide additional context." in body
+    assert "meet at a convenient time" not in body
+    assert "happy to" not in body
+
+
+def test_email_drafting_normal_academic_email_is_not_excessively_short() -> None:
+    command = "Write a formal academic email to professor@example.com requesting a brief extension for the paper and asking for guidance on the next steps."
+    parsed = chat_service._parse_english_email_compose(command)
+    assert parsed is not None
+    composition = compose_missing_fields(command, **parsed, profile_name="Aisha Rahman")
+    word_count = len(re.findall(r"\b\w+\b", composition.body))
+    assert 90 <= word_count <= 140
+    paragraphs = [
+        part.strip()
+        for part in composition.body.split("\n\n")
+        if part.strip() and not part.strip().startswith(("Dear ", "Best regards,"))
+    ]
+    assert 2 <= len(paragraphs) <= 3
+    assert "[Your Name]" not in composition.body
+    assert "Aisha Rahman" in composition.body
+
+
+def test_email_drafting_brief_email_remains_brief() -> None:
+    command = "Write a brief email to client@example.com confirming that I received the invoice and will review it today."
+    parsed = chat_service._parse_english_email_compose(command)
+    assert parsed is not None
+    composition = compose_missing_fields(command, **parsed, profile_name="")
+    word_count = len(re.findall(r"\b\w+\b", composition.body))
+    assert 60 <= word_count <= 90
+
+
+def test_email_drafting_detailed_request_can_be_longer() -> None:
+    command = (
+        "Draft a detailed professional email to supervisor@example.com explaining the project update, "
+        "the current timeline, the main risks, and the need for feedback on the next milestone."
+    )
+    parsed = chat_service._parse_english_email_compose(command)
+    assert parsed is not None
+    composition = compose_missing_fields(command, **parsed)
+    word_count = len(re.findall(r"\b\w+\b", composition.body))
+    assert 120 <= word_count <= 180
+    assert not composition.body.startswith("I am writing regarding")
+
+
+def test_email_drafting_avoids_placeholder_when_profile_name_exists() -> None:
+    command = "Write a professional email to colleague@example.com about the meeting schedule."
+    parsed = chat_service._parse_english_email_compose(command)
+    assert parsed is not None
+    composition = compose_missing_fields(command, **parsed, profile_name="Nadia Iqbal")
+    assert "[Your Name]" not in composition.body
+    assert "Nadia Iqbal" in composition.body
+    assert "Best regards," in composition.body
+
+
+def test_email_drafting_does_not_fabricate_details_when_context_is_missing() -> None:
+    command = "Write a polite email to professor@example.com about the missing assignment."
+    parsed = chat_service._parse_english_email_compose(command)
+    assert parsed is not None
+    composition = compose_missing_fields(command, **parsed)
+    body = composition.body.lower()
+    assert "missing assignment" in body
+    assert "deadline" not in body
+    assert "tomorrow" not in body
+    assert "medical" not in body
+    assert "approved" not in body
 
 
 @pytest.mark.parametrize(

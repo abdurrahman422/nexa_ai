@@ -638,6 +638,7 @@ export function requestChatMessage(
   addressStyle?: string,
   whatsappDraftOpenTarget = "auto",
   source = "chat_page",
+  profileName?: string,
   backendUrl = DEFAULT_BACKEND_URL,
 ) {
   return sendJson<ChatMessageResponseDto>(
@@ -648,6 +649,7 @@ export function requestChatMessage(
       history,
       source,
       address_style: addressStyle,
+      profile_name: profileName?.trim() || undefined,
       whatsapp_draft_open_target: whatsappDraftOpenTarget,
     },
   );

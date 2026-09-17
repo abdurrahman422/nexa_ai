@@ -13,6 +13,7 @@ class ChatMessageRequest(BaseModel):
     history: list[ChatHistoryItem] = Field(default_factory=list)
     source: str = "chat_page"
     address_style: str | None = Field(default=None, max_length=40)
+    profile_name: str | None = Field(default=None, max_length=200)
     whatsapp_draft_open_target: str | None = Field(default="auto", max_length=24)
 
 

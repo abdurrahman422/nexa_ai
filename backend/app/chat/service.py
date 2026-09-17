@@ -488,8 +488,51 @@ def _looks_like_gmail_request(text: str) -> bool:
     return any(marker in text for marker in gmail_markers)
 
 
-def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessageResponse:
+def _active_profile_name(agent: object) -> str:
+    def _candidate_name(value: object) -> str:
+        if not isinstance(value, str):
+            return ""
+        cleaned = " ".join(value.replace("[Your Name]", "").split())
+        return cleaned.strip()
+
+    def _search_name_sources(*sources: object) -> str:
+        for container in sources:
+            if not isinstance(container, dict):
+                continue
+            for key in ("display_name", "full_name", "name", "profile_name", "user_name"):
+                name = _candidate_name(container.get(key))
+                if name:
+                    return name
+        return ""
+
+    provider = getattr(agent, "provider", None)
+    name = _search_name_sources(
+        getattr(agent, "profile", None),
+        getattr(agent, "user_profile", None),
+        getattr(agent, "account_profile", None),
+        getattr(agent, "active_profile", None),
+        getattr(agent, "current_profile", None),
+        getattr(provider, "profile", None),
+        getattr(provider, "user_profile", None),
+        getattr(provider, "account_profile", None),
+        getattr(provider, "active_profile", None),
+        getattr(provider, "current_profile", None),
+    )
+    if name:
+        return name
+
+    active = getattr(provider, "active_account", lambda: None)() if provider is not None else None
+    if isinstance(active, dict):
+        name = _search_name_sources(active)
+        if name:
+            return name
+    return ""
+
+
+def _gmail_chat_response(message: str, address_style: str | None, profile_name: str | None = None) -> ChatMessageResponse:
     agent = get_gmail_agent()
+    trusted_profile_name = (profile_name or "").strip()
+    profile_name = trusted_profile_name or _active_profile_name(agent)
     attachment_paths, cleaned_message = _extract_attachment_paths(message)
     try:
         attachments = resolve_attachments(attachment_paths)
@@ -523,7 +566,7 @@ def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessage
             return ChatMessageResponse(status="failed", intent="gmail_skill", message=message, answer="More than one matching email was found. Please specify which email to use.", provider=agent.provider.__class__.__name__, source="GmailAgent", source_type="tool", error="ambiguous_email")
         source = received[0]
         action = reply_request["action"]
-        reply_body = str(reply_request["body"] or compose_missing_fields(cleaned_message, to=()).body)
+        reply_body = str(reply_request["body"] or compose_missing_fields(cleaned_message, to=(), profile_name=profile_name).body)
         draft_kwargs = {"thread_id": source.thread_id, "body": reply_body, "attachments": attachments, "open_browser": True}
         if action == "forward_draft":
             draft_kwargs = {"message_id": source.id, "to": reply_request["to"], "body": reply_request["body"], "attachments": attachments, "open_browser": True}
@@ -546,7 +589,7 @@ def _gmail_chat_response(message: str, address_style: str | None) -> ChatMessage
         return ChatMessageResponse(status=result.status, intent="gmail_skill", message=message, answer=_compose_reply(result.message, address_style, _language_style(message)), blocked=result.status == "blocked", provider=agent.provider.__class__.__name__, source="GmailAgent", source_type="tool", gmail_draft=draft_metadata or None, gmail_approval=draft_metadata.get("approval"), approval_id=result.approval_id, error=result.error)
     compose = _parse_english_email_compose(cleaned_message)
     if compose is not None:
-        composition = compose_missing_fields(cleaned_message, **compose)
+        composition = compose_missing_fields(cleaned_message, **compose, profile_name=profile_name)
         draft_kwargs = composition.as_kwargs()
         draft_kwargs["attachments"] = attachments
         result = agent.execute("draft", **draft_kwargs, open_browser=True)
@@ -3657,7 +3700,7 @@ def handle_chat_message(request: ChatMessageRequest) -> ChatMessageResponse:
         return pending_whatsapp
 
     if intent == "gmail_skill":
-        return _with_route_debug(_gmail_chat_response(message, request.address_style), route)
+        return _with_route_debug(_gmail_chat_response(message, request.address_style, request.profile_name), route)
 
     productivity_response = productivity_chat_response(request)
     if productivity_response is not None:

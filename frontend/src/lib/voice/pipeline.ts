@@ -7,6 +7,7 @@
    command that the backend safety router needs to execute.
    ========================================================================== */
 import { requestChatMessage } from "@/lib/backendAssistantClient";
+import { loadProfile } from "@/lib/profileStorage";
 import type { ChatTurn, LLMNotice } from "@/lib/llm";
 
 export interface VoicePipelineResult {
@@ -32,7 +33,8 @@ export class VoicePipeline {
     const history = ctx.history
       .filter((turn) => turn.role !== "system")
       .map((turn) => ({ role: turn.role as "user" | "assistant", content: turn.content }));
-    const result = await requestChatMessage(message, history, ctx.addressStyle, "auto", "voice_conversation");
+    const profile = loadProfile();
+    const result = await requestChatMessage(message, history, ctx.addressStyle, "auto", "voice_conversation", profile.userName?.trim() || "");
     return {
       text: result.answer,
       provider: result.provider || result.llm_provider || "Nexa Backend",

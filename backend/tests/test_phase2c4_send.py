@@ -55,6 +55,26 @@ def test_approved_unchanged_draft_sends_once_and_becomes_sent() -> None:
     assert provider.send_draft_call_count == 1
 
 
+def test_approval_flow_requires_explicit_approval_before_send() -> None:
+    provider = MockGmailProvider()
+    agent = GmailAgent(provider)
+    draft_id = provider.create_draft(_email())
+    approval = agent.request_draft_approval(draft_id, _email())
+
+    result, message_id = agent.send_approved_draft(approval.approval_id)
+    assert result.status == "pending"
+    assert message_id is None
+    assert provider.send_draft_call_count == 0
+
+    approved = agent.approve_draft(approval.approval_id)
+    assert approved.status == "approved"
+
+    sent, message_id = agent.send_approved_draft(approval.approval_id)
+    assert sent.status == "sent"
+    assert message_id == "message-1"
+    assert provider.send_draft_call_count == 1
+
+
 @pytest.mark.parametrize("status", ["pending", "cancelled", "expired", "invalidated"])
 def test_non_approved_states_cannot_send(status: str) -> None:
     provider = MockGmailProvider()

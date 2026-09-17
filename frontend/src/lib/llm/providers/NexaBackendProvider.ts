@@ -15,6 +15,7 @@ import {
   requestChatMessage,
   type ChatHistoryItemDto,
 } from "../../backendAssistantClient";
+import { loadProfile } from "../../profileStorage";
 import { DEFAULT_BACKEND_URL } from "../../backendCommandClient";
 
 export class NexaBackendProvider extends BaseProvider {
@@ -38,7 +39,8 @@ export class NexaBackendProvider extends BaseProvider {
       .map((turn) => ({ role: turn.role, content: turn.content }));
 
     try {
-      const response = await requestChatMessage(input.message, history, input.addressStyle);
+      const profile = loadProfile();
+      const response = await requestChatMessage(input.message, history, input.addressStyle, "auto", "chat_page", profile.userName?.trim() || "");
       return {
         text: response.answer,
         providerId: this.meta.id,

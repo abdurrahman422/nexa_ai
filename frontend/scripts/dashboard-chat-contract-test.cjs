@@ -116,10 +116,11 @@ const checks = [
     pass: source.includes("entry.status === \"blocked\""),
   },
   {
-    name: "Dashboard sends assistant address style to chat endpoint",
+    name: "Dashboard sends assistant address style and profile metadata to chat endpoint",
     pass:
-      source.includes("loadProfile().addressingPreference") &&
-      clientSource.includes("address_style: addressStyle"),
+      /const\s+profile\s*=\s*loadProfile\(\);[\s\S]*requestChatMessage\([\s\S]*profile\.addressingPreference[\s\S]*profile\.userName\?\.trim\(\)\s*\|\|\s*""[\s\S]*\)/.test(source) &&
+      clientSource.includes("address_style: addressStyle") &&
+      clientSource.includes("profile_name: profileName?.trim() || undefined"),
   },
   {
     name: "Dashboard renders normal assistant replies",
