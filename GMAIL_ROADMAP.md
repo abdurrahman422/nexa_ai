@@ -1,28 +1,122 @@
-# NEXA AI — Gmail Integration
+# 🚀 NEXA AI — Secure Gmail Integration
 
 > **Project:** NEXA AI  
 > **Module:** Gmail Integration  
-> **Current Status:** Phase 2C Complete
-> **Next Milestone:** To be determined
-> **Repository Owner:** `supti-medha`
+> **Status:** ✅ Phase 1 → Phase 2A → Phase 2B → Phase 2C Complete  
+> **Latest Refinement:** AI Email Drafting + Profile-Aware Signatures  
+> **Active Remote Branch:** `origin/supti-medha`  
+> **Latest Verified Commit:** `96fa262`  
+> **Architecture:** Secure • Modular • Human-Controlled • Audit-Friendly
 
 ---
 
 ## 📌 Overview
 
-NEXA AI is a secure desktop AI assistant built around a modular, agent-based architecture.
+NEXA AI is a desktop AI assistant built around a modular, agent-based architecture.
 
-The Gmail integration is designed around three core principles:
+The Gmail integration provides real Gmail access while maintaining a strict security boundary between:
 
-- Secure access to the user's own Gmail account
-- Strict separation between AI reasoning and privileged Gmail actions
-- Human approval before sensitive actions such as sending an email
+- AI reasoning
+- Gmail account access
+- privileged Gmail operations
+- email sending
+- OAuth credentials
+- user approval
 
-Third-party Gmail and Google Workspace repositories were reviewed during development as references only.
+The Gmail module uses the official **Google Gmail API**.
 
-NEXA does **not** depend on those third-party repositories as its runtime Gmail engine.
+Third-party Gmail / Google Workspace repositories may be used for reference during development, but NEXA does **not** depend on them as its active Gmail runtime engine.
 
-The Gmail integration uses the official **Google Gmail API**.
+---
+
+# 🔐 Core Security Philosophy
+
+The Gmail integration follows three primary principles:
+
+1. **The LLM never gets direct Gmail sending authority**
+2. **Sensitive Gmail actions require explicit human approval**
+3. **OAuth credentials and tokens never enter the LLM context**
+
+Received emails are treated as:
+
+```text
+UNTRUSTED INPUT
+```
+
+This prevents malicious instructions inside received emails from automatically triggering privileged Gmail actions.
+
+---
+
+# 🏗️ High-Level Architecture
+
+```text
+User
+ │
+ ▼
+NEXA Desktop UI
+ │
+ ▼
+Chat / Command Router
+ │
+ ▼
+GmailAgent
+ │
+ ├── Gmail Provider Abstraction
+ │      ├── MockGmailProvider
+ │      └── GoogleGmailProvider
+ │
+ ├── Email Drafting Layer
+ │
+ ├── Approval Controller
+ │
+ ├── Draft Fingerprint / Revalidation
+ │
+ ├── Audit Layer
+ │
+ ▼
+Official Google Gmail API
+```
+
+---
+
+# 🔒 Gmail Send Security Boundary
+
+The LLM cannot directly execute Gmail send operations.
+
+```text
+LLM
+ │
+ │ prepares content only
+ ▼
+GmailAgent
+ │
+ ▼
+Draft Creation
+ │
+ ▼
+User Review
+ │
+ ▼
+Explicit Approval
+ │
+ ▼
+Final Revalidation
+ │
+ ▼
+Explicit Send Approved Draft
+ │
+ ▼
+Google Gmail API
+```
+
+The following architecture is forbidden:
+
+```text
+LLM
+ │
+ ▼
+Gmail Send API
+```
 
 ---
 
@@ -30,131 +124,71 @@ The Gmail integration uses the official **Google Gmail API**.
 
 **Status:** Complete
 
-Phase 1 established the Gmail architecture, provider abstraction, security boundaries, and Human-in-the-Loop foundation.
+Phase 1 established the Gmail architecture, provider abstraction, Human-in-the-Loop foundation, and security boundaries.
 
----
-
-## Phase 1 Architecture
-
-```text
-NEXA Host Agent
-      │
-      ▼
-  GmailAgent
-      │
-      ▼
- GmailProvider
-  Abstraction
-      │
-      ├── MockGmailProvider
-      │
-      └── GoogleGmailProvider
-      │
-      ▼
-HITL Approval Controller
-```
-
----
-
-## Phase 1 Completed Work
+## Completed Work
 
 - Created `GmailAgent`
 - Created Gmail provider abstraction
 - Implemented `MockGmailProvider`
-- Added `GoogleGmailProvider` support
-- Added Gmail-related backend API routes
-- Added Gmail request/response schemas
-- Added Human-in-the-Loop approval architecture
-- Added Gmail write-operation security restrictions
-- Added Gmail unit and integration tests
+- Added Google Gmail provider support
+- Added Gmail backend routes
+- Added Gmail request / response schemas
+- Added Human-in-the-Loop architecture
+- Added Gmail write-operation restrictions
+- Added Gmail tests
+- Prevented direct AI-controlled sending
 
 ---
 
-## 🔐 Core Gmail Security Architecture
-
-```text
-LLM
- │
- │ Requests / Prepares Action
- ▼
-GmailAgent
- │
- ▼
-Security / Approval Layer
- │
- ▼
-Gmail Provider
- │
- ▼
-Google Gmail API
-```
-
-The LLM is **never allowed to directly send an email**.
-
-Incoming email content is treated as:
-
-```text
-UNTRUSTED INPUT
-```
-
-This prevents malicious instructions contained inside emails from automatically triggering privileged actions.
-
----
-
-# ✅ Phase 2A — Real Gmail Read/Search Integration
+# ✅ Phase 2A — Real Gmail Read/Search + OAuth
 
 **Status:** Complete
 
-Phase 2A replaced mock Gmail behavior with real Gmail access through Google's official Gmail API.
+Phase 2A connected NEXA to real Gmail accounts through Google's official Gmail API.
 
 ---
 
-## 2A.1 — Official Google Gmail API Integration
+## Official Gmail Provider
 
-NEXA supports real Gmail access through:
+Active production provider:
 
 ```text
 GoogleGmailProvider
 ```
 
-Provider selection supports:
+Example provider configuration:
 
 ```env
 NEXA_GMAIL_PROVIDER=google
 ```
 
-Phase 2A originally used the Gmail read-only scope:
-
-```text
-https://www.googleapis.com/auth/gmail.readonly
-```
-
-This allowed NEXA to read Gmail information without giving it direct email-sending authority.
-
 ---
 
-## 2A.2 — Google Cloud OAuth Setup
+## Google OAuth
 
-A dedicated Google Cloud project was configured for NEXA AI.
+NEXA uses Google OAuth 2.0.
 
-Configuration includes:
+The Gmail integration supports:
 
 - Gmail API enabled
-- Google Auth Platform configured
-- OAuth application configured as External
-- Development application running in Testing mode
-- Google test-user support
-- Desktop OAuth client configured
+- Google Auth Platform
+- External OAuth application
+- Testing-mode development
+- Google test users
+- Desktop OAuth client
+- Local token persistence
+- Browser-based authorization flow
 
-OAuth credentials are stored outside the Git repository.
+OAuth credentials are stored outside the repository.
 
-Example local credentials location:
+Example:
 
 ```text
 D:\NEXA-Secrets\gmail\credentials.json
 ```
 
-OAuth account tokens are stored outside the repository under the user's local NEXA directory.
+Account tokens are stored under the local NEXA user directory.
 
 Example:
 
@@ -162,7 +196,11 @@ Example:
 %USERPROFILE%\.nexa_ai\gmail\
 ```
 
-### ⚠️ Never Commit These Files
+---
+
+## ⚠️ Never Commit Secrets
+
+Never commit:
 
 ```text
 credentials.json
@@ -170,33 +208,32 @@ token.json
 .env
 OAuth access tokens
 OAuth refresh tokens
-Private keys
+private keys
+API keys
 ```
 
-No Gmail OAuth token should ever be committed to GitHub.
+Real secrets must never be pushed to GitHub.
 
 ---
 
-## 2A.3 — Real Gmail Features
+# 📬 Real Gmail Read Features
 
-NEXA can access real Gmail data.
+NEXA supports:
 
-Supported operations include:
-
-- Search emails
-- List unread emails
-- List recent emails
+- Search email
+- List unread email
+- List recent email
 - Search by sender
 - Search by subject
-- Open an email
+- Open email
 - Read email content
 - Read Gmail threads
 - Retrieve message metadata
 - Retrieve attachment metadata
 - Download permitted attachments
-- Display normalized Gmail previews
+- Display Gmail previews
 
-### Example NEXA Commands
+Example commands:
 
 ```text
 Show my latest 5 unread emails
@@ -220,13 +257,11 @@ Show the full thread of my latest Google email
 
 ---
 
-## 2A.4 — Mock Gmail Routing Bug Fix
+# 🐛 Real Gmail Routing Fix
 
-During Phase 2A, an important integration bug was discovered.
+An early integration bug caused the desktop UI to return old mock Gmail data even though the backend successfully accessed real Gmail.
 
-The backend Gmail API correctly returned real Gmail data, but the NEXA desktop chat interface was still displaying Phase 1 mock information.
-
-Examples included:
+Examples of old mock values included:
 
 ```text
 supervisor@university.edu
@@ -235,25 +270,23 @@ msg-supervisor
 thread-report
 ```
 
-The issue was caused by old hardcoded mock-routing logic inside the chat service.
+The routing logic was corrected.
 
-The routing was corrected.
-
-Current architecture:
+Current flow:
 
 ```text
 NEXA Chat UI
-      │
-      ▼
-  GmailAgent
-      │
-      ▼
+ │
+ ▼
+GmailAgent
+ │
+ ▼
 GoogleGmailProvider
-      │
-      ▼
+ │
+ ▼
 Official Gmail API
-      │
-      ▼
+ │
+ ▼
 User's Real Gmail
 ```
 
@@ -261,92 +294,74 @@ User's Real Gmail
 
 ---
 
-## 2A.5 — Natural-Language Gmail Routing Fix
+# 🧠 Natural-Language Gmail Routing
 
-The Gmail command parser was improved.
+The Gmail router distinguishes between list and single-message operations.
 
-Previously:
-
-```text
-Show my latest 5 unread emails
-```
-
-could incorrectly interpret the word `latest` as a request to open a single email.
-
-The routing logic was corrected.
-
-Now:
+Example:
 
 ```text
 Show my latest 5 unread emails
 ```
 
-returns:
+returns multiple results.
 
-```text
-5 email results
-```
-
-while:
+While:
 
 ```text
 Open my latest unread email
 ```
 
-returns:
-
-```text
-1 opened email
-```
+opens one email.
 
 **Status:** ✅ Fixed
 
 ---
 
-## 2A.6 — Multi-Account Gmail Isolation
+# 👥 Multi-Account Gmail Isolation
 
-A major security improvement was introduced to safely support multiple Gmail accounts.
-
-The previous single-token architecture was replaced with isolated per-account OAuth tokens.
+NEXA supports multiple Gmail accounts using isolated OAuth tokens.
 
 ```text
 NEXA
  │
- ├── Google Account A
+ ├── Gmail Account A
  │      └── Token A
  │
- ├── Google Account B
+ ├── Gmail Account B
  │      └── Token B
  │
- └── Google Account C
+ └── Gmail Account C
         └── Token C
 ```
 
-Each connected Google account receives its own isolated OAuth token.
-
-Therefore:
+Each Gmail account receives its own token.
 
 ```text
-User A Token ≠ User B Token
+Account A Token ≠ Account B Token
 ```
 
-and:
+A teammate cloning the project must connect their own Gmail account.
 
-```text
-User A Gmail ≠ User B Gmail
-```
-
-A teammate who clones NEXA from GitHub must connect their own Google account.
-
-They do not automatically receive access to another user's Gmail mailbox.
+They do not automatically receive access to another user's Gmail.
 
 ---
 
-## 2A.7 — Gmail Account Management UI
+# ⚙️ Gmail Account Management
 
-A Gmail account management section was added to NEXA Settings.
+NEXA Settings provides Gmail account management.
 
-Example interface:
+Supported actions:
+
+- View connected accounts
+- Connect Gmail account
+- Connect additional Gmail account
+- Switch active Gmail account
+- Disconnect account
+- Refresh account state
+- Maintain isolated account tokens
+
+Example:
 
 ```text
 Gmail Accounts
@@ -360,69 +375,40 @@ Connected as: user@gmail.com
 [ Refresh ]
 ```
 
-Supported functionality:
-
-- View connected Gmail accounts
-- Connect a Gmail account
-- Connect additional Gmail accounts
-- Switch the active Gmail account
-- Disconnect an account
-- Refresh Gmail account status
-- Maintain isolated account tokens
-
-**Status:** ✅ Complete
-
 ---
 
-## 2A.8 — Improved OAuth Connection Flow
+# 🌐 Improved OAuth Browser Flow
 
-Originally, Gmail OAuth required the user to manually copy an authorization URL from the backend terminal.
+OAuth no longer requires manually copying authorization URLs from the backend console.
 
-That behavior was removed.
-
-The current connection flow is:
+Current flow:
 
 ```text
 Settings
-   │
-   ▼
+ │
+ ▼
 Gmail Accounts
-   │
-   ▼
+ │
+ ▼
 Connect Account
-   │
-   ▼
+ │
+ ▼
 Default Browser Opens
-   │
-   ▼
-Google OAuth Login
-   │
-   ▼
+ │
+ ▼
+Google Login
+ │
+ ▼
 User Grants Permission
-   │
-   ▼
+ │
+ ▼
 NEXA Detects Completion
-   │
-   ▼
+ │
+ ▼
 Account List Refreshes
-   │
-   ▼
-Connected Account Becomes Active
 ```
 
-The OAuth operation runs asynchronously.
-
-The backend exposes only sanitized OAuth status information.
-
-OAuth URLs and OAuth token values are not intentionally returned to:
-
-```text
-Chat UI
-LLM Context
-Conversation History
-```
-
-The loading state correctly clears on:
+OAuth loading state handles:
 
 ```text
 Success
@@ -431,172 +417,40 @@ Timeout
 Cancellation
 ```
 
-**Status:** ✅ Fixed
-
----
-
-## 2A.9 — Disconnect / Reconnect Flow
-
-The Gmail account lifecycle was manually tested.
+OAuth URLs and token values are not intentionally exposed to:
 
 ```text
-Connected Gmail
-      │
-      ▼
-Disconnect
-      │
-      ▼
-Account Removed
-      │
-      ▼
-Connect Account
-      │
-      ▼
-Google OAuth
-      │
-      ▼
-New Token
-      │
-      ▼
-Account Active
-```
-
-**Status:** ✅ Verified
-
----
-
-## 🧪 Phase 2A Validation
-
-| Validation | Result |
-|---|---|
-| Google Gmail Provider Tests | ✅ 13 Passed |
-| Gmail Integration Tests | ✅ 15 Passed |
-| Full Backend Test Suite | ✅ 342 Passed |
-| Frontend `npm run check` | ✅ Passed |
-| `git diff --check` | ✅ Passed |
-| Real Gmail Read/Search | ✅ Working |
-| OAuth Browser Flow | ✅ Working |
-| Disconnect / Reconnect | ✅ Working |
-| Multi-Account Architecture | ✅ Implemented |
-
----
-
-## ✅ Phase 2A Final Status
-
-```text
-PHASE 2A
-================================
-
-Real Gmail OAuth           ✅
-Read Email                 ✅
-Search Email               ✅
-Unread Email Listing       ✅
-Open Email                 ✅
-Read Thread                ✅
-Real Chat Integration      ✅
-Mock Data Removal          ✅
-Multi-Account Support      ✅
-Per-Account Token Storage  ✅
-Connect Account            ✅
-Switch Account             ✅
-Disconnect Account         ✅
-OAuth Auto Browser         ✅
-Secure Token Handling      ✅
-Read-Only Protection       ✅
-
-STATUS: COMPLETE
+LLM Context
+Chat History
+Normal Frontend Responses
 ```
 
 ---
 
-# ✅ Phase 2B — Gmail Compose, Draft, Reply, Forward & Attachments
+# ✅ Phase 2B — Compose, Draft, Reply, Forward & Attachments
 
 **Status:** Complete
 
-Phase 2B introduced Gmail write-preparation capabilities while preserving NEXA's most important Gmail security boundary:
+Phase 2B introduced Gmail content preparation and real Gmail draft creation.
 
-> **NEXA can prepare Gmail content, but it cannot automatically send email.**
+Supported capabilities:
 
-The user remains in control of the final sending action.
-
-NEXA now supports:
-
-- Natural-language email composition
-- Gmail draft creation
-- Reply drafts
-- Reply-All drafts
-- Forward drafts
-- Local file attachments
+- Natural-language composition
 - AI-assisted email drafting
-- Secure recipient validation
-- MIME message generation
-- Gmail browser draft navigation
-- Attachment validation
-- Attachment metadata sanitization
-
-Gmail sending is available only through the explicit approved-draft flow.
-
----
-
-## 🔐 Phase 2B Security Model
-
-Phase 2B follows a strict draft-only architecture.
-
-```text
-User Request
-    │
-    ▼
-NEXA Chat Router
-    │
-    ▼
-GmailAgent
-    │
-    ▼
-Draft Preparation
-    │
-    ▼
-GoogleGmailProvider
-    │
-    ▼
-Gmail Draft Created
-    │
-    ▼
-Gmail Opens in Browser
-    │
-    ▼
-User Reviews / Edits
-    │
-    ▼
-User Manually Presses Send
-```
-
-The following architecture is intentionally forbidden:
-
-```text
-LLM
- │
- ▼
-Gmail Send API
-```
-
-During Phase 2B:
-
-```text
-messages.send   ❌ Not used by active Google provider
-drafts.send     ❌ Not used
-Automatic Send  ❌ Disabled
-Manual Send     ✅ User-controlled in Gmail
-```
-
-The active `GoogleGmailProvider.send_prepared()` path rejects direct sending.
-
-A legacy `ExistingSkillGmailProvider.send_prepared()` implementation still exists in the codebase, but it is not instantiated or selected by the active Gmail provider factory.
+- Gmail draft creation
+- Reply draft
+- Reply-All draft
+- Forward draft
+- Local attachments
+- MIME generation
+- Recipient validation
+- Header injection protection
+- Secure attachment validation
+- Draft browser navigation
 
 ---
 
-## 2B.1 — Natural-Language Email Composition
-
-NEXA can prepare Gmail drafts directly from conversational commands.
+# ✍️ Natural-Language Email Composition
 
 Example:
 
@@ -618,7 +472,7 @@ Body:
 The meeting is tomorrow at 10 AM.
 ```
 
-Natural-language parsing supports commands such as:
+Supported commands include:
 
 ```text
 Write an email...
@@ -628,67 +482,237 @@ Create an email...
 Send an email...
 ```
 
-Even when the user says:
-
-```text
-Send an email...
-```
-
-NEXA still creates only a Gmail draft.
-
-The word `send` does not bypass the Phase 2B draft-only security boundary.
+The word `send` in natural language does **not** give the LLM direct sending authority.
 
 ---
 
-## 2B.2 — AI-Assisted Email Drafting
+# 🤖 AI-Assisted Email Drafting
 
-A dedicated email drafting layer was introduced:
+Main drafting layer:
 
 ```text
 backend/app/email_drafting.py
 ```
 
-It supports contextual email generation when the user provides an intent but does not provide a complete subject or body.
+NEXA can generate email subject/body when the user provides intent but incomplete content.
 
-Supported writing styles include:
+Supported styles include:
 
 - Formal
 - Professional
-- Polite
-- Friendly
 - Academic
+- Friendly
+- Polite
 - Apology
-- Short / concise
+- Brief
+- Detailed
+
+---
+
+# 📏 Intelligent Email Length
+
+Email generation now adapts to the user's request.
+
+Typical targets:
+
+```text
+Brief email:
+60–90 words
+
+Normal professional / academic email:
+90–140 words
+
+Detailed email:
+120–180 words
+```
+
+The system does not blindly force identical email lengths.
+
+The generated email should remain:
+
+- natural
+- professional
+- useful
+- concise
+- context-aware
+
+---
+
+# 🛡️ Fact-Safe Drafting
+
+NEXA must not invent unsupported facts.
+
+Examples of information that should not be invented:
+
+```text
+Dates
+Times
+Deadlines
+Achievements
+Excuses
+Medical reasons
+Meeting availability
+Commitments
+Promises
+Project status
+Submission reasons
+```
+
+If information is missing, NEXA uses neutral wording instead.
 
 Example:
 
 ```text
-Write a formal academic email to professor@example.com
-about my late project submission.
+If needed, I can provide additional context.
 ```
 
-NEXA can generate an appropriate subject and body while avoiding unsupported facts.
-
-The drafting layer is designed to avoid inventing:
+Instead of inventing:
 
 ```text
-Dates
-Deadlines
-Causes
-Promises
-Meeting times
-Personal facts
+I am available to meet tomorrow at 10 AM.
 ```
 
-unless the user explicitly provides them.
-
-Explicit user-provided subject and body content are preserved whenever possible.
+unless the user actually provided that information.
 
 ---
 
-## 2B.3 — Official Gmail Draft Creation
+# 👤 Profile-Aware Email Signatures
 
-`GoogleGmailProvider` supports real Gmail draft creation using the official Gmail API.
+NEXA now supports profile-aware email signatures.
+
+Example profile:
+
+```text
+Supti Das Medha
+```
+
+Generated email:
+
+```text
+Best regards,
+Supti Das Medha
+```
+
+The application no longer generates placeholder signatures such as:
+
+```text
+[Your Name]
+```
+
+and no longer guesses a human name from an email local-part.
+
+For example:
+
+```text
+suptidasmedha@gmail.com
+```
+
+must **not** automatically become:
+
+```text
+Suptidasmedha
+```
+
+---
+
+# 🔄 Profile Name Flow
+
+Frontend profile source:
+
+```text
+localStorage key:
+nexa-ai:user-profile
+```
+
+Profile field:
+
+```text
+userName
+```
+
+Example:
+
+```text
+Supti Das Medha
+```
+
+Runtime flow:
+
+```text
+NEXA Profile
+ │
+ ▼
+profile.userName
+ │
+ ▼
+requestChatMessage(...)
+ │
+ ▼
+profileName
+ │
+ ▼
+profile_name
+ │
+ ▼
+Backend Chat Schema
+ │
+ ▼
+Gmail Email Drafting
+ │
+ ▼
+Email Signature
+```
+
+---
+
+# 🎯 Profile Name Priority
+
+Email signature name resolution uses:
+
+```text
+1. Trusted NEXA profile display name
+2. Gmail account display/profile name
+3. Neutral closing with no invented name
+```
+
+Email local-part guessing is disabled.
+
+---
+
+# 🗣️ Address Style Preservation
+
+Adding profile-name support does not break the existing assistant addressing preference.
+
+Both are sent together:
+
+```text
+address_style
+profile_name
+```
+
+Frontend request path:
+
+```text
+profile.addressingPreference
+        ↓
+addressStyle
+        ↓
+address_style
+```
+
+and:
+
+```text
+profile.userName
+        ↓
+profileName
+        ↓
+profile_name
+```
+
+---
+
+# 📧 Real Gmail Draft Creation
 
 Draft creation uses:
 
@@ -696,144 +720,72 @@ Draft creation uses:
 users().drafts().create(...)
 ```
 
-The message is constructed as an RFC-compatible MIME email using:
-
-```text
-EmailMessage
-```
-
-and encoded using URL-safe Base64 before being submitted to Gmail.
-
-Architecture:
+Message flow:
 
 ```text
 PreparedEmail
-     │
-     ▼
+ │
+ ▼
 EmailMessage
-     │
-     ▼
+ │
+ ▼
 RFC / MIME Message
-     │
-     ▼
-URL-safe Base64
-     │
-     ▼
+ │
+ ▼
+URL-Safe Base64
+ │
+ ▼
 Gmail drafts.create
-     │
-     ▼
+ │
+ ▼
 Real Gmail Draft
-```
-
-The provider performs draft readback verification using Gmail's raw draft representation.
-
-This verification confirms:
-
-```text
-Draft ID
-Message ID
-Thread ID
-Body Presence
-Stored Draft Content
 ```
 
 ---
 
-## 2B.4 — Gmail Compose OAuth Scope
+# 🔑 Gmail Compose OAuth Scope
 
-Phase 2A originally used Gmail read-only permissions.
-
-Phase 2B requires Gmail draft creation capability.
-
-The Gmail integration therefore supports:
+Gmail draft functionality requires:
 
 ```text
 https://www.googleapis.com/auth/gmail.compose
 ```
 
-NEXA verifies the active OAuth token before creating a draft.
+The application verifies Gmail permissions before draft creation.
 
-If the connected Gmail account only has the previous read-only permission, NEXA safely requests reconnection instead of silently failing.
-
-OAuth credentials and account tokens remain outside the Git repository.
-
-Protected locations include:
-
-```text
-D:\NEXA-Secrets\gmail\credentials.json
-
-%USERPROFILE%\.nexa_ai\gmail\
-```
-
-OAuth secrets are never intentionally exposed to:
-
-```text
-LLM Context
-Chat History
-Frontend Responses
-Git Repository
-```
+If an older read-only token is detected, NEXA can require reconnection.
 
 ---
 
-## 2B.5 — Recipient & Header Protection
+# 📥 Reply Support
 
-Outgoing Gmail draft recipients are validated before draft creation.
-
-Validation applies to:
-
-```text
-To
-CC
-BCC
-```
-
-NEXA rejects invalid recipient addresses.
-
-Header-injection protection also prevents carriage-return or newline characters from being inserted into sensitive email headers.
-
-Protected fields include:
-
-```text
-Recipients
-Subject
-Email Headers
-```
-
-This prevents malicious input from manipulating MIME headers.
-
----
-
-## 2B.6 — Reply Draft Support
-
-NEXA can prepare reply drafts against received Gmail messages.
+NEXA supports reply drafts.
 
 Example:
 
 ```text
-Reply to my latest email from professor@example.com
-and say I will submit tomorrow.
+Reply to my latest email from professor@example.com and say I will submit tomorrow.
 ```
 
-Flow:
+Reply flow:
 
 ```text
 User Request
-     │
-     ▼
-Search Matching Received Email
-     │
-     ▼
+ │
+ ▼
+Search Matching Email
+ │
+ ▼
 Select Source Message
-     │
-     ▼
+ │
+ ▼
 Build Reply Metadata
-     │
-     ▼
-Create Gmail Reply Draft
+ │
+ ▼
+Create Reply Draft
 ```
 
-Reply drafts preserve Gmail threading information:
+Thread information is preserved:
 
 ```text
 Thread ID
@@ -842,60 +794,40 @@ References
 Re: Subject
 ```
 
-NEXA prefers the original message's `Reply-To` address when available.
-
-Received-message selection excludes inappropriate source messages such as:
-
-```text
-DRAFT
-SENT
-TRASH
-SPAM
-```
-
-This prevents NEXA from accidentally replying to the wrong Gmail item.
-
 ---
 
-## 2B.7 — Reply-All Support
+# 👥 Reply-All Support
 
-Reply-All drafting is supported.
-
-NEXA calculates the appropriate recipients from the original email while excluding the active Gmail user's own address.
+Reply-All safely determines recipients.
 
 ```text
 Original Sender
-      │
-      ├── To Recipients
-      │
-      └── CC Recipients
-              │
-              ▼
-      Remove Active User
-              │
-              ▼
-      Deduplicate Addresses
-              │
-              ▼
-        Reply-All Draft
+ │
+ ├── Original To
+ │
+ ├── Original CC
+ │
+ ▼
+Remove Active User
+ │
+ ▼
+Deduplicate
+ │
+ ▼
+Reply-All Draft
 ```
-
-Reply-All preserves the original Gmail thread and appropriate reply headers.
 
 ---
 
-## 2B.8 — Forward Draft Support
-
-NEXA can create a forward draft from an existing Gmail message.
+# 📤 Forward Support
 
 Example:
 
 ```text
-Forward my latest email from supervisor@university.edu
-to colleague@example.com
+Forward my latest email from supervisor@university.edu to colleague@example.com
 ```
 
-The forwarded draft contains source information such as:
+Forward drafts may contain:
 
 ```text
 Original Sender
@@ -904,155 +836,109 @@ Original Subject
 Original Body
 ```
 
-The destination address is isolated from the original recipients.
+Original attachments are not automatically copied.
 
-NEXA does not automatically copy original message attachments during forwarding.
-
-Only new attachments explicitly requested by the user are added.
+Only explicitly requested new attachments are added.
 
 ---
 
-## 📎 2B.9 — Local Attachment Support
-
-Secure local-file attachment support was completed in Phase 2B.
+# 📎 Local Attachment Support
 
 Example:
 
 ```text
-Draft an email to test@example.com
-saying please see the attached file.
+Draft an email to test@example.com saying please see the attached file.
 Subject: NEXA Attachment Test.
 Attach D:\Test\sample.txt
 ```
 
-NEXA performs the following flow:
+Flow:
 
 ```text
-Natural-Language Request
-        │
-        ▼
-Extract Explicit Attachment Path
-        │
-        ▼
-Remove Attachment Directive
-from Email Body
-        │
-        ▼
-Resolve Local File
-        │
-        ▼
+User Request
+ │
+ ▼
+Extract Attachment Path
+ │
+ ▼
+Remove Attachment Directive From Body
+ │
+ ▼
+Resolve File
+ │
+ ▼
 Security Validation
-        │
-        ▼
-MIME Type Detection
-        │
-        ▼
+ │
+ ▼
+MIME Detection
+ │
+ ▼
 EmailMessage.add_attachment(...)
-        │
-        ▼
+ │
+ ▼
 Gmail Draft
-```
-
-The attachment command itself does not appear inside the final email body.
-
-Input:
-
-```text
-Please see the attached file.
-Attach D:\Test\sample.txt
-```
-
-Final body:
-
-```text
-Please see the attached file.
-```
-
-Attachment:
-
-```text
-sample.txt
 ```
 
 ---
 
-## Attachment Path Support
+# 📁 Supported Attachment Paths
 
-Supported attachment input includes Windows absolute paths:
+Windows absolute path:
 
 ```text
 D:\Test\sample.txt
 ```
 
-Quoted paths containing spaces:
+Quoted path:
 
 ```text
 "D:\Project Files\Final Report.pdf"
 ```
 
-Multiple explicitly requested attachments:
+Multiple attachments:
 
 ```text
 Attach D:\Files\a.txt and D:\Files\b.pdf
 ```
 
-Unicode filenames are also supported.
+Unicode filenames are supported.
 
-Filename-only lookup is restricted to approved locations.
-
-NEXA does not recursively search the entire computer for attachment files.
+NEXA does not recursively scan the entire computer for files.
 
 ---
 
-## Attachment Validation
+# 🔍 Attachment Validation
 
-All attachments must pass validation before any Gmail draft is created.
+Attachments must pass:
 
-Validation includes:
+- file existence check
+- regular-file validation
+- readable-file check
+- filename validation
+- extension validation
+- protected-path validation
+- file-size validation
+- combined-size validation
 
-- File exists
-- Regular file
-- Readable file
-- Safe filename
-- Safe extension
-- Protected-path checks
-- Per-file size limit
-- Total attachment size limit
-
-Current limits:
+Limits:
 
 ```text
 Maximum single attachment:
 10 MiB
 
-Maximum combined attachment size:
+Maximum combined attachments:
 25 MiB
 ```
 
-Attachment validation is all-or-nothing.
-
-Example:
-
-```text
-Attachment A = Valid
-Attachment B = Missing
-```
-
-Result:
-
-```text
-Entire draft operation fails safely.
-```
-
-NEXA does not create a partially attached draft.
+Validation is all-or-nothing.
 
 ---
 
-## Sensitive File Protection
+# 🔐 Sensitive Attachment Blocking
 
-Sensitive files cannot be attached through NEXA.
+Sensitive files are blocked.
 
-Blocked examples include:
+Examples:
 
 ```text
 credentials.json
@@ -1063,529 +949,757 @@ token.json
 *.p12
 ```
 
-Protected paths include:
+Protected locations include:
 
 ```text
 D:\NEXA-Secrets\
-
 %USERPROFILE%\.nexa_ai\gmail\
 ```
 
-This prevents Gmail OAuth credentials and private key material from being accidentally attached to email drafts.
-
 ---
 
-## Attachment Metadata Sanitization
+# 🧼 Attachment Metadata Sanitization
 
-Internally, NEXA may need a local filesystem path to read the selected file.
-
-However, local paths are not returned in user-facing attachment metadata.
-
-Safe metadata contains information such as:
+Safe frontend metadata may contain:
 
 ```text
 File Name
 MIME Type
-File Size
+Size
 Validation Status
 ```
 
-Example:
-
-```json
-{
-  "file_name": "report.pdf",
-  "mime_type": "application/pdf",
-  "size_bytes": 12345,
-  "exists": true,
-  "safe_status": "validated"
-}
-```
-
-The following information is excluded:
+It must not expose:
 
 ```text
-local_path
-OAuth Token Paths
-Secret Directory Paths
-Raw Attachment Bytes
+Local filesystem path
+OAuth token path
+Secret directory path
+Raw attachment bytes
 ```
 
 ---
 
-## MIME Attachment Architecture
+# ✅ Phase 2C — Human Approval & Controlled Real Send
 
-Attachments are added as separate MIME parts.
+**Status:** Complete
 
-The email body remains the primary editable text body.
+Phase 2C introduced controlled real Gmail sending.
+
+The final secure flow is:
 
 ```text
-EmailMessage
-   │
-   ├── text/plain body
-   │
-   ├── attachment #1
-   │
-   ├── attachment #2
-   │
-   └── ...
+User Request
+ │
+ ▼
+NEXA Generates Email
+ │
+ ▼
+Gmail Draft Created
+ │
+ ▼
+User Reviews Draft
+ │
+ ▼
+Approve Draft
+ │
+ ▼
+Approved
+ │
+ ▼
+Send Approved Draft
+ │
+ ▼
+Final Revalidation
+ │
+ ▼
+Gmail drafts.send
+ │
+ ▼
+Sent
+```
+
+Approval and sending are intentionally separate actions.
+
+---
+
+# 🧩 Phase 2C.1 — Approval Controller
+
+Implemented:
+
+- ephemeral approval state
+- approval IDs
+- TTL / expiry support
+- approval status transitions
+- canonical draft fingerprint
+- draft/account binding
+- recipient binding
+- attachment binding
+
+Approval states include:
+
+```text
+pending
+approved
+cancelled
+expired
+invalidated
+sending
+sent
+```
+
+---
+
+# 🧩 Phase 2C.2 — Approval UI
+
+The NEXA UI provides approval controls.
+
+Pending draft:
+
+```text
+[ Approve Draft ]
+[ Cancel ]
+```
+
+Approved draft:
+
+```text
+[ Send Approved Draft ]
+```
+
+Approval alone does not send the email.
+
+---
+
+# 🧩 Phase 2C.3 — Draft Change Invalidation
+
+An approved draft cannot authorize a modified version.
+
+Example:
+
+```text
+Draft Version A
+ │
+ ▼
+Approved
+ │
+ ▼
+User edits Gmail draft
+ │
+ ▼
+Draft Version B
+ │
+ ▼
+Fingerprint mismatch
+ │
+ ▼
+Approval invalidated
+```
+
+Revalidation verifies:
+
+- active Gmail account
+- draft ID
+- recipients
+- subject
+- body
+- attachment metadata
+- attachment digest
+- canonical fingerprint
+
+---
+
+# 🧩 Phase 2C.4 — Controlled Send Gate
+
+Final send endpoint:
+
+```text
+POST /api/gmail/draft-approvals/{approval_id}/send
+```
+
+The request uses only the approval ID.
+
+It does not allow last-minute recipient/body override parameters.
+
+Google send operation:
+
+```python
+service.users().drafts().send(
+    userId="me",
+    body={"id": draft_id},
+).execute()
 ```
 
 NEXA uses:
 
-```python
-EmailMessage.add_attachment(...)
+```text
+drafts.send
 ```
 
-MIME type is inferred from the filename.
+for the approved draft.
 
-If the type cannot be determined, NEXA uses:
+Direct active-runtime:
 
 ```text
-application/octet-stream
+messages.send
+```
+
+is not used.
+
+---
+
+# 🔒 Duplicate Send Protection
+
+Before real send:
+
+```text
+approved
+ │
+ ▼
+atomic claim
+ │
+ ▼
+sending
+ │
+ ▼
+provider.send_draft(...)
+ │
+ ▼
+sent
+```
+
+A second concurrent send attempt cannot claim the same approval.
+
+This prevents accidental duplicate sends.
+
+---
+
+# ⚠️ Send Failure Handling
+
+If the Gmail provider reports an uncertain or failed operation:
+
+- NEXA does not silently retry privileged sends
+- failure is sanitized
+- ambiguous outcome fails closed
+- user may be advised to check Gmail Sent
+- approval state does not automatically authorize another unsafe retry
+
+---
+
+# ⏱️ TOCTOU Limitation
+
+Gmail does not provide a transaction that can simultaneously:
+
+```text
+Compare Draft
++
+Lock Gmail Web UI
++
+Send Draft
+```
+
+NEXA performs final revalidation immediately before sending.
+
+A tiny external-edit race window may still theoretically exist between revalidation and the Gmail API send operation.
+
+This limitation is documented rather than hidden.
+
+---
+
+# 🧩 Phase 2C.5 — Audit & Error Handling
+
+The Gmail audit system records important lifecycle events.
+
+Examples:
+
+```text
+Approval Created
+Approval Approved
+Approval Cancelled
+Approval Expired
+Approval Invalidated
+Draft Changed
+Account Mismatch
+Send Claimed
+Send Succeeded
+Send Blocked
+Provider Failure
+Duplicate Send Attempt
+```
+
+Audit logs must not contain:
+
+```text
+OAuth tokens
+API keys
+Email body
+Raw MIME
+Attachment bytes
+Local file paths
+Draft fingerprints
+Secret values
 ```
 
 ---
 
-## 2B.10 — Gmail Draft Browser Navigation
+# 🧩 Phase 2C.6 — Final Verification
 
-After NEXA successfully creates a Gmail draft, it can open Gmail in the user's default browser.
+Phase 2C underwent:
 
-For normal compose and forward drafts, NEXA attempts to open the exact created draft when a safe message identifier is available.
+- focused Gmail tests
+- full backend regression
+- frontend TypeScript validation
+- frontend contract tests
+- route audit
+- send-path audit
+- approval-state audit
+- API sanitization review
+- audit privacy review
+- duplicate send verification
+- secret scanning
+- real Gmail manual send verification
+
+---
+
+# 🧪 Real Gmail Send Verification
+
+A real approved Gmail draft was manually tested.
+
+Flow:
+
+```text
+Create Draft
+ │
+ ▼
+Review Draft
+ │
+ ▼
+Approve Draft
+ │
+ ▼
+NO AUTOMATIC SEND
+ │
+ ▼
+Send Approved Draft
+ │
+ ▼
+Gmail API
+ │
+ ▼
+Recipient Inbox
+```
+
+Verified:
+
+```text
+Draft creation        ✅
+Approval              ✅
+Approve-only no send  ✅
+Explicit send         ✅
+Recipient received    ✅
+Sent folder copy      ✅
+Duplicate protection  ✅
+```
+
+---
+
+# 🤖 Hosted LLM Integration
+
+NEXA contains an LLM routing layer.
+
+Supported providers include:
+
+```text
+Gemini
+Groq
+OpenRouter
+Cloudflare Workers AI
+Mistral
+Cerebras
+```
+
+Provider fallback ordering is supported.
+
+Example primary provider configuration:
+
+```env
+NEXA_LLM_PRIMARY=groq
+```
+
+---
+
+# ⚡ Current Groq Configuration
+
+Current development configuration uses Groq.
 
 Example:
 
-```text
-https://mail.google.com/mail/u/0/#drafts/<message-id>
+```env
+NEXA_LLM_PRIMARY=groq
+GROQ_API_KEY=<YOUR_PRIVATE_GROQ_API_KEY>
+GROQ_MODEL=openai/gpt-oss-20b
 ```
 
-For reply flows where an exact Gmail deep-link cannot be safely verified, NEXA falls back to:
-
-```text
-https://mail.google.com/mail/u/0/#drafts
-```
-
-This allows the user to:
-
-```text
-Review
-Edit
-Verify Recipients
-Verify Attachments
-Manually Press Send
-```
-
-NEXA does not press Send for the user during Phase 2B.
+Never commit the actual API key.
 
 ---
 
-## 2B.11 — Attachment Parser Regression Fix
+# 🧠 Current Groq Model
 
-During manual verification, a parsing bug was discovered.
-
-The command:
+Current working model:
 
 ```text
-Subject: NEXA Attachment Test.
-Attach D:\Test\sample.txt
+openai/gpt-oss-20b
 ```
 
-initially caused the word:
+The previous configured model:
 
 ```text
-Attachment
+llama-3.1-8b-instant
 ```
 
-inside the email subject to be incorrectly interpreted as an attachment command.
+was found unavailable for the current account/API environment.
 
-This caused the subject to become:
-
-```text
-NEXA
-```
-
-instead of:
-
-```text
-NEXA Attachment Test
-```
-
-The attachment parser was corrected.
-
-Attachment commands now require an actual path-like argument.
-
-Therefore ordinary language such as:
-
-```text
-NEXA Attachment Test
-attachment support
-attachment issue
-please see the attached file
-this attachment is important
-```
-
-does not trigger attachment parsing.
-
-Actual commands such as:
-
-```text
-Attach D:\Test\sample.txt
-```
-
-```text
-Attach: D:\Test\sample.txt
-```
-
-```text
-Attaching "D:\Project Files\report.pdf"
-```
-
-continue to work.
-
-A regression test was added to preserve this behavior.
+NEXA was updated to use the available Groq-hosted model.
 
 ---
 
-## 🧪 Phase 2B Automated Validation
+# 🔐 Environment File
 
-Phase 2B underwent focused and full-regression testing.
+NEXA backend environment file:
 
-| Validation | Result |
-|---|---|
-| Focused Phase 2B Test Suite | ✅ 67 Passed |
-| Full Backend Test Suite | ✅ 409 Passed |
-| Backend Compile Check | ✅ Passed |
-| Frontend `npm run check` | ✅ Passed |
-| `git diff --check` | ✅ Passed |
-| Compose Draft | ✅ Verified |
-| Reply Draft | ✅ Tested |
-| Reply-All Draft | ✅ Tested |
-| Forward Draft | ✅ Tested |
-| Local Attachment Validation | ✅ Tested |
-| Multiple Attachments | ✅ Tested |
-| Sensitive File Blocking | ✅ Tested |
-| Oversized File Blocking | ✅ Tested |
-| MIME Attachment Structure | ✅ Tested |
-| Metadata Sanitization | ✅ Tested |
-| Draft-Only Send Protection | ✅ Verified |
+```text
+D:\nexa_ai\backend\.env
+```
+
+It is ignored by Git.
+
+Typical configuration:
+
+```env
+NEXA_LLM_PRIMARY=groq
+GROQ_API_KEY=<PRIVATE_KEY>
+GROQ_MODEL=openai/gpt-oss-20b
+```
+
+Never paste real secrets into:
+
+- GitHub
+- documentation
+- screenshots
+- chat logs
+- source files
 
 ---
 
-## 🧪 Phase 2B Manual Verification
+# 🖥️ Local Development
 
-A real Gmail draft was manually tested using:
+## Backend
 
-```text
-Draft an email to <test-account>
-saying please see the attached file.
-Subject: NEXA Attachment Test.
-Attach D:\Test\sample.txt
+PowerShell:
+
+```powershell
+Set-Location D:\nexa_ai\backend
+
+D:\nexa_ai\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Verified result:
+Expected:
 
 ```text
-Recipient                 ✅
-Subject                   ✅ NEXA Attachment Test
-Body                      ✅ please see the attached file
-Attachment Directive      ✅ Removed from body
-sample.txt Attachment     ✅ Present
-Gmail Draft Creation      ✅
-Automatic Email Sending   ✅ Did NOT occur
-```
-
-The manual test confirmed that the final real Gmail draft contained the expected subject, body, and local attachment.
-
----
-
-## 🔐 Phase 2B Send-Path Verification
-
-Final Phase 2B review confirmed:
-
-```text
-GoogleGmailProvider
-        │
-        └── send_prepared()
-              │
-              └── Direct Send Disabled
-```
-
-Search results:
-
-```text
-drafts().send
-→ No active backend occurrence
-
-messages().send
-→ One legacy ExistingSkillGmailProvider occurrence
-```
-
-The legacy provider is not instantiated by the active runtime provider factory.
-
-The active runtime creates only:
-
-```text
-MockGmailProvider
-GoogleGmailProvider
-```
-
-Therefore the legacy direct-send implementation is not part of the active Phase 2B Gmail path.
-
----
-
-## 🔒 Phase 2B Secret & Git Safety Verification
-
-Before the Phase 2B commit, the staged diff was checked for sensitive information.
-
-Protected files were not tracked:
-
-```text
-credentials.json
-token.json
-NEXA-Secrets
-.env
-```
-
-Test-only credentials use non-secret placeholder values such as:
-
-```text
-access-token
-refresh-token
-client-id
-client-secret
-```
-
-No real Gmail OAuth credential was committed.
-
----
-
-## ✅ Phase 2B Final Status
-
-```text
-PHASE 2B
-================================================
-
-Natural-Language Compose       ✅
-AI-Assisted Drafting           ✅
-Recipient Validation           ✅
-Header Injection Protection    ✅
-Real Gmail Draft Creation      ✅
-Compose OAuth Scope            ✅
-Draft Readback Verification    ✅
-
-Reply                          ✅
-Reply-All                      ✅
-Forward                        ✅
-Gmail Thread Preservation      ✅
-Reply-To Handling              ✅
-
-Local Attachments              ✅
-Windows Paths                  ✅
-Quoted Paths                   ✅
-Multiple Attachments           ✅
-Unicode Filenames              ✅
-MIME Attachment Parts          ✅
-Sensitive File Blocking        ✅
-Size Validation                ✅
-Metadata Sanitization          ✅
-All-or-Nothing Validation      ✅
-
-Gmail Browser Draft Opening    ✅
-Manual User Review             ✅
-Manual Gmail Send              ✅
-
-Automatic Send                 ❌ DISABLED
-messages.send                  ❌ NOT ACTIVE
-drafts.send                    ❌ NOT USED
-
-Focused Tests                  ✅ 67 Passed
-Full Backend Tests             ✅ 409 Passed
-Frontend Typecheck             ✅ Passed
-Manual Attachment Test         ✅ Passed
-Git Diff Check                 ✅ Passed
-
-STATUS: COMPLETE
+INFO: Application startup complete.
+INFO: Uvicorn running on http://127.0.0.1:8000
 ```
 
 ---
 
-## Phase 2B Git Milestone
+## Frontend
 
-Phase 2B was committed as:
+PowerShell:
 
-```text
-979adee
-feat: complete Gmail Phase 2B draft workflow
+```powershell
+Set-Location D:\nexa_ai\frontend
+npm.cmd run dev
 ```
 
-and pushed successfully to:
+---
+
+# 🧪 Latest Verification Status
+
+Latest Gmail/email-drafting verification:
+
+```text
+Focused Gmail Tests:
+✅ 97 Passed
+
+Full Backend Suite:
+✅ 477 Passed
+
+Frontend TypeScript Check:
+✅ Passed
+
+Frontend Contract Tests:
+✅ Passed
+
+Manual Gmail Draft Test:
+✅ Passed
+
+Profile-Aware Signature:
+✅ Passed
+
+Explicit Approval:
+✅ Passed
+
+Controlled Send:
+✅ Passed
+```
+
+---
+
+# 🧪 Previous Regression Milestones
+
+During development, successful backend suite milestones included:
+
+```text
+324 passed
+342 passed
+409 passed
+438 passed
+457 passed
+466 passed
+472 passed
+474 passed
+476 passed
+477 passed
+```
+
+The increasing totals reflect additional regression coverage added during development.
+
+---
+
+# ✅ Current Email Drafting Verification
+
+Verified manually:
+
+```text
+Normal academic email length     ✅
+Professional tone                ✅
+2–3 paragraph structure          ✅
+Fact-safe content                ✅
+No invented date/time            ✅
+No [Your Name] placeholder       ✅
+No guessed local-part name       ✅
+Real profile display name        ✅
+Profile spacing preserved        ✅
+Address style preserved          ✅
+```
+
+Example final sign-off:
+
+```text
+Best regards,
+Supti Das Medha
+```
+
+---
+
+# 🧪 Frontend Contract Coverage
+
+Frontend contract tests verify:
+
+- typed chat requests
+- voice request pipeline
+- backend chat routing
+- address style propagation
+- profile-name propagation
+- Gmail approval UI
+- action confirmation gates
+- source rendering
+- backend status rendering
+- voice/STT/TTS integration
+- YouTube integration
+- WhatsApp draft flow
+- no WhatsApp auto-send path
+
+---
+
+# 🛡️ Gmail Security Principles
+
+The Gmail module must continue following these rules:
+
+```text
+1. Never expose OAuth tokens to the LLM.
+
+2. Never commit Gmail credentials or tokens.
+
+3. Never expose API keys to Git.
+
+4. Never allow the LLM to directly send email.
+
+5. Treat received emails as untrusted input.
+
+6. Require explicit human approval before sending.
+
+7. Keep Gmail account tokens isolated.
+
+8. Use minimum required OAuth permissions.
+
+9. Revalidate recipients before sending.
+
+10. Revalidate attachments before sending.
+
+11. Revalidate the Gmail account before sending.
+
+12. Invalidate approval after draft changes.
+
+13. Prevent duplicate sends.
+
+14. Keep sensitive operations auditable.
+
+15. Never silently retry privileged send operations.
+
+16. Fail safely.
+```
+
+---
+
+# 🔐 Secret Safety Check
+
+Before committing Gmail-related code:
+
+```powershell
+git diff --cached | Select-String -Pattern 'GROQ_API_KEY|gsk_|GEMINI_API_KEY|client_secret|access_token|refresh_token|private_key'
+```
+
+Tracked sensitive-file check:
+
+```powershell
+git ls-files | Select-String 'credentials\.json|token\.json|NEXA-Secrets|(^|/)\.env$'
+```
+
+Expected result:
+
+```text
+No real secrets tracked.
+```
+
+---
+
+# 🧾 Git Safety Rules
+
+Avoid:
+
+```text
+git add .
+git add -A
+```
+
+Prefer explicitly staging expected files.
+
+Example:
+
+```powershell
+git add backend/app/email_drafting.py
+git add backend/app/chat/service.py
+```
+
+Always inspect:
+
+```powershell
+git status --short
+git --no-pager diff --cached --stat
+```
+
+before commit.
+
+---
+
+# 📦 Latest Development Commit
+
+Latest verified Gmail drafting refinement:
+
+```text
+Commit:
+96fa262
+
+Message:
+feat: improve Gmail drafting and profile-aware signatures
+```
+
+Remote:
 
 ```text
 origin/supti-medha
 ```
 
-Final repository state:
+Final sync verification:
 
 ```text
-Working Tree: Clean
-Remote Sync: Up To Date
+origin/supti-medha...HEAD
+
+0    0
 ```
+
+Meaning:
+
+```text
+Remote ahead: 0
+Local ahead:  0
+```
+
+Repository was synchronized successfully after push.
 
 ---
 
-# ✅ Phase 2C — Human Approval & Real Gmail Sending
-
-**Status:** Complete
-
-Phase 2C provides controlled Gmail sending through the explicit approved-draft flow.
-
-This phase must preserve strict Human-in-the-Loop control.
-
----
-
-## Phase 2C Secure Send Architecture
-
-Required flow:
+# 🗂️ Important Gmail Milestone Commits
 
 ```text
-User Request
-     │
-     ▼
-NEXA Generates Email
-     │
-     ▼
-Gmail Draft / Preview
-     │
-     ▼
-User Reviews Email
-     │
-     ▼
-Explicit Approve & Send
-     │
-     ▼
-HITL Approval Controller
-     │
-     ▼
-Final Security Validation
-     │
-     ▼
-Google Gmail API
-     │
-     ▼
-Email Sent
+Phase 2B
+979adee
+feat: complete Gmail Phase 2B draft workflow
 ```
-
-The following architecture remains forbidden:
 
 ```text
-LLM
- │
- ▼
-Send Email
+Phase 2C.1
+e2f04b8
+feat: add Gmail Phase 2C.1 approval controller
 ```
-
-The LLM must never have direct Gmail sending authority.
-
----
-
-## Phase 2C Completed Security Features
-
-### Explicit Approval
-
-NEXA must require a clear user action such as:
 
 ```text
-Approve & Send
+Phase 2C.2
+239f2da
+feat: add Gmail Phase 2C.2 approval preview UI
 ```
-
-before Gmail sending is allowed.
-
----
-
-### Approval Expiration
-
-Existing approval must become invalid if the draft changes.
 
 ```text
-Draft Approved
-      │
-      ▼
-Draft Changed
-      │
-      ▼
-Previous Approval Invalidated
+Phase 2C.3
+4ef3fcb
+feat: add Gmail Phase 2C.3 approval invalidation
 ```
-
----
-
-### Recipient Revalidation
-
-Immediately before sending:
 
 ```text
-Recheck To
-Recheck CC
-Recheck BCC
+Phase 2C.4
+247fa30
+feat: add Gmail Phase 2C.4 controlled send gate
 ```
-
----
-
-### Attachment Revalidation
-
-Immediately before sending:
 
 ```text
-Verify File Still Exists
-Verify Selected Attachment
-Verify File Has Not Changed Unexpectedly
+Phase 2C.5
+02a86ce
+feat: add Gmail Phase 2C.5 audit and error handling
 ```
-
----
-
-### Account Revalidation
-
-Before sending:
 
 ```text
-Confirm Active Gmail Account
+Phase 2C.6
+fcd921b
+docs: mark Gmail Phase 2C complete
 ```
-
-NEXA must ensure the email is being sent from the account the user expects.
-
----
-
-### Audit Logging
-
-Important Gmail events should be recorded:
 
 ```text
-Draft Created
-Preview Generated
-Approval Requested
-Approval Granted
-Email Sent
-Send Failed
-Approval Cancelled
+Post-Phase 2C Drafting Refinement
+96fa262
+feat: improve Gmail drafting and profile-aware signatures
 ```
-
-Sensitive OAuth tokens must never appear inside audit logs.
-
----
-
-### Failure Handling
-
-The Gmail send pipeline should safely handle:
-
-```text
-API Failure
-Network Failure
-Expired OAuth
-Permission Failure
-Invalid Recipient
-Attachment Failure
-```
-
-Dangerous or privileged Gmail operations must never be silently retried.
 
 ---
 
@@ -1597,44 +1711,52 @@ Dangerous or privileged Gmail operations must never be silently retried.
 | Mock Gmail Provider | ✅ Complete | Phase 1 |
 | HITL Foundation | ✅ Complete | Phase 1 |
 | Official Gmail API | ✅ Complete | Phase 2A |
-| Gmail OAuth | ✅ Complete | Phase 2A |
-| Read Emails | ✅ Complete | Phase 2A |
-| Search Emails | ✅ Complete | Phase 2A |
-| Unread Listing | ✅ Complete | Phase 2A |
-| Open Email | ✅ Complete | Phase 2A |
-| Read Thread | ✅ Complete | Phase 2A |
+| OAuth | ✅ Complete | Phase 2A |
+| Read Email | ✅ Complete | Phase 2A |
+| Search Email | ✅ Complete | Phase 2A |
+| Unread Email Listing | ✅ Complete | Phase 2A |
+| Gmail Threads | ✅ Complete | Phase 2A |
 | Multi-Account OAuth | ✅ Complete | Phase 2A |
-| Per-Account Token Isolation | ✅ Complete | Phase 2A |
-| Connect Account | ✅ Complete | Phase 2A |
-| Switch Account | ✅ Complete | Phase 2A |
-| Disconnect Account | ✅ Complete | Phase 2A |
-| Automatic OAuth Browser Flow | ✅ Complete | Phase 2A |
+| Token Isolation | ✅ Complete | Phase 2A |
+| Account Connect | ✅ Complete | Phase 2A |
+| Account Switch | ✅ Complete | Phase 2A |
+| Account Disconnect | ✅ Complete | Phase 2A |
+| OAuth Browser Flow | ✅ Complete | Phase 2A |
 | Natural-Language Compose | ✅ Complete | Phase 2B |
 | AI-Assisted Drafting | ✅ Complete | Phase 2B |
-| Gmail Draft Creation | ✅ Complete | Phase 2B |
+| Real Gmail Draft | ✅ Complete | Phase 2B |
 | Reply | ✅ Complete | Phase 2B |
-| Reply All | ✅ Complete | Phase 2B |
+| Reply-All | ✅ Complete | Phase 2B |
 | Forward | ✅ Complete | Phase 2B |
 | Local Attachments | ✅ Complete | Phase 2B |
 | Multiple Attachments | ✅ Complete | Phase 2B |
-| MIME Attachment Support | ✅ Complete | Phase 2B |
-| Recipient Protection | ✅ Complete | Phase 2B |
-| Header Injection Protection | ✅ Complete | Phase 2B |
-| Sensitive File Protection | ✅ Complete | Phase 2B |
-| Metadata Sanitization | ✅ Complete | Phase 2B |
-| Browser Draft Navigation | ✅ Complete | Phase 2B |
-| Explicit Send Approval | ✅ Complete | Phase 2C |
-| Real Gmail Send | ✅ Complete | Phase 2C |
-| Approval Expiration | ✅ Complete | Phase 2C |
-| Final Recipient Validation | ✅ Complete | Phase 2C |
-| Final Attachment Validation | ✅ Complete | Phase 2C |
-| Active Account Revalidation | ✅ Complete | Phase 2C |
-| Gmail Audit Trail | ✅ Complete | Phase 2C |
+| MIME Attachments | ✅ Complete | Phase 2B |
+| Recipient Validation | ✅ Complete | Phase 2B |
+| Header Protection | ✅ Complete | Phase 2B |
+| Sensitive File Blocking | ✅ Complete | Phase 2B |
+| Draft Browser Navigation | ✅ Complete | Phase 2B |
+| Approval Controller | ✅ Complete | Phase 2C |
+| Approval UI | ✅ Complete | Phase 2C |
+| Draft Fingerprint | ✅ Complete | Phase 2C |
+| Draft Change Invalidation | ✅ Complete | Phase 2C |
+| Account Revalidation | ✅ Complete | Phase 2C |
+| Recipient Revalidation | ✅ Complete | Phase 2C |
+| Attachment Revalidation | ✅ Complete | Phase 2C |
+| Controlled `drafts.send` | ✅ Complete | Phase 2C |
+| Duplicate Send Protection | ✅ Complete | Phase 2C |
+| Audit Trail | ✅ Complete | Phase 2C |
 | Safe Error Handling | ✅ Complete | Phase 2C |
+| Real Send Verification | ✅ Complete | Phase 2C |
+| Intelligent Email Length | ✅ Complete | Refinement |
+| Fact-Safe Drafting | ✅ Complete | Refinement |
+| Profile-Aware Signature | ✅ Complete | Refinement |
+| Frontend `profile_name` Propagation | ✅ Complete | Refinement |
+| Address Style Preservation | ✅ Complete | Refinement |
+| Groq LLM Integration | ✅ Working | LLM Layer |
 
 ---
 
-# 📊 Overall Gmail Progress
+# 📊 Overall Progress
 
 ```text
 Phase 1
@@ -1657,89 +1779,39 @@ Compose + Draft + Reply + Forward + Attachments
 
 Phase 2C
 ████████████████████ 100%
-Human Approval + Real Send
+Human Approval + Controlled Real Send
+✅ COMPLETE
+
+
+Post-Phase 2C Refinement
+████████████████████ 100%
+Draft Quality + Profile-Aware Signatures
 ✅ COMPLETE
 ```
 
 ---
 
-# 🛡️ Security Principles
+# 📦 Current Gmail Capabilities
 
-The Gmail module must continue following these security rules throughout development:
-
-```text
-1. Never expose OAuth tokens to the LLM.
-
-2. Never commit Gmail credentials or tokens to Git.
-
-3. Never allow the LLM to directly send email.
-
-4. Treat received email content as untrusted input.
-
-5. Require explicit human approval before sending.
-
-6. Keep Gmail account tokens isolated from one another.
-
-7. Use the minimum Google OAuth permissions required.
-
-8. Revalidate recipients before sending.
-
-9. Revalidate attachments before sending.
-
-10. Revalidate the active Gmail account before sending.
-
-11. Keep security-sensitive operations auditable.
-
-12. Fail safely instead of silently performing privileged actions.
-```
-
----
-
-# 🚀 Current Development Position
-
-```text
-Phase 1
-✅ COMPLETE
-     │
-     ▼
-Phase 2A
-✅ COMPLETE
-     │
-     ▼
-Phase 2B
-✅ COMPLETE
-     │
-     ▼
-Phase 2C
-✅ COMPLETE
-```
-
-The latest completed development milestone is:
-
-## ✅ Phase 2C — Human Approval & Real Gmail Sending
-
-Phase 2C implementation and verification are complete.
-
-Phase 2C sends only after explicit Human-in-the-Loop approval and final security revalidation.
-
----
-
-# 📦 Current Gmail Module Capabilities
-
-The current Gmail implementation supports:
+NEXA Gmail currently supports:
 
 ```text
 Official Gmail API
-Real Gmail Read/Search
-OAuth Authentication
-Multi-Account Isolation
+Real Gmail OAuth
+
+Read Email
+Search Email
+Unread Email Listing
+Open Email
+Read Thread
+
+Multi-Account Gmail
 Account Connect
 Account Switch
 Account Disconnect
-Automatic OAuth Browser Flow
-Secure Local Token Storage
+Per-Account Token Isolation
 
-Natural-Language Email Composition
+Natural-Language Email Compose
 AI-Assisted Email Drafting
 Real Gmail Draft Creation
 
@@ -1748,97 +1820,235 @@ Reply-All
 Forward
 
 Local Attachments
-Windows File Paths
-Quoted File Paths
 Multiple Attachments
+Windows Paths
+Quoted Paths
 Unicode Filenames
-MIME Attachment Parts
+MIME Attachments
+
 Sensitive File Blocking
 Attachment Size Validation
 Attachment Metadata Sanitization
 
 Recipient Validation
 Header Injection Protection
-Gmail Thread Preservation
-Draft Browser Navigation
-```
+Thread Preservation
 
-The current implementation intentionally does **not** support automatic or AI-controlled Gmail sending.
+Profile-Aware Email Signature
+Fact-Safe Email Generation
+Intelligent Email Length
 
----
+Human Draft Review
+Approve Draft
+Send Approved Draft
 
-# 📈 Development Status
-
-| Phase | Description | Status |
-|---|---|---|
-| Phase 1 | Gmail Foundation | ✅ Complete |
-| Phase 2A | Real Gmail Read/Search + OAuth + Multi-Account | ✅ Complete |
-| Phase 2B | Compose + Draft + Reply + Forward + Attachments | ✅ Complete |
-| Phase 2C | Human Approval + Real Gmail Send | ✅ Complete |
-
----
-
-# 🔖 Latest Gmail Milestone
-
-```text
-Commit:
-979adee
-
-Message:
-feat: complete Gmail Phase 2B draft workflow
-
-Remote:
-origin/supti-medha
-
-Repository State:
-Clean and synchronized
+Draft Fingerprinting
+Approval Invalidation
+Final Revalidation
+Duplicate Send Protection
+Audit Logging
+Controlled Gmail drafts.send
 ```
 
 ---
 
-# ⚠️ Important Development Rule
+# 🚫 Intentionally Unsupported / Forbidden Behavior
 
-Phase 2C has been implemented, reviewed, tested, and approved. Gmail sending remains restricted to:
+NEXA must not:
 
 ```text
-NEXA MUST NOT SEND EMAIL AUTOMATICALLY.
+Allow LLM-controlled automatic sending
+
+Expose Gmail OAuth tokens to the LLM
+
+Expose API keys to the frontend
+
+Commit .env files
+
+Commit OAuth credentials
+
+Automatically resend after uncertain send failure
+
+Ignore draft modifications after approval
+
+Use old approval for a modified draft
+
+Guess names from email local-parts
+
+Invent dates, times, excuses or commitments
 ```
 
-Email flow must remain:
+---
+
+# 🔄 Final Gmail Runtime Flow
 
 ```text
-NEXA Creates Draft
-       │
-       ▼
+User
+ │
+ ▼
+NEXA Chat / Voice
+ │
+ ▼
+Intent Router
+ │
+ ▼
+LLM Email Generation
+ │
+ ▼
+Fact-Safety / Drafting Layer
+ │
+ ▼
+Gmail Draft
+ │
+ ▼
 User Reviews Draft
-       │
-       ▼
-User Manually Sends From Gmail
+ │
+ ▼
+Approve Draft
+ │
+ ▼
+Approval Controller
+ │
+ ▼
+Final Draft / Account / Recipient /
+Attachment Revalidation
+ │
+ ▼
+Send Approved Draft
+ │
+ ▼
+Official Gmail drafts.send
+ │
+ ▼
+Sent
 ```
 
 ---
 
-# ✅ Final Gmail Status
+# 🧠 Human-in-the-Loop Guarantee
+
+The send workflow must always remain:
 
 ```text
-NEXA GMAIL MODULE
+Draft
+   ↓
+Review
+   ↓
+Approve Draft
+   ↓
+Approved
+   ↓
+Explicit Send Approved Draft
+   ↓
+Final Validation
+   ↓
+Sent
+```
+
+Never:
+
+```text
+User Request
+   ↓
+LLM
+   ↓
+Automatic Send
+```
+
+---
+
+# ✅ Final Development Status
+
+```text
+NEXA AI — GMAIL MODULE
 ================================================
 
-Phase 1   ✅ COMPLETE
-Phase 2A  ✅ COMPLETE
-Phase 2B  ✅ COMPLETE
-Phase 2C  ✅ COMPLETE
+Phase 1
+Gmail Foundation                         ✅ COMPLETE
 
-Current Runtime:
-READ + SEARCH + COMPOSE + DRAFT + REPLY + FORWARD + ATTACHMENTS
+Phase 2A
+Real Gmail + OAuth + Multi-Account       ✅ COMPLETE
 
-Automatic Gmail Send:
-CONTROLLED BY EXPLICIT APPROVAL AND SEND ACTION
+Phase 2B
+Compose + Draft + Reply + Forward        ✅ COMPLETE
+Attachments                              ✅ COMPLETE
 
-Human Control:
-ENFORCED
+Phase 2C
+Approval Controller                      ✅ COMPLETE
+Approval Invalidation                    ✅ COMPLETE
+Controlled Send                          ✅ COMPLETE
+Audit + Error Handling                   ✅ COMPLETE
+Real Send Verification                   ✅ COMPLETE
+
+Email Drafting Refinement
+Professional Length                      ✅ COMPLETE
+Fact-Safe Drafting                       ✅ COMPLETE
+Profile-Aware Signature                  ✅ COMPLETE
+Frontend Profile Propagation             ✅ COMPLETE
+
+LLM
+Groq API                                 ✅ WORKING
+openai/gpt-oss-20b                       ✅ WORKING
+
+Testing
+Focused Gmail Suite                      ✅ 97 PASSED
+Full Backend Suite                       ✅ 477 PASSED
+Frontend TypeScript                      ✅ PASSED
+Frontend Contract Suite                  ✅ PASSED
+
+Git
+Latest Commit                            ✅ 96fa262
+Remote                                   ✅ origin/supti-medha
+Ahead / Behind                           ✅ 0 / 0
+Repository Sync                          ✅ COMPLETE
+================================================
 ```
 
 ---
 
-> **NEXA AI** — Secure, modular, human-controlled AI automation.
+# 🎯 Current Development Position
+
+```text
+Phase 1
+✅ COMPLETE
+    │
+    ▼
+Phase 2A
+✅ COMPLETE
+    │
+    ▼
+Phase 2B
+✅ COMPLETE
+    │
+    ▼
+Phase 2C
+✅ COMPLETE
+    │
+    ▼
+Drafting & Profile Refinement
+✅ COMPLETE
+```
+
+The Gmail integration is now in a stable, tested, human-controlled state.
+
+Future work should preserve all existing Gmail security boundaries.
+
+---
+
+# 🛡️ Final Rule
+
+> **NEXA may assist with email generation and may execute a send only after explicit human-controlled approval and a separate explicit send action.**
+
+The LLM itself must never possess direct Gmail sending authority.
+
+---
+
+## NEXA AI
+
+**Secure. Modular. Human-Controlled. Privacy-Aware.**
+
+```text
+AI assists.
+Security validates.
+The human decides.
+```
