@@ -507,8 +507,13 @@ Supported styles include:
 - Brief
 - Detailed
 
-ex: Write a formal academic email to suptidasmedha@gmail.com about my project progress.
+```text
+ Write a formal academic email to suptidasmedha@gmail.com about my project progress.
+
+```
 ---
+
+
 
 # 📏 Intelligent Email Length
 
