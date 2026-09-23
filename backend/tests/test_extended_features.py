@@ -57,7 +57,7 @@ def test_voice_engines_use_online_services_without_local_models(monkeypatch) -> 
     engines = client.get("/api/voice/stt/engines").json()
     tts = client.get("/api/voice/tts/status").json()
 
-    assert engines["preferred_engine"] == "google_web_speech_online"
+    assert engines["preferred_engine"] == "assemblyai_streaming"
     assert engines["engines"][0]["model_available"] is True
     assert "local model" in engines["engines"][0]["message"]
     assert tts["available"] is True

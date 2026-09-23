@@ -12,7 +12,7 @@ class VoiceSTTStatusResponse(BaseModel):
     sample_rate: int
     language: str
     auto_start: bool
-    dependency_required: str = "Web Speech API"
+    dependency_required: str = "AssemblyAI API"
     model_required: bool = False
     execution_enabled: bool = False
     message: str
@@ -22,7 +22,7 @@ class VoiceSTTReadinessResponse(BaseModel):
     status: str = "ok"
     module: str = "voice_stt_readiness"
     phase: str = "34.3"
-    engine: str = "google_web_speech_online"
+    engine: str = "assemblyai_streaming"
     dependency_installed: bool
     dependency_message: str
     model_available: bool
@@ -36,7 +36,7 @@ class VoiceSTTTestTranscriptionResponse(BaseModel):
     status: str
     module: str = "voice_stt_test_transcription"
     phase: str = "34.4"
-    engine: str = "google_web_speech_online"
+    engine: str = "assemblyai_streaming"
     transcribed: bool = False
     text: str = ""
     execution_enabled: bool = False

@@ -5,6 +5,7 @@ import {
   createProductivityItem, getProductivityDashboard, getProductivityDiagnostics,
   ProductivityDashboardDto, ProductivityDiagnosticsDto,
 } from "@/lib/backendAssistantClient";
+import { EmailSkillPanel } from "@/components/email/EmailSkillPanel";
 
 const EXAMPLES = [
   "নেক্সা মনে রাখো আমার favourite color blue",
@@ -84,6 +85,7 @@ export function SkillsHubPage() {
         </section>
 
         <div style={{ display: "grid", gap: 16 }}>
+          <EmailSkillPanel />
           <section className="nx-card">
             <div className="nx-card-head"><div className="nx-card-title"><Save /> Add local item</div></div>
             <select className="nx-input" value={kind} onChange={(event) => setKind(event.target.value)}>

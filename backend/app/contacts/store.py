@@ -13,12 +13,14 @@ from app.core.runtime_paths import data_dir
 CONTACTS_FILE = data_dir() / "whatsapp_contacts.json"
 
 _lock = threading.Lock()
+EMAIL_ADDRESS_RE = re.compile(r"^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$")
 
 
 @dataclass
 class ContactRecord:
     name: str
     phone_number: str
+    email_address: str | None = None
     nickname: str | None = None
     aliases: list[str] | None = None
     relationship: str = "unknown"
@@ -53,6 +55,7 @@ def _record_from_dict(value: dict) -> ContactRecord | None:
     try:
         row = dict(value)
         row.setdefault("aliases", [])
+        row.setdefault("email_address", None)
         row.setdefault("relationship", "unknown")
         row.setdefault("default_tone", "normal")
         return ContactRecord(**row)
@@ -197,11 +200,15 @@ def save_contact(
     aliases: list[str] | str | None = None,
     relationship: str | None = None,
     default_tone: str | None = None,
+    email_address: str | None = None,
 ) -> ContactRecord:
     clean_name = " ".join((name or "").strip().split())
     if not clean_name:
         raise ValueError("Contact name is required.")
     normalized_phone = normalize_phone_number(phone_number)
+    clean_email = (email_address or "").strip()
+    if clean_email and not EMAIL_ADDRESS_RE.fullmatch(clean_email):
+        raise ValueError("Malformed email address.")
     key = normalize_contact_name(clean_name)
     timestamp = _now()
     with _lock:
@@ -217,6 +224,7 @@ def save_contact(
         record = ContactRecord(
             name=clean_name,
             phone_number=normalized_phone,
+            email_address=(clean_email or existing.get("email_address") or "").strip() or None,
             nickname=(" ".join(nickname.strip().split()) if nickname and nickname.strip() else None),
             aliases=merged_aliases,
             relationship=normalized_relationship,

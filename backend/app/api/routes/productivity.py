@@ -10,6 +10,7 @@ from app.productivity.store import (
     dashboard_snapshot, set_note_status,
 )
 from app.voice.stt_engines import get_stt_engines_overview
+from app.voice.cartesia import status as cartesia_status
 
 router = APIRouter(prefix="/productivity", tags=["productivity"])
 
@@ -45,7 +46,7 @@ def productivity_diagnostics() -> dict:
         "checks": [
             {"name": "Online Bangla STT", "ok": bool(stt["engines"][0]["ready"] and permissions.get("voice_stt"))},
             {"name": "Always-listening", "ok": bool(permissions.get("always_on_microphone"))},
-            {"name": "Voice replies", "ok": bool(permissions.get("voice_tts") and permissions.get("edge_tts"))},
+            {"name": "Voice replies", "ok": bool(permissions.get("voice_tts") and (cartesia_status()["configured"] or permissions.get("edge_tts")))},
             {"name": "Offline local skills", "ok": True},
         ],
     }

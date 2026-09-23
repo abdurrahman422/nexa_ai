@@ -10,7 +10,7 @@ SKILLS = [
     ("media_control", "Music & Media", "ready", "YouTube plus safe system media commands."),
     ("reminders", "Reminders, Alarms & Timers", "ready", "Local recurring reminders and due alerts."),
     ("calendar", "Calendar", "ready", "Local calendar works now; cloud sync is optional."),
-    ("email", "Email Assistant", "ready", "Local drafts only; sending requires a future account connection."),
+    ("email", "Email Send", "ready", "Preview and explicitly confirm delivery through configured Gmail, Outlook or SMTP."),
     ("whatsapp", "WhatsApp Assistant", "ready", "Confirmed drafts; auto-send remains blocked."),
     ("files", "File Assistant", "ready", "Safe-folder search and document/PDF preview."),
     ("screen_context", "Screen Understanding", "ready", "Answers about the active Nexa page supplied by the UI."),

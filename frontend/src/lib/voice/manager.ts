@@ -18,9 +18,11 @@
    ========================================================================== */
 import { interactionBus } from "@/interaction";
 import { loadProfile } from "@/lib";
+import { transcribeAudioBlob } from "@/lib/backendAssistantClient";
+import { startContinuousVoiceCapture, type ContinuousVoiceCapture } from "@/lib/audioRecorder";
 import type { ChatTurn } from "@/lib/llm";
 import { SpeechRecognitionService } from "./recognitionService";
-import { GoogleStreamingService } from "./googleStreamingService";
+import { AssemblyAIStreamingService } from "./assemblyAIStreamingService";
 import { SpeechSynthesisService } from "./synthesisService";
 import type { OnlineVoiceInfo } from "./synthesisService";
 import { VoicePipeline } from "./pipeline";
@@ -36,7 +38,9 @@ function uid(): string {
 
 class VoiceManager {
   private recognition = new SpeechRecognitionService();
-  private googleRecognition = new GoogleStreamingService();
+  private assemblyRecognition = new AssemblyAIStreamingService();
+  private uploadRecognition: ContinuousVoiceCapture | null = null;
+  private recognitionGeneration = 0;
   private synthesis = new SpeechSynthesisService();
   private pipeline = new VoicePipeline();
 
@@ -139,8 +143,11 @@ class VoiceManager {
 
   stopListening(): void {
     this.running = false;
+    this.recognitionGeneration += 1;
     this.recognition.abort();
-    this.googleRecognition.stop();
+    this.assemblyRecognition.stop();
+    this.uploadRecognition?.stop();
+    this.uploadRecognition = null;
     this.synthesis.cancel();
     this.interim = "";
     window.dispatchEvent(new CustomEvent("nexa:voice-output-state", { detail: { active: false } }));
@@ -165,7 +172,7 @@ class VoiceManager {
   }
 
   pushToTalkStop(): void {
-    this.recognition.stop(); // triggers the final result → a turn
+    this.recognition.stop(); // triggers the final browser result → a turn
   }
 
   /** Submit a transcript captured by the backend push-to-talk recorder. */
@@ -176,18 +183,19 @@ class VoiceManager {
   }
 
   private beginRecognition(continuous: boolean): void {
+    const generation = ++this.recognitionGeneration;
     this.interim = "";
     this.setState("listening");
     if (this.settings.sttEngine !== "browser") {
-      void this.beginGoogleRecognition(continuous);
+      void this.beginAssemblyRecognition(continuous, generation);
       return;
     }
-    this.beginBrowserRecognition(continuous);
+    this.beginBrowserRecognition(continuous, generation);
   }
 
-  private beginBrowserRecognition(continuous: boolean): void {
+  private beginBrowserRecognition(continuous: boolean, generation: number): void {
     this.recognition.start({
-      lang: resolveLanguage(this.settings.language),
+      lang: this.activeLanguage(),
       continuous,
       handlers: {
         onInterim: (text) => {
@@ -198,28 +206,87 @@ class VoiceManager {
           void this.handleFinal(text);
         },
         onError: (kind) => {
+          if (generation !== this.recognitionGeneration || this.state !== "listening") return;
           if (kind === "no-speech") return; // benign
+          if (kind === "network" || kind === "unsupported") {
+            this.recognition.abort();
+            void this.beginUploadedRecognition(generation);
+            return;
+          }
           this.setError(kind);
         },
       },
     });
   }
 
-  private async beginGoogleRecognition(continuous: boolean): Promise<void> {
+  private async beginAssemblyRecognition(continuous: boolean, generation: number): Promise<void> {
     try {
-      await this.googleRecognition.start(resolveLanguage(this.settings.language), {
+      await this.assemblyRecognition.start({
         onInterim: (text) => { this.interim = text; this.emit(); },
         onFinal: (text) => { void this.handleFinal(text); },
-        onError: () => {
-          this.googleRecognition.stop();
-          if (this.state === "listening") this.beginBrowserRecognition(continuous);
+        onError: (_kind, detail) => {
+          this.assemblyRecognition.stop();
+          if (generation === this.recognitionGeneration && this.state === "listening") {
+            interactionBus.emit({ type: "notify", payload: { title: "AssemblyAI unavailable", message: detail || "Using recorded-audio fallback instead.", tone: "warning" } });
+            void this.beginUploadedRecognition(generation);
+          }
         },
       });
-    } catch {
-      this.googleRecognition.stop();
-      if (this.state !== "listening") return;
-      this.beginBrowserRecognition(continuous);
+    } catch (err) {
+      this.assemblyRecognition.stop();
+      if (generation !== this.recognitionGeneration || this.state !== "listening") return;
+      interactionBus.emit({ type: "notify", payload: { title: "AssemblyAI unavailable", message: err instanceof Error ? err.message : "Using recorded-audio fallback instead.", tone: "warning" } });
+      void this.beginUploadedRecognition(generation);
     }
+  }
+
+  private async beginUploadedRecognition(generation: number): Promise<void> {
+    if (this.uploadRecognition || generation !== this.recognitionGeneration) return;
+    interactionBus.emit({ type: "notify", payload: { title: "Voice fallback active", message: "Live speech service is unavailable. Transcribing after each short pause instead.", tone: "warning" } });
+    try {
+      const capture = await startContinuousVoiceCapture({
+        onUtterance: async (blob) => {
+          if (generation !== this.recognitionGeneration || this.state !== "listening") return;
+          try {
+            const response = await transcribeAudioBlob(blob, "voice-fallback.wav", undefined, this.activeLanguage());
+            if (generation !== this.recognitionGeneration || this.state !== "listening") return;
+            if (response.transcribed && response.text.trim()) await this.handleFinal(response.text);
+            else if (response.status === "blocked" || (response.error && !/not clear|unknown/i.test(response.error))) {
+              this.error = { kind: "network", message: response.error || response.message };
+              this.uploadRecognition?.stop();
+              this.uploadRecognition = null;
+              this.setState("error");
+            }
+          } catch (error) {
+            if (generation !== this.recognitionGeneration) return;
+            this.error = { kind: "network", message: error instanceof Error ? error.message : VOICE_ERROR_COPY.network };
+            this.uploadRecognition?.stop();
+            this.uploadRecognition = null;
+            this.setState("error");
+          }
+        },
+        onError: (error) => {
+          if (generation !== this.recognitionGeneration) return;
+          this.error = { kind: "network", message: error.message };
+          this.uploadRecognition?.stop();
+          this.uploadRecognition = null;
+          this.setState("error");
+        },
+      });
+      if (generation !== this.recognitionGeneration || this.state !== "listening") capture.stop();
+      else this.uploadRecognition = capture;
+    } catch (error) {
+      if (generation !== this.recognitionGeneration) return;
+      this.error = { kind: "network", message: error instanceof Error ? error.message : VOICE_ERROR_COPY.network };
+      this.setState("error");
+    }
+  }
+
+  private activeLanguage(): string {
+    const preference = loadProfile().languageMode;
+    if (preference === "Bangla") return "bn-BD";
+    if (preference === "English") return "en-US";
+    return resolveLanguage(this.settings.language);
   }
 
   /* ---------------- turn ---------------- */
@@ -228,8 +295,11 @@ class VoiceManager {
     const clean = text.trim();
     if (!clean) return;
     // Pause the mic while we think + speak (no echo, no double-processing).
+    this.recognitionGeneration += 1;
     this.recognition.stop();
-    this.googleRecognition.stop();
+    this.assemblyRecognition.stop();
+    this.uploadRecognition?.stop();
+    this.uploadRecognition = null;
     this.interim = "";
     window.dispatchEvent(new CustomEvent("nexa:voice-output-state", { detail: { active: true } }));
 
@@ -244,6 +314,7 @@ class VoiceManager {
         history,
         conversationId: this.conversationId,
         addressStyle: loadProfile().addressingPreference,
+        preferredLanguage: loadProfile().languageMode,
         onNotice: (notice) => interactionBus.emit({ type: "notify", payload: notice }),
       });
       const assistant: VoiceMessage = {
@@ -276,7 +347,7 @@ class VoiceManager {
       return;
     }
     this.setState("speaking");
-    this.synthesis.speak(text, this.settings, resolveLanguage(this.settings.language), {
+    this.synthesis.speak(text, this.settings, this.activeLanguage(), {
       onEnd: () => this.afterReply(),
       onError: () => {
         // Text is already shown — surface a soft error, then continue.

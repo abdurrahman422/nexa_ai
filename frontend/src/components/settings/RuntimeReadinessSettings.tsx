@@ -3,7 +3,7 @@ import { BadgeCheck, RefreshCw, TriangleAlert } from "lucide-react";
 import { configureHuggingFaceToken, getSetupReadiness, SetupReadinessDto } from "@/lib/backendAssistantClient";
 
 const LABELS = {
-  google_streaming_stt: "Google Streaming STT",
+  assemblyai_streaming_stt: "AssemblyAI Streaming STT",
   image_generation: "AI Image Generation",
   edge_tts: "Edge Neural TTS",
   advanced_youtube: "Advanced YouTube",

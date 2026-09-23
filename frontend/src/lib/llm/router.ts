@@ -87,9 +87,12 @@ export async function routeChat(message: string, context: ChatContext): Promise<
     const provider = providerRegistry.require(providerId);
     const config = llmManager.config(providerId);
     const input: ProviderCallInput = {
-      message,
+      message: providerId !== "nexa-backend" && context.preferredLanguage !== "Mixed" && context.preferredLanguage
+        ? `${message}\n\nReply entirely in ${context.preferredLanguage === "Bangla" ? "Bengali script" : "English"}, unless I explicitly request another reply language in this message.`
+        : message,
       history: context.history,
       addressStyle: context.addressStyle,
+      preferredLanguage: context.preferredLanguage,
       model: modelFor(providerId, selection, providerId === selectionStart),
       signal: context.signal,
     };

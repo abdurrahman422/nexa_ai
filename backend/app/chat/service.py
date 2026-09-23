@@ -8,6 +8,7 @@ when Trusted Quick Launch Mode is enabled.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from contextvars import ContextVar
 from datetime import datetime
 import os
 import re
@@ -20,7 +21,9 @@ from app.actions import execute_open_app, execute_open_website, get_allowed_app,
 from app.actions.safety import contains_dangerous_keyword
 from app.assistant.response_composer import address_label as compose_address_label, compose as compose_response, compose_intent
 from app.audit.event_log import record_audit_event
-from app.contacts import add_contact_alias, delete_contact, find_contact_matches, get_contact, save_contact
+from app.contacts import add_contact_alias, delete_contact, find_contact_matches, get_contact, list_contacts, save_contact
+from app.email.composer import compose_formal_email
+from app.email.service import send_email
 from app.permissions import is_permission_enabled, permission_denied_message
 from app.llm import complete as complete_llm
 from app.llm.prompt_builder import build_task_context
@@ -29,6 +32,7 @@ from app.llm.schemas import LLMResponse
 from app.memory.pending_tasks import (
     PendingTask,
     action_confirmation_task,
+    email_confirmation_task,
     app_planning_task,
     clear_pending_task,
     file_summary_task,
@@ -68,6 +72,43 @@ WEATHER_URL = (
 )
 DEFAULT_LOCATION = "Dhaka, Bangladesh"
 REQUEST_TIMEOUT_SECONDS = 8.0
+_PREFERRED_REPLY_LANGUAGE: ContextVar[str | None] = ContextVar("preferred_reply_language", default=None)
+
+
+def set_preferred_reply_language(message: str, preference: str):
+    normalized = normalize_text(message)
+    if re.search(r"(?:reply|answer|respond|speak|write)\s+(?:to me\s+)?in\s+english|ইংরেজিতে\s+(?:উত্তর|বলো|বলুন|লিখ)", normalized):
+        style = "english"
+    elif re.search(r"(?:reply|answer|respond|speak|write)\s+(?:to me\s+)?in\s+(?:bangla|bengali)|বাংলা[য়তে]\s+(?:উত্তর|বলো|বলুন|লিখ)", normalized):
+        style = "bangla"
+    else:
+        style = {"Bangla": "bangla", "English": "english"}.get(preference)
+    return _PREFERRED_REPLY_LANGUAGE.set(style)
+
+
+def reset_preferred_reply_language(token) -> None:
+    _PREFERRED_REPLY_LANGUAGE.reset(token)
+
+
+def enforce_reply_language(response: ChatMessageResponse, message: str, address_style: str | None) -> ChatMessageResponse:
+    style = _PREFERRED_REPLY_LANGUAGE.get()
+    if style not in {"bangla", "english"} or not response.answer.strip():
+        return response
+    answer = response.answer
+    bangla_letters = len(re.findall(r"[\u0980-\u09ff]", answer))
+    latin_letters = len(re.findall(r"[A-Za-z]", answer))
+    wrong_language = (style == "bangla" and bangla_letters < max(8, latin_letters // 3)) or (style == "english" and bangla_letters > 10)
+    if not wrong_language or "```" in answer:
+        return response
+    target = "natural Bengali written in Bengali script" if style == "bangla" else "natural English"
+    translation = complete_llm(
+        f"Translate the following assistant reply into {target}. Preserve all facts, warnings, addresses, URLs, code, and confirmation requirements exactly. Return only the translated reply.\n\n{answer}",
+        address_style=address_style,
+        language_style=style,
+    )
+    if translation and translation.answer.strip():
+        response.answer = translation.answer.strip()
+    return response
 
 WEATHER_KEYWORDS = {
     "weather",
@@ -641,6 +682,15 @@ def _looks_like_generation_detail(text: str) -> bool:
 
 def classify_task(message: str) -> SmartTaskRoute:
     normalized = normalize_banglish(normalize_text(message))
+    if "email" in normalized or "ইমেইল" in normalized or "ই-মেইল" in normalized:
+        return SmartTaskRoute(
+            intent="email_skill",
+            confidence="high",
+            route="email_draft_confirmation",
+            reason="Explicit email drafting or sending request.",
+            needs_action=True,
+            needs_confirmation=True,
+        )
     if _looks_like_contact_command(normalized):
         return SmartTaskRoute(
             intent="contact_command",
@@ -815,6 +865,7 @@ def _should_defer_pending_task(route: SmartTaskRoute, task: PendingTask | None =
         "file_summary_request",
         "youtube_skill",
         "whatsapp_skill",
+        "email_skill",
         "web_search",
         "contact_command",
         "app_open_request",
@@ -827,6 +878,9 @@ def detect_chat_intent(message: str) -> str:
 
 
 def _language_style(message: str) -> str:
+    preferred = _PREFERRED_REPLY_LANGUAGE.get()
+    if preferred:
+        return preferred
     style = detect_language_style(message, normalize_text(message))
     # Existing response templates call romanized Bangla "mixed". Keep that
     # compatibility while distinguishing native Bangla script for Bangla TTS.
@@ -2769,6 +2823,31 @@ def _handle_pending_task(message: str, task: PendingTask, request: ChatMessageRe
             source_type="local",
         )
 
+    if task.kind == "email_send_confirmation":
+        if not is_confirm_message(message):
+            # Keep the draft pending when speech recognition returns filler or an unclear answer.
+            return _response_with_pending(ChatMessageResponse(
+                status="needs_confirmation",
+                intent="email_send_confirmation",
+                message=message,
+                answer="I have not sent it. Please say Yes to send, or Cancel to discard the draft.",
+                requires_confirmation=True,
+                provider="Nexa email",
+                source="Pending email draft",
+                chips=["Yes, send", "Cancel"],
+            ), task)
+        clear_pending_task()
+        recipient = task.recipient or ""
+        subject = str(task.data.get("subject") or "")
+        body = str(task.data.get("body") or task.message or "")
+        try:
+            result = send_email(recipient=recipient, subject=subject, body=body)
+        except Exception as exc:
+            answer = f"I could not send the email: {exc}"
+            return ChatMessageResponse(status="blocked", intent="email_send_confirmation", message=message, answer=answer, blocked=True, error=str(exc), chips=["Email not sent"])
+        answer = f"Email sent successfully to {task.data.get('contact_name') or recipient}."
+        return ChatMessageResponse(status="completed", intent="email_send_confirmation", message=message, answer=answer, execution_enabled=True, provider=str(result.get("provider") or "SMTP"), source="Confirmed email delivery", chips=["Email sent"], action=ChatActionStatus(kind="email", target=recipient, label="Send email", executed=True, requires_confirmation=False, message=answer, recipient=recipient, draft_text=body))
+
     if task.kind == "action_confirmation":
         if not is_confirm_message(message):
             clear_pending_task()
@@ -3030,6 +3109,39 @@ def _handle_pending_task(message: str, task: PendingTask, request: ChatMessageRe
         return _location_permission_response(message, request.address_style)
 
     return None
+
+
+def _parse_email_request(message: str) -> tuple[str | None, str | None]:
+    text = " ".join(message.strip().split())
+    patterns = (
+        r"(?:email|ইমেইল|ই-মেইল)(?:টা)?\s+(?:to\s+)?(?P<recipient>.+?)\s+(?:লিখে দাও|লিখে দিন|write|draft|send)(?:\s+(?:যে|that))?\s+(?P<brief>.+)",
+        r"(?P<recipient>.+?)(?:কে|\s+ke)\s+(?:একটা\s+)?(?:email|ইমেইল|ই-মেইল)(?:টা)?\s+(?:লিখে দাও|লিখে দিন|write|draft|send)(?:\s+(?:যে|that))?\s+(?P<brief>.+)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match:
+            recipient = re.sub(r"^(?:আমার|my)\s+", "", match.group("recipient"), flags=re.IGNORECASE).strip()
+            return recipient, match.group("brief").strip()
+    return None, None
+
+
+def _email_skill_response(message: str, address_style: str | None) -> ChatMessageResponse:
+    recipient_name, brief = _parse_email_request(message)
+    if not recipient_name or not brief:
+        return ChatMessageResponse(status="needs_more_info", intent="email_skill", message=message, answer="Please tell me who the email is for and what it should say.", chips=["Email draft"])
+    matches = find_contact_matches(recipient_name)
+    if not matches and normalize_text(recipient_name) in {"boss", "my boss", "বস", "আমার বস"}:
+        matches = [contact for contact in list_contacts() if contact.relationship == "boss"]
+    if len(matches) != 1:
+        return ChatMessageResponse(status="needs_more_info", intent="email_skill", message=message, answer=f"I could not uniquely find '{recipient_name}'. Save that contact and email address in Settings first.", chips=["Contact needed"])
+    contact = matches[0]
+    if not contact.email_address:
+        return ChatMessageResponse(status="needs_more_info", intent="email_skill", message=message, answer=f"I found {contact.name}, but no email address is saved. Add it in Settings, then try again.", chips=["Email address needed"])
+    bangla = bool(re.search(r"[\u0980-\u09ff]", message))
+    subject, body = compose_formal_email(brief, contact.name, bangla=bangla)
+    task = set_pending_task(email_confirmation_task(recipient=contact.email_address, contact_name=contact.name, subject=subject, body=body))
+    answer = f"Email draft for {contact.name}\n\nSubject: {subject}\n\n{body}\n\nMay I send this email? Say Yes to send or Cancel to discard it."
+    return _response_with_pending(ChatMessageResponse(status="needs_confirmation", intent="email_skill", message=message, answer=answer, requires_confirmation=True, provider="Nexa formal email composer", source="Local draft; SMTP only after confirmation", chips=["Yes, send", "Cancel"], action=ChatActionStatus(kind="email", target=contact.email_address, label=f"Email {contact.name}", executed=False, requires_confirmation=True, message="Waiting for explicit confirmation.", recipient=contact.email_address, draft_text=body)), task)
 
 
 def _attach_voice_action_confirmation(
@@ -3313,6 +3425,9 @@ def handle_chat_message(request: ChatMessageRequest) -> ChatMessageResponse:
     if intent == "whatsapp_skill":
         response = _whatsapp_skill_response(message, request.whatsapp_draft_open_target, request.address_style)
         return _with_route_debug(_attach_voice_action_confirmation(response, message, request.source), route)
+
+    if intent == "email_skill":
+        return _with_route_debug(_email_skill_response(message, request.address_style), route)
 
     if intent == "app_open_request":
         return _with_route_debug(

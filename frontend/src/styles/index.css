@@ -35,6 +35,7 @@
 @import "./system/interaction.css";
 @import "./system/ai-models.css";
 @import "./system/voice-chat.css";
+@import "./system/email.css";
 
 /* ---- Minimal / performance redesign (loads LAST — wins the cascade) ---
    The heavy cinematic layers (environment, alive, cinematic, hud, omega*,

@@ -38,7 +38,7 @@ export class NexaBackendProvider extends BaseProvider {
       .map((turn) => ({ role: turn.role, content: turn.content }));
 
     try {
-      const response = await requestChatMessage(input.message, history, input.addressStyle);
+      const response = await requestChatMessage(input.message, history, input.addressStyle, "auto", "chat_page", undefined, input.preferredLanguage);
       return {
         text: response.answer,
         providerId: this.meta.id,

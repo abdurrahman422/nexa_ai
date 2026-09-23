@@ -100,6 +100,7 @@ export interface ChatContext {
   history: ChatTurn[];
   conversationId: string;
   addressStyle?: string;
+  preferredLanguage?: "Bangla" | "English" | "Mixed";
   /** Optional model override; defaults to the user's saved selection. */
   selection?: ModelSelection;
   signal?: AbortSignal;
@@ -133,6 +134,7 @@ export interface ProviderCallInput {
   message: string;
   history: ChatTurn[];
   addressStyle?: string;
+  preferredLanguage?: "Bangla" | "English" | "Mixed";
   /** Model to use for this call (overrides the config default). */
   model: string;
   signal?: AbortSignal;

@@ -6,7 +6,7 @@ import type { VoiceSettings } from "./types";
 const KEY = "nexa.voice.settings";
 
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
-  sttEngine: "auto",
+  sttEngine: "assemblyai",
   enableVoiceReply: true,
   autoSpeak: true,
   continuousListening: true,
@@ -23,8 +23,9 @@ export function loadVoiceSettings(): VoiceSettings {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULT_VOICE_SETTINGS };
-    const parsed = JSON.parse(raw) as Partial<VoiceSettings>;
-    return { ...DEFAULT_VOICE_SETTINGS, ...parsed };
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (parsed.sttEngine === "google") parsed.sttEngine = "assemblyai";
+    return { ...DEFAULT_VOICE_SETTINGS, ...parsed } as VoiceSettings;
   } catch {
     return { ...DEFAULT_VOICE_SETTINGS };
   }

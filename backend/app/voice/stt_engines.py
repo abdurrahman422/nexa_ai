@@ -1,8 +1,4 @@
-"""Online STT engines for Nexa AI.
-
-The desktop continuous-listening path detects utterances locally and sends a
-short WAV recording to Google Speech Recognition. No local model is loaded.
-"""
+"""AssemblyAI-backed STT engine metadata and recorded-audio fallback."""
 
 from __future__ import annotations
 
@@ -13,25 +9,18 @@ ALLOWED_UPLOAD_SUFFIXES = {".wav", ".webm", ".ogg", ".mp3", ".m4a", ".flac"}
 
 
 def get_stt_engines_overview() -> dict:
-    try:
-        import speech_recognition  # noqa: F401
-        dependency_installed = True
-    except ImportError:
-        dependency_installed = False
+    from app.voice.assemblyai import status
+    current = status()
     return {
-        "preferred_engine": "google_web_speech_online",
+        "preferred_engine": "assemblyai_streaming",
         "engines": [
             {
-                "name": "google_web_speech_online",
-                "label": "Google Web Speech (online, Bangla)",
-                "dependency_installed": dependency_installed,
+                "name": "assemblyai_streaming",
+                "label": "AssemblyAI Multilingual Streaming",
+                "dependency_installed": True,
                 "model_available": True,
-                "ready": dependency_installed,
-                "message": (
-                    "Uses online recognition with bn-BD; no local model is required."
-                    if dependency_installed
-                    else "Install SpeechRecognition to use online Bangla STT."
-                ),
+                "ready": current["ready"],
+                "message": "Uses AssemblyAI multilingual online recognition; no local model is required.",
             },
         ],
     }
@@ -44,43 +33,5 @@ def is_upload_suffix_allowed(filename: str | None) -> bool:
 
 
 def transcribe_audio_file(audio_path: str | Path, language: str | None = None) -> dict:
-    """Transcribe a WAV recording with the online Google recognition service."""
-    selected_language = language or "bn-BD"
-    try:
-        import speech_recognition as sr
-    except ImportError:
-        return {
-            "status": "not_ready", "transcribed": False, "text": "",
-            "language": selected_language, "engine": "google_web_speech_online",
-            "error": "SpeechRecognition is not installed.",
-        }
-
-    recognizer = sr.Recognizer()
-    try:
-        with sr.AudioFile(str(audio_path)) as source:
-            audio = recognizer.record(source)
-        text = str(recognizer.recognize_google(audio, language=selected_language)).strip()
-    except sr.UnknownValueError:
-        return {
-            "status": "failed", "transcribed": False, "text": "",
-            "language": selected_language, "engine": "google_web_speech_online",
-            "error": "Speech was not clear enough to transcribe.",
-        }
-    except sr.RequestError as exc:
-        return {
-            "status": "failed", "transcribed": False, "text": "",
-            "language": selected_language, "engine": "google_web_speech_online",
-            "error": f"Online speech service request failed: {exc}",
-        }
-    except (OSError, ValueError, EOFError) as exc:
-        return {
-            "status": "failed", "transcribed": False, "text": "",
-            "language": selected_language, "engine": "google_web_speech_online",
-            "error": f"Audio could not be read: {exc}",
-        }
-
-    return {
-        "status": "completed", "transcribed": bool(text), "text": text,
-        "language": selected_language, "engine": "google_web_speech_online",
-        "error": None,
-    }
+    from app.voice.assemblyai import transcribe_file
+    return transcribe_file(Path(audio_path).read_bytes(), language)

@@ -327,6 +327,8 @@ export function CommandCenterPage({
         loadProfile().addressingPreference,
         whatsappDraftOpenTarget,
         options.source ?? "dashboard_text",
+        undefined,
+        loadProfile().languageMode,
       );
       const assistantEntry = chatResponseToEntry(response, text);
       setMessages((prev) => [...prev, assistantEntry]);

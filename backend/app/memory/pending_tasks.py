@@ -176,3 +176,15 @@ def action_confirmation_task(
             "original_text": original_text,
         },
     )
+
+
+def email_confirmation_task(*, recipient: str, contact_name: str, subject: str, body: str) -> PendingTask:
+    return PendingTask(
+        kind="email_send_confirmation",
+        prompt="Confirm sending the displayed email draft",
+        status_label=f"Waiting for email confirmation: {contact_name}",
+        recipient=recipient,
+        message=body,
+        topic="email",
+        data={"contact_name": contact_name, "subject": subject, "body": body},
+    )

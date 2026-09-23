@@ -72,6 +72,7 @@ export function updateBackendPermission(
 export type ContactItemDto = {
   name: string;
   phone_number: string;
+  email_address?: string | null;
   nickname?: string | null;
   aliases: string[];
   relationship: string;
@@ -103,6 +104,7 @@ export function saveBackendContact(
   input: {
     name: string;
     phone_number: string;
+    email_address?: string | null;
     nickname?: string | null;
     aliases?: string[];
     relationship?: string | null;
@@ -163,10 +165,11 @@ export async function transcribeAudioBlob(
   blob: Blob,
   filename = "push-to-talk.wav",
   backendUrl = DEFAULT_BACKEND_URL,
+  language = "bn-BD",
 ): Promise<TranscriptionResponseDto> {
   const form = new FormData();
   form.append("audio", blob, filename);
-  const response = await fetch(`${backendUrl}/api/voice/stt/transcribe`, {
+  const response = await fetch(`${backendUrl}/api/voice/stt/transcribe?language=${encodeURIComponent(language)}`, {
     method: "POST",
     body: form,
   });
@@ -199,12 +202,45 @@ export function getBackendTtsStatus(backendUrl = DEFAULT_BACKEND_URL) {
   return getJson<TtsStatusResponseDto>(`${backendUrl}/api/voice/tts/status`);
 }
 
+export type CartesiaStatusDto = { configured: boolean; provider: string; model: string; voice_bn: string; voice_en: string; key_masked: string };
+export type CartesiaVoiceDto = { id: string; name: string };
+
+export function getCartesiaStatus(backendUrl = DEFAULT_BACKEND_URL) {
+  return getJson<CartesiaStatusDto>(`${backendUrl}/api/voice/tts/cartesia/status`);
+}
+export function saveCartesiaKey(apiKey: string, backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<CartesiaStatusDto & { ok: boolean; message: string }>(`${backendUrl}/api/voice/tts/cartesia/key`, "PUT", { api_key: apiKey });
+}
+export function removeCartesiaKey(backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<CartesiaStatusDto & { ok: boolean; message: string }>(`${backendUrl}/api/voice/tts/cartesia/key`, "DELETE");
+}
+export function getCartesiaVoices(language: "bn" | "en", backendUrl = DEFAULT_BACKEND_URL) {
+  return getJson<{ ok: boolean; voices: CartesiaVoiceDto[]; message: string }>(`${backendUrl}/api/voice/tts/cartesia/voices?language=${language}`);
+}
+export function setCartesiaVoice(language: "bn" | "en", voiceId: string, backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<CartesiaStatusDto & { ok: boolean; message: string }>(`${backendUrl}/api/voice/tts/cartesia/voice`, "PUT", { language, voice_id: voiceId });
+}
+
+export async function requestPreferredTtsAudio(text: string, edgeVoice: string, backendUrl = DEFAULT_BACKEND_URL, rate = "+0%"):
+  Promise<{ blob: Blob; provider: string; fallbackReason: string | null }> {
+  const response = await fetch(`${backendUrl}/api/voice/tts/audio`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, language: /[\u0980-\u09ff]/u.test(text) ? "bn" : "en", edge_voice: edgeVoice, rate }),
+  });
+  if (!response.ok) throw new Error(`TTS failed with status ${response.status}`);
+  if (!(response.headers.get("content-type") || "").includes("audio")) {
+    const result = await response.json() as { error?: string; message?: string };
+    throw new Error(result.error || result.message || "TTS unavailable.");
+  }
+  return { blob: await response.blob(), provider: response.headers.get("X-TTS-Provider") || "unknown", fallbackReason: response.headers.get("X-TTS-Fallback-Reason") };
+}
+
 export async function requestTtsSpeak(
   text: string,
   backendUrl = DEFAULT_BACKEND_URL,
 ): Promise<TtsSpeakResponseDto> {
   const voice = /[\u0980-\u09ff]/u.test(text) ? "bn-BD-NabanitaNeural" : "en-US-AriaNeural";
-  const blob = await requestEdgeTtsAudio(text, voice, backendUrl);
+  const { blob, provider, fallbackReason } = await requestPreferredTtsAudio(text, voice, backendUrl);
   const url = URL.createObjectURL(blob);
   try {
     const audio = new Audio(url);
@@ -213,7 +249,7 @@ export async function requestTtsSpeak(
       audio.addEventListener("error", () => reject(new Error("Online TTS audio playback failed.")), { once: true });
       audio.play().catch(reject);
     });
-    return { status: "completed", spoken: true, message: "Spoken through online Edge neural TTS." };
+    return { status: "completed", spoken: true, message: provider === "cartesia" ? "Spoken through Cartesia Sonic." : `Spoken through Edge fallback.${fallbackReason ? ` ${fallbackReason}` : ""}` };
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -555,6 +591,7 @@ export function requestChatMessage(
   whatsappDraftOpenTarget = "auto",
   source = "chat_page",
   backendUrl = DEFAULT_BACKEND_URL,
+  preferredLanguage = "auto",
 ) {
   return sendJson<ChatMessageResponseDto>(
     `${backendUrl}/api/chat/message`,
@@ -564,6 +601,7 @@ export function requestChatMessage(
       history,
       source,
       address_style: addressStyle,
+      preferred_language: preferredLanguage,
       whatsapp_draft_open_target: whatsappDraftOpenTarget,
     },
   );
@@ -728,7 +766,7 @@ export type SetupReadinessDto = {
   packaged_backend: boolean;
   python: string;
   all_dependencies_ready: boolean;
-  capabilities: Record<"google_streaming_stt" | "image_generation" | "edge_tts" | "advanced_youtube", SetupCapabilityDto>;
+  capabilities: Record<"assemblyai_streaming_stt" | "image_generation" | "edge_tts" | "advanced_youtube", SetupCapabilityDto>;
 };
 
 export function getSetupReadiness(backendUrl = DEFAULT_BACKEND_URL) {
@@ -741,4 +779,22 @@ export function configureHuggingFaceToken(token: string, backendUrl = DEFAULT_BA
     "POST",
     { token, user_confirmed: true },
   );
+}
+
+/* ---------------- Email ---------------- */
+
+export type EmailStatusDto = { status: string; provider: string; sender: string; configured: boolean; confirmation_required: boolean; message: string };
+export type EmailRequestDto = { recipient: string; subject: string; body: string };
+export type EmailResultDto = { status: string; sent: boolean; confirmation_required?: boolean; recipient?: string; subject?: string; body?: string; provider?: string; message: string };
+
+export function getEmailStatus(backendUrl = DEFAULT_BACKEND_URL) {
+  return getJson<EmailStatusDto>(`${backendUrl}/api/email/status`);
+}
+
+export function previewEmail(input: EmailRequestDto, backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<EmailResultDto>(`${backendUrl}/api/email/preview`, "POST", { ...input, user_confirmed: false });
+}
+
+export function sendConfirmedEmail(input: EmailRequestDto, backendUrl = DEFAULT_BACKEND_URL) {
+  return sendJson<EmailResultDto>(`${backendUrl}/api/email/send`, "POST", { ...input, user_confirmed: true });
 }

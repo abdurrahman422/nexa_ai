@@ -10,11 +10,11 @@ export type VoiceState = "idle" | "listening" | "thinking" | "speaking" | "error
 
 /** Recognition/synthesis language. "auto" resolves to the browser locale. */
 export type VoiceLanguage = "auto" | "en-US" | "bn-BD";
-export type VoiceSttEngine = "auto" | "google" | "browser";
+export type VoiceSttEngine = "auto" | "assemblyai" | "browser";
 
 /** User-owned, persisted voice preferences. */
 export interface VoiceSettings {
-  /** Preferred live transcription engine; auto uses Google when configured. */
+  /** Preferred live transcription engine; auto uses AssemblyAI when configured. */
   sttEngine: VoiceSttEngine;
   /** Master switch: speak AI replies at all. */
   enableVoiceReply: boolean;

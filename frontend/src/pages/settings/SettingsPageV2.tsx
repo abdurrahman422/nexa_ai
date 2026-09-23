@@ -23,8 +23,10 @@ import {
 import { PageHero } from "@/components/ui";
 import { AiModelsSettings } from "@/components/settings/AiModelsSettings";
 import { VoiceSettings } from "@/components/settings/VoiceSettings";
+import { voiceManager } from "@/lib/voice";
 import { BackgroundSettings } from "@/components/settings/BackgroundSettings";
 import { EdgeTtsSettings } from "@/components/settings/EdgeTtsSettings";
+import { CartesiaSettings } from "@/components/settings/CartesiaSettings";
 import { RuntimeReadinessSettings } from "@/components/settings/RuntimeReadinessSettings";
 import {
   getBackendPermissions,
@@ -75,6 +77,7 @@ export function SettingsPageV2({
   const [contacts, setContacts] = useState<ContactItemDto[]>([]);
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [contactNickname, setContactNickname] = useState("");
   const [contactAliases, setContactAliases] = useState("");
   const [contactRelationship, setContactRelationship] = useState("unknown");
@@ -129,6 +132,8 @@ export function SettingsPageV2({
 
   const updateProfileField = (patch: Partial<UserProfile>, label: string) => {
     const updated = saveProfile(patch);
+    if (patch.languageMode === "Bangla") voiceManager.updateSettings({ language: "bn-BD" });
+    if (patch.languageMode === "English") voiceManager.updateSettings({ language: "en-US" });
     setProfile(updated);
     logChange(label);
   };
@@ -171,6 +176,7 @@ export function SettingsPageV2({
       const result = await saveBackendContact({
         name: contactName.trim(),
         phone_number: contactPhone.trim(),
+        email_address: contactEmail.trim() || null,
         nickname: contactNickname.trim() || null,
         aliases: contactAliases.split(",").map((item) => item.trim()).filter(Boolean),
         relationship: contactRelationship,
@@ -182,6 +188,7 @@ export function SettingsPageV2({
       }
       setContactName("");
       setContactPhone("");
+      setContactEmail("");
       setContactNickname("");
       setContactAliases("");
       setContactRelationship("unknown");
@@ -328,7 +335,7 @@ export function SettingsPageV2({
             <div className="nx-switch-row">
               <span>
                 Voice replies (TTS)
-                <small>Speak assistant responses through online Edge neural voices</small>
+                <small>Speak through Cartesia Sonic, with Edge neural fallback</small>
               </span>
               <Switch
                 on={permissionEnabled("voice_tts")}
@@ -530,12 +537,12 @@ export function SettingsPageV2({
 
           <section className="nx-card">
             <div className="nx-card-head">
-              <div className="nx-card-title"><User /> 6. Local WhatsApp Contacts</div>
+              <div className="nx-card-title"><User /> 6. Local WhatsApp Contacts & Email</div>
             </div>
             <div className="nx-chip-row" style={{ marginBottom: 10 }}>
               <div className="nx-chip muted">Local-only</div>
-              <div className="nx-chip muted">Draft only</div>
-              <div className="nx-chip warn">No auto-send</div>
+              <div className="nx-chip muted">WhatsApp drafts</div>
+              <div className="nx-chip warn">Email requires confirmation</div>
             </div>
             <div className="nx-field-row">
               <span>Name</span>
@@ -562,6 +569,16 @@ export function SettingsPageV2({
                 value={contactNickname}
                 placeholder="Optional"
                 onChange={(event) => setContactNickname(event.target.value)}
+              />
+            </div>
+            <div className="nx-field-row">
+              <span>Email address</span>
+              <input
+                className="nx-input"
+                type="email"
+                value={contactEmail}
+                placeholder="boss@company.com"
+                onChange={(event) => setContactEmail(event.target.value)}
               />
             </div>
             <div className="nx-field-row">
@@ -618,6 +635,7 @@ export function SettingsPageV2({
                       <strong>{contact.name}</strong>
                       <small>
                         {contact.phone_number}
+                        {contact.email_address ? ` / ${contact.email_address}` : ""}
                         {contact.nickname ? ` / ${contact.nickname}` : ""}
                         {contact.aliases?.length ? ` / aliases: ${contact.aliases.join(", ")}` : ""}
                         {` / ${contact.relationship} / ${contact.default_tone}`}
@@ -678,6 +696,7 @@ export function SettingsPageV2({
 
           <VoiceSettings />
 
+          <CartesiaSettings />
           <EdgeTtsSettings />
 
           <RuntimeReadinessSettings />

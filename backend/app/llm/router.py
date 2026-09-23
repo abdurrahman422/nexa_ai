@@ -26,11 +26,15 @@ def router_enabled() -> bool:
     return _env_bool("NEXA_LLM_ROUTER_ENABLED", False)
 
 
-def build_system_prompt(address_style: str | None = None) -> str:
+def build_system_prompt(address_style: str | None = None, language_style: str = "english") -> str:
     address = (address_style or "Boss").strip() or "Neutral"
+    language_rule = {
+        "bangla": "Reply entirely in natural Bengali script unless the user explicitly requests another language.",
+        "english": "Reply entirely in English unless the user explicitly requests another language.",
+    }.get(language_style, "Answer in the user's language style: Bangla, Banglish, or English.")
     return (
         "You are Nexa AI, a respectful personal desktop assistant. "
-        "Answer in the user's language style: Bangla, Banglish, or English. "
+        f"{language_rule} "
         f"Use this address style naturally when appropriate: {address}. "
         "Do not claim live/current data unless source context is provided. "
         "Do not execute actions, open apps, send WhatsApp messages, bypass login, scrape credentials, "
@@ -67,7 +71,7 @@ def complete(message: str, *, address_style: str | None = None, language_style: 
         return None
     request = LLMRequest(
         message=message,
-        system_prompt=build_system_prompt(address_style),
+        system_prompt=build_system_prompt(address_style, language_style),
         address_style=address_style,
         language_style=language_style,
         context=context,

@@ -112,6 +112,7 @@ export function ChatPage() {
         history: chatHistory,
         conversationId: conversationId.current,
         addressStyle: loadProfile().addressingPreference,
+        preferredLanguage: loadProfile().languageMode,
         onNotice: (notice) => notify(notice),
       });
       setMessages((prev) => [...prev, resultToEntry(result)]);

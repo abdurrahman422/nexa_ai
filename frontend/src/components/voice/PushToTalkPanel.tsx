@@ -4,6 +4,7 @@ import {
   TranscriptionResponseDto, transcribeAudioBlob,
 } from "@/lib/backendAssistantClient";
 import { ContinuousVoiceCapture, startContinuousVoiceCapture } from "@/lib/audioRecorder";
+import { loadProfile } from "@/lib";
 import { LoaderCircle, Mic, MicOff } from "lucide-react";
 
 type ListenStatus = "idle" | "starting" | "listening" | "hearing" | "transcribing" | "processing" | "error";
@@ -78,7 +79,8 @@ export function PushToTalkPanel({ onTranscript, compact = false }: {
           setStatus("transcribing");
           void requestYouTubeCommand({ action: "duck", value: 8, user_confirmed: true, source: "continuous_voice_ducking" }).catch(() => undefined);
           try {
-            const response = await transcribeAudioBlob(blob, "continuous-voice.wav");
+            const language = loadProfile().languageMode === "English" ? "en-US" : "bn-BD";
+            const response = await transcribeAudioBlob(blob, "continuous-voice.wav", undefined, language);
             if (!mountedRef.current) return;
             setResult(response);
             if (!response.transcribed || !response.text.trim()) {
@@ -179,7 +181,7 @@ export function PushToTalkPanel({ onTranscript, compact = false }: {
   const preferredEngine = engines?.engines.find((engine) => engine.name === engines.preferred_engine);
   return (
     <div className="voice-panel push-to-talk-panel">
-      <div className="voice-panel-header"><div><p className="eyebrow">Always-listening Bangla Voice</p><h4>Nexa আপনার কথা শুনবে</h4>
+      <div className="voice-panel-header"><div><p className="eyebrow">Always-listening Voice</p><h4>Nexa আপনার কথা শুনবে</h4>
         <p>“Nexa” বা “নেক্সা” বলে command দিন। Follow-up window-তে পরের কথা wake word ছাড়াও নেওয়া হবে। উত্তর দেওয়ার সময় mic pause থাকে।</p></div></div>
       <div className="ptt-controls"><button type="button" className={`real-listening-button ${listening ? "recording" : ""}`}
         onClick={listening ? stopListening : () => void startListening()} disabled={status === "starting"}>

@@ -34,7 +34,7 @@ The core application can run without a paid AI API. Optional provider keys can b
 | Hosted LLM routing | Optional Gemini-first routing with Groq, OpenRouter, Cloudflare, Mistral, and Cerebras fallbacks | Optional API keys |
 | Live web answers | Search-backed current information using free DuckDuckGo/Wikipedia fallbacks or optional search providers | Built in; internet required |
 | Voice input | Push-to-talk and voice-room flows with browser speech recognition or optional Google Cloud streaming STT | Internet required |
-| Voice output | Bangla and English neural speech through Edge TTS | Internet required |
+| Voice output | Cartesia Sonic 3.6 primary; Edge neural speech fallback | Internet required; Cartesia key entered in Settings |
 | Safe launcher | Opens recognized, whitelisted Windows apps and websites with permission and confirmation controls | Built in |
 | YouTube assistant | Search/play, pause, seek, volume, captions, speed, theater/fullscreen, autoplay, and sleep timer | Chrome + internet |
 | WhatsApp drafts | Local contact aliases, tone-aware draft composition, and safe `wa.me` links | Draft-only; never auto-sends |
@@ -65,7 +65,7 @@ The core application can run without a paid AI API. Optional provider keys can b
 | Interface | Framer Motion, Lucide, Three.js, React Three Fiber, Globe.gl |
 | Local service | Python 3.11+, FastAPI, Uvicorn, Pydantic |
 | Data | Local JSON and SQLite-backed application data |
-| Voice | Web Speech, Google Cloud Speech (optional), Edge TTS |
+| Voice | Web Speech, Google Cloud Speech (optional), Cartesia TTS, Edge TTS fallback |
 | Search and AI | Free web fallbacks, Serper and other search providers, optional hosted LLM router |
 | Automation and media | Selenium-based YouTube control, restricted Windows integrations |
 
@@ -251,12 +251,30 @@ Nexa falls back to browser speech recognition when Google streaming STT is unava
 |---|---|
 | Core UI, local assistant, reminders, safety center | Nothing beyond standard installation |
 | Free web answers | Internet connection |
-| Edge neural TTS / browser STT | Internet and microphone permission |
+| Cartesia / Edge neural TTS and browser STT | Internet and microphone permission; Cartesia key optional |
 | Advanced YouTube control | Google Chrome and internet |
 | Hosted AI responses | One supported LLM provider key |
 | Higher-quality Serper search | Serper API key |
 | AI image generation | Hugging Face token + permission toggle |
 | Google streaming STT | Google Cloud credentials + permission toggle |
+
+### Direct Email Skill
+
+Skills → Direct Email supports preview and explicit confirmation before SMTP
+delivery. Add a provider configuration to `backend/.env`, then restart the
+backend. For Gmail, use a Google App Password rather than the normal password:
+
+```env
+NEXA_EMAIL_PROVIDER=gmail
+NEXA_EMAIL_ADDRESS=you@gmail.com
+NEXA_EMAIL_APP_PASSWORD=your-app-password
+NEXA_EMAIL_SENDER_NAME=Nexa AI
+```
+
+For Outlook, set `NEXA_EMAIL_PROVIDER=outlook`; SMTP AUTH must be enabled for
+that account. Custom providers can also set `NEXA_SMTP_HOST`, `NEXA_SMTP_PORT`,
+and `NEXA_SMTP_SECURITY` (`ssl` or `starttls`). Secrets remain backend-only and
+must never be committed.
 
 ## 🛡 Safety by Design
 

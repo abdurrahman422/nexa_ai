@@ -4,10 +4,14 @@ import tempfile
 import asyncio
 import re
 from starlette.background import BackgroundTask
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pathlib import Path
 
-from fastapi import APIRouter, File, UploadFile, WebSocket
+from fastapi import APIRouter, File, UploadFile
+from pydantic import BaseModel, Field
+import httpx
+
+from app.voice import assemblyai, cartesia
 
 from app.audit.event_log import record_audit_event
 from app.permissions import is_permission_enabled, permission_denied_message
@@ -32,11 +36,15 @@ from app.voice.stt_engines import (
 router = APIRouter(prefix="/voice", tags=["voice"])
 
 
-@router.websocket("/stt/google-stream")
-async def google_streaming_stt(websocket: WebSocket) -> None:
-    from app.voice.google_streaming import handle_google_stream
-
-    await handle_google_stream(websocket)
+@router.get("/stt/assemblyai/token")
+async def assemblyai_streaming_token() -> dict:
+    if not is_permission_enabled("voice_stt"):
+        return {"ok": False, "message": permission_denied_message("voice_stt")}
+    try:
+        token = await assemblyai.create_streaming_token()
+    except (RuntimeError, httpx.HTTPError) as exc:
+        return {"ok": False, "message": str(exc)}
+    return {"ok": True, "token": token, "provider": "assemblyai", "model": "whisper-rt"}
 
 EDGE_VOICES = [
     ("bn-BD-NabanitaNeural", "Bangla - Nabanita", ["bn-BD"]),
@@ -44,6 +52,98 @@ EDGE_VOICES = [
     ("en-US-AriaNeural", "English - Aria", ["en-US"]),
     ("en-US-GuyNeural", "English - Guy", ["en-US"]),
 ]
+
+
+class CartesiaKeyRequest(BaseModel):
+    api_key: str
+
+
+class CartesiaVoiceRequest(BaseModel):
+    language: str
+    voice_id: str
+
+
+class PreferredTTSRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=800)
+    language: str = "auto"
+    edge_voice: str = "bn-BD-NabanitaNeural"
+    rate: str = "+0%"
+
+
+@router.get("/tts/cartesia/status")
+def cartesia_status() -> dict:
+    return cartesia.status()
+
+
+@router.put("/tts/cartesia/key")
+def cartesia_save_key(request: CartesiaKeyRequest) -> dict:
+    try:
+        cartesia.save_key(request.api_key)
+    except (ValueError, RuntimeError, OSError) as exc:
+        return {"ok": False, "message": str(exc)}
+    return {"ok": True, "message": "Cartesia key saved securely for this Windows user.", **cartesia.status()}
+
+
+@router.delete("/tts/cartesia/key")
+def cartesia_remove_key() -> dict:
+    cartesia.remove_key()
+    return {"ok": True, "message": "Cartesia key removed.", **cartesia.status()}
+
+
+@router.get("/tts/cartesia/voices")
+def cartesia_voices(language: str = "bn") -> dict:
+    try:
+        voices = cartesia.list_voices(language)
+    except (ValueError, RuntimeError, httpx.HTTPError) as exc:
+        return {"ok": False, "voices": [], "message": _cartesia_error(exc)}
+    return {"ok": True, "voices": voices, "message": f"{len(voices)} voices available."}
+
+
+@router.put("/tts/cartesia/voice")
+def cartesia_set_voice(request: CartesiaVoiceRequest) -> dict:
+    try:
+        cartesia.set_voice(request.language, request.voice_id)
+    except ValueError as exc:
+        return {"ok": False, "message": str(exc)}
+    return {"ok": True, "message": "Cartesia voice selected.", **cartesia.status()}
+
+
+def _cartesia_error(exc: Exception) -> str:
+    if isinstance(exc, httpx.HTTPStatusError):
+        code = exc.response.status_code
+        if code in {401, 403}:
+            return "Cartesia rejected this key. Replace it in Settings."
+        if code in {402, 429}:
+            return "Cartesia credits or rate limit reached. Choose another account key in Settings."
+        return f"Cartesia request failed (HTTP {code})."
+    if isinstance(exc, httpx.HTTPError):
+        return "Cartesia is unreachable. Check the network connection."
+    return str(exc)
+
+
+@router.post("/tts/audio")
+def preferred_tts_audio(request: PreferredTTSRequest):
+    if not is_permission_enabled("voice_tts"):
+        denied = permission_denied_message("voice_tts")
+        return TTSSpeakResponse(status="blocked", message=denied, error=denied)
+    language = "bn" if request.language == "bn" or (request.language == "auto" and re.search(r"[\u0980-\u09ff]", request.text)) else "en"
+    if cartesia.status()["configured"]:
+        try:
+            audio = cartesia.generate_audio(request.text.strip(), language)
+            record_audit_event("voice_tts", "cartesia_audio", "completed", message=f"language={language}, chars={len(request.text)}")
+            return Response(audio, media_type="audio/mpeg", headers={"X-TTS-Provider": "cartesia"})
+        except (ValueError, RuntimeError, httpx.HTTPError) as exc:
+            fallback_reason = _cartesia_error(exc)
+    else:
+        fallback_reason = "Cartesia key is not configured."
+    if not is_permission_enabled("edge_tts"):
+        return TTSSpeakResponse(status="failed", message=fallback_reason, error=fallback_reason)
+    voice = request.edge_voice if request.edge_voice in {item[0] for item in EDGE_VOICES} else ("bn-BD-NabanitaNeural" if language == "bn" else "en-US-AriaNeural")
+    fallback = edge_tts_audio(EdgeTTSRequest(text=request.text, voice=voice, rate=request.rate))
+    if isinstance(fallback, FileResponse):
+        fallback.headers["X-TTS-Provider"] = "edge-fallback"
+        fallback.headers["X-TTS-Fallback-Reason"] = fallback_reason[:180]
+    return fallback
 
 
 def _edge_tts_available() -> bool:
@@ -57,15 +157,15 @@ def _edge_tts_available() -> bool:
 @router.get("/stt/status", response_model=VoiceSTTStatusResponse)
 def get_stt_status() -> VoiceSTTStatusResponse:
     return VoiceSTTStatusResponse(
-        engine="google_web_speech_online",
+        engine="assemblyai_whisper_streaming",
         mode="online_service",
         enabled=is_permission_enabled("voice_stt"),
         model_path="",
         sample_rate=0,
-        language="bn-BD",
+        language="auto",
         auto_start=True,
         execution_enabled=False,
-        message="Always-listening online Google Web Speech STT is selected; no local model is used.",
+        message="AssemblyAI multilingual streaming STT is selected with automatic language detection.",
     )
 
 
@@ -80,7 +180,7 @@ def get_stt_readiness() -> VoiceSTTReadinessResponse:
         model_message="Online service selected; no local model is required.",
         ready=engine["ready"] and is_permission_enabled("voice_stt"),
         execution_enabled=False,
-        message="Bangla online STT uses bn-BD and requires internet.",
+        message="AssemblyAI online STT supports Bangla and English and requires internet.",
     )
 
 
@@ -91,7 +191,7 @@ def get_stt_test_transcription() -> VoiceSTTTestTranscriptionResponse:
         transcribed=False,
         text="",
         execution_enabled=False,
-        message="Use the microphone test in the app for online Web Speech STT.",
+        message="Use the microphone test in the app for AssemblyAI streaming STT.",
         error=None,
     )
 
@@ -180,33 +280,37 @@ async def transcribe_uploaded_audio(
 
 @router.get("/tts/status", response_model=TTSStatusResponse)
 def tts_status() -> TTSStatusResponse:
-    available = _edge_tts_available()
-    enabled = is_permission_enabled("voice_tts") and is_permission_enabled("edge_tts")
+    edge_available = _edge_tts_available()
+    cartesia_configured = cartesia.status()["configured"]
+    available = cartesia_configured or edge_available
+    enabled = is_permission_enabled("voice_tts") and (cartesia_configured or is_permission_enabled("edge_tts"))
     return TTSStatusResponse(
-        dependency_installed=available,
+        dependency_installed=edge_available,
         available=available,
         enabled=enabled,
         voices=[TTSVoiceInfo(id=voice_id, name=name, languages=languages) for voice_id, name, languages in EDGE_VOICES],
         message=(
-            "Online Edge neural TTS is ready."
+            "Cartesia Sonic is primary; Edge neural TTS is fallback."
+            if cartesia_configured and enabled
+            else "Online Edge neural TTS fallback is ready. Add a Cartesia key in Settings."
             if available and enabled
-            else "Online Edge TTS is installed but disabled in the Security Center."
+            else "TTS is disabled in the Security Center."
             if available
             else "edge-tts is not installed."
         ),
-        error=None if available else "Install edge-tts to use online neural voices.",
+        error=None if available else "Add a Cartesia key or install edge-tts.",
     )
 
 
 @router.post("/tts/speak", response_model=TTSSpeakResponse)
 def tts_speak(request: TTSSpeakRequest) -> TTSSpeakResponse:
-    if not is_permission_enabled("voice_tts") or not is_permission_enabled("edge_tts"):
-        denied = permission_denied_message("edge_tts")
+    if not is_permission_enabled("voice_tts"):
+        denied = permission_denied_message("voice_tts")
         return TTSSpeakResponse(status="blocked", message=denied, error=denied)
     return TTSSpeakResponse(
         status="audio_endpoint_required",
         spoken=False,
-        message="Use /voice/tts/edge/audio so the app can play online neural audio.",
+        message="Use /voice/tts/audio for Cartesia-primary audio with Edge fallback.",
         error=None,
     )
 

@@ -34,7 +34,7 @@ export function EdgeTtsSettings() {
   };
 
   return <section className="nx-card">
-    <div className="nx-card-head"><div className="nx-card-title"><AudioLines /> Edge Neural Voice</div><span className="nx-list-badge ok">Online</span></div>
+    <div className="nx-card-head"><div className="nx-card-title"><AudioLines /> Edge Neural Voice — Fallback</div><span className="nx-list-badge ok">Online</span></div>
     <div className="content-writer-fields">
       <select value={voice} onChange={(event) => setVoice(event.target.value as typeof voice)} aria-label="Edge TTS voice">
         {VOICES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}

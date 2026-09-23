@@ -12,6 +12,7 @@ def _item(record) -> ContactItem:
     return ContactItem(
         name=record.name,
         phone_number=record.phone_number,
+        email_address=record.email_address,
         nickname=record.nickname,
         aliases=record.aliases or [],
         relationship=record.relationship,
@@ -40,6 +41,7 @@ def upsert_contact(request: ContactCreateRequest) -> ContactMutationResponse:
             request.aliases,
             request.relationship,
             request.default_tone,
+            request.email_address,
         )
     except ValueError as exc:
         return ContactMutationResponse(
@@ -52,7 +54,7 @@ def upsert_contact(request: ContactCreateRequest) -> ContactMutationResponse:
         status="saved",
         ok=True,
         contact=_item(record),
-        message=f"{record.name} saved locally for WhatsApp drafts.",
+        message=f"{record.name} saved locally for messaging and email.",
     )
 
 

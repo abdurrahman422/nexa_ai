@@ -1,5 +1,5 @@
-/* Online Edge neural TTS for the live voice conversation. */
-import { requestEdgeTtsAudio } from "@/lib/backendAssistantClient";
+/* Cartesia-primary online TTS with Edge neural fallback. */
+import { requestPreferredTtsAudio } from "@/lib/backendAssistantClient";
 import type { VoiceSettings } from "./types";
 
 export interface SpeakHandlers {
@@ -86,7 +86,7 @@ export class SpeechSynthesisService {
       try {
         for (let index = 0; index < chunks.length; index += 1) {
           if (generation !== this.generation) return;
-          const blob = await requestEdgeTtsAudio(chunks[index], voice, undefined, rate);
+          const { blob } = await requestPreferredTtsAudio(chunks[index], voice, undefined, rate);
           if (generation !== this.generation) return;
           this.objectUrl = URL.createObjectURL(blob);
           this.audio = new Audio(this.objectUrl);

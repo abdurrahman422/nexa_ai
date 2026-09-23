@@ -10,7 +10,7 @@ def complete(request: LLMRequest) -> LLMResponse | None:
     key = env("GEMINI_API_KEY")
     if not key:
         return None
-    model = env("GEMINI_MODEL", "gemini-1.5-flash")
+    model = env("GEMINI_MODEL", "gemini-3.5-flash")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
     payload = {
         "systemInstruction": {"parts": [{"text": request.system_prompt}]},

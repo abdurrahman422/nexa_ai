@@ -45,5 +45,7 @@ data/*.sqlite3
 backend/data/*.db
 backend/data/*.sqlite
 backend/data/*.sqlite3
+backend/data/cartesia-key.dpapi
+backend/data/cartesia-settings.json
 backend/data/generated_images/
 backend/data/generated_content/

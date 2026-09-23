@@ -19,6 +19,7 @@ from app.api.routes.system_controls import router as system_controls_router
 from app.api.routes.content import router as content_router
 from app.api.routes.setup import router as setup_router
 from app.api.routes.productivity import router as productivity_router
+from app.api.routes.email import router as email_router
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -38,6 +39,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-TTS-Provider", "X-TTS-Fallback-Reason"],
 )
 
 app.include_router(health_router, prefix="/api")
@@ -58,6 +60,7 @@ app.include_router(system_controls_router, prefix="/api")
 app.include_router(content_router, prefix="/api")
 app.include_router(setup_router, prefix="/api")
 app.include_router(productivity_router, prefix="/api")
+app.include_router(email_router, prefix="/api")
 
 
 @app.get("/")

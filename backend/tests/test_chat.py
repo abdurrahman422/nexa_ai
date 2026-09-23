@@ -36,6 +36,42 @@ def test_chat_endpoint_works(tmp_path, monkeypatch) -> None:
     assert data["execution_enabled"] is False
 
 
+def test_voice_email_draft_requires_yes_before_sending(tmp_path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    clear_pending_task()
+    contact_store.save_contact(
+        "Office Boss",
+        "01712345678",
+        aliases=["boss", "বস"],
+        relationship="boss",
+        default_tone="formal",
+        email_address="boss@example.com",
+    )
+    sends: list[dict[str, str]] = []
+    monkeypatch.setattr(chat_service, "send_email", lambda **kwargs: sends.append(kwargs) or {"sent": True, "provider": "test"})
+
+    draft = client.post(
+        "/api/chat/message",
+        json={"message": "আমার বসকে একটা ইমেইল লিখে দাও যে আমি কালকে আসতে পারব না", "source": "voice_room"},
+    ).json()
+
+    assert draft["status"] == "needs_confirmation"
+    assert draft["intent"] == "email_skill"
+    assert draft["requires_confirmation"] is True
+    assert "Subject:" in draft["answer"]
+    assert sends == []
+
+    unclear = client.post("/api/chat/message", json={"message": "উম", "source": "voice_room"}).json()
+    assert unclear["status"] == "needs_confirmation"
+    assert sends == []
+
+    confirmed = client.post("/api/chat/message", json={"message": "হ্যাঁ", "source": "voice_room"}).json()
+    assert confirmed["status"] == "completed"
+    assert confirmed["execution_enabled"] is True
+    assert sends[0]["recipient"] == "boss@example.com"
+    clear_pending_task()
+
+
 def test_hi_returns_personal_greeting(tmp_path, monkeypatch) -> None:
     client = _client(tmp_path, monkeypatch)
 

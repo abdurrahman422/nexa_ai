@@ -12,7 +12,7 @@ from app.memory.context_store import remember_turn
 
 
 def run_chat_pipeline(request: ChatMessageRequest) -> ChatMessageResponse:
-    from app.chat.service import handle_chat_message
+    from app.chat.service import handle_chat_message, set_preferred_reply_language, reset_preferred_reply_language, enforce_reply_language
 
     remember_turn(
         "user",
@@ -20,7 +20,11 @@ def run_chat_pipeline(request: ChatMessageRequest) -> ChatMessageResponse:
         language_style=None,
         address_style=request.address_style,
     )
-    response = handle_chat_message(request)
+    token = set_preferred_reply_language(request.message, request.preferred_language)
+    try:
+        response = enforce_reply_language(handle_chat_message(request), request.message, request.address_style)
+    finally:
+        reset_preferred_reply_language(token)
     remember_turn(
         "assistant",
         response.answer,

@@ -38,13 +38,13 @@ def _chrome_available() -> bool:
 
 @router.get("/readiness")
 def setup_readiness() -> dict:
-    from app.voice.google_streaming import google_streaming_status
+    from app.voice.assemblyai import status as assemblyai_status
     image_dependency = _installed("huggingface_hub") and _installed("PIL")
     edge_dependency = _installed("edge_tts")
     youtube_dependency = _installed("selenium")
     hf_configured = bool((os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN") or "").strip())
     capabilities = {
-        "google_streaming_stt": google_streaming_status(),
+        "assemblyai_streaming_stt": assemblyai_status(),
         "image_generation": {
             "ready": image_dependency and hf_configured,
             "dependency_installed": image_dependency,
