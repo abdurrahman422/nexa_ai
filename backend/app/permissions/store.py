@@ -89,6 +89,11 @@ TOGGLEABLE_PERMISSIONS: dict[str, dict] = {
         "label": "Trusted WhatsApp Draft Auto Open",
         "description": "Open WhatsApp Web/draft URLs without confirmation. Nexa never clicks Send.",
     },
+    "whatsapp_send_skill": {
+        "default": False,
+        "label": "WhatsApp Web Sending",
+        "description": "Allow explicit WhatsApp send commands through the dedicated visible browser profile.",
+    },
     "documents": {
         "default": True,
         "label": "Document Preview (Read-only)",

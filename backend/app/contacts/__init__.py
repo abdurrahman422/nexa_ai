@@ -4,7 +4,7 @@ from .store import CONTACTS_FILE
 from .store import ContactRecord
 from .store import add_contact_alias
 from .store import delete_contact
-from .store import find_contact_matches
+from .store import find_contact_matches, find_exact_contact_matches, normalize_phone_number
 from .store import get_contact
 from .store import list_contacts
 from .store import normalize_contact_name

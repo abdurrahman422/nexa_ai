@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime
+import hashlib
 import os
 import re
 import urllib.parse
@@ -20,7 +21,7 @@ from app.actions import execute_open_app, execute_open_website, get_allowed_app,
 from app.actions.safety import contains_dangerous_keyword
 from app.assistant.response_composer import address_label as compose_address_label, compose as compose_response, compose_intent
 from app.audit.event_log import record_audit_event
-from app.contacts import add_contact_alias, delete_contact, find_contact_matches, get_contact, save_contact
+from app.contacts import add_contact_alias, delete_contact, find_contact_matches, find_exact_contact_matches, get_contact, normalize_phone_number, save_contact
 from app.permissions import is_permission_enabled, permission_denied_message
 from app.llm import complete as complete_llm
 from app.llm.prompt_builder import build_task_context
@@ -53,6 +54,7 @@ from app.schemas.chat import (
 from app.web import answer_question
 from app.search import clean_search_query, is_market_query, search_answer, synthesize_related_answer, to_chat_results
 from app.tools.calculator import calculate as calculate_local_expression
+from app.tools.whatsapp_sender import send_whatsapp_message
 from app.youtube import parse_youtube_command
 from app.nlu.normalizer import detect_language_style
 from app.nlu.banglish import normalize_banglish
@@ -268,6 +270,7 @@ class WhatsAppDraftIntent:
     raw_message: str | None = None
     tone: str = "normal"
     exact: bool = False
+    send_requested: bool = False
 
 
 def _route_debug_enabled() -> bool:
@@ -2246,23 +2249,53 @@ def _clean_draft_text(text: str) -> str:
     return " ".join(cleaned.split()).strip(" ,:")
 
 
+def _has_explicit_whatsapp_send(message: str) -> bool:
+    normalized = normalize_text(message)
+    if any(marker in normalized for marker in ("don't send", "do not send", "send koro na", "send korona", "pathio na", "পাঠিও না", "পাঠাবেন না")):
+        return False
+    if normalized.startswith(("quote ", "quoted ", "example ", "উদাহরণ", '"', "'", "“", "‘")) or "what if" in normalized:
+        return False
+    return any(
+        marker in normalized
+        for marker in (
+            "send a whatsapp message",
+            "send whatsapp message",
+            "whatsapp message send",
+            "whatsapp e .* pathao",
+            "whatsapp e .* পাঠাও",
+            "whatsapp e .* send koro",
+            "whatsapp e .* send",
+            "ke whatsapp e message pathao",
+            "কে হোয়াটসঅ্যাপে মেসেজ পাঠাও",
+            "কে হোয়াটসঅ্যাপে মেসেজ পাঠাও",
+        )
+    ) or bool(re.search(r"(?i)whatsapp\s+e\s+.+?\s+(?:ke\s+)?(?:message\s+)?(?:pathao|send\s+koro)", message)) or bool(
+        re.search(r"(?i)হোয়াটসঅ্যাপে?\s+মেসেজ\s+পাঠাও|হোয়াটসঅ্যাপে?\s+মেসেজ\s+পাঠাও", message)
+    )
+
+
 def _parse_whatsapp_draft(message: str) -> WhatsAppDraftIntent:
     raw = " ".join(message.strip().split())
     normalized = normalize_text(raw)
     exact = any(marker in normalized for marker in ("same message", "exact message", "hubohu", "as it is"))
+    send_requested = _has_explicit_whatsapp_send(raw)
     patterns = [
-        r"(?i)whatsapp\s+e\s+(?P<recipient>.+?)\s+ke\s+(?:bolo|likho|message\s+dao|message|draft\s+koro|draft|send|sms\s+dao|pathanor\s+jonno\s+ready\s+koro)\s+(?P<text>.+)",
-        r"(?i)(?P<recipient>.+?)\s+(?:ke|k)\s+whatsapp\s+e\s+(?:bolo|likho|message\s+dao|message|draft\s+koro|draft|send|sms\s+dao|pathanor\s+jonno\s+ready\s+koro)\s+(?P<text>.+)",
-        r"(?i)(?P<recipient>.+?)\s+(?:ke|k)\s+(?:message\s+dao|sms\s+dao|sms|bolo|likho|draft\s+koro|draft)\s+(?P<text>.+)",
-        r"(?i)whatsapp\s+(?:message|draft)\s+(?P<recipient>.+?)\s*:\s*(?P<text>.+)",
+        r"(?is)send\s+(?:a\s+)?whatsapp\s+message\s+to\s+(?P<recipient>.+?)\s+(?:saying|that)\s+(?P<text>.+)",
+        r"(?s)(?P<recipient>[\u0980-\u09ff][\u0980-\u09ff\s]{1,40}?)কে\s+হোয়াটসঅ্যাপে?\s+মেসেজ\s+পাঠাও\s*:\s*(?P<text>.+)",
+        r"(?s)(?P<recipient>[\u0980-\u09ff][\u0980-\u09ff\s]{1,40}?)কে\s+হোয়াটসঅ্যাপে?\s+মেসেজ\s+পাঠাও\s*:\s*(?P<text>.+)",
+        r"(?is)whatsapp\s+e\s+(?P<recipient>.+?)\s+ke\s+(?:message\s+pathao|bolo|likho|message\s+dao|message|draft\s+koro|draft|send|sms\s+dao|pathao|পাঠাও|পাঠান|pathanor\s+jonno\s+ready\s+koro)\s*(?::\s*|\s+)(?P<text>.+)",
+        r"(?is)(?P<recipient>.+?)\s+(?:ke|k)\s+whatsapp\s+e\s+(?:message\s+pathao|bolo|likho|message\s+dao|message|draft\s+koro|draft|send|sms\s+dao|pathao|পাঠাও)\s*(?::\s*|\s+)(?P<text>.+)",
+        r"(?is)(?P<recipient>.+?)\s+(?:ke|k)\s+(?:message\s+dao|sms\s+dao|sms|bolo|likho|draft\s+koro|draft)\s+(?P<text>.+)",
+        r"(?is)whatsapp\s+(?:message|draft)\s+(?P<recipient>.+?)\s*:\s*(?P<text>.+)",
     ]
     for pattern in patterns:
         match = re.search(pattern, raw)
         if match:
             recipient = " ".join(match.group("recipient").strip(" ,:").split())
             recipient = re.sub(r"(?i)^amar\s+", "", recipient).strip()
-            text = _clean_draft_text(" ".join(match.group("text").strip(" ,:").split()))
-            return WhatsAppDraftIntent(recipient or None, text or None, _infer_tone(raw), exact)
+            source_text = match.group("text").strip(" ,:")
+            text = source_text if send_requested else _clean_draft_text(" ".join(source_text.split()))
+            return WhatsAppDraftIntent(recipient or None, text or None, _infer_tone(raw), exact, send_requested)
     missing_text_patterns = [
         r"(?i)^whatsapp\s+(?P<recipient>.+?)\s+draft$",
         r"(?i)^whatsapp\s+e\s+(?P<recipient>.+?)\s+draft$",
@@ -2272,7 +2305,7 @@ def _parse_whatsapp_draft(message: str) -> WhatsAppDraftIntent:
         match = re.search(pattern, raw)
         if match:
             recipient = re.sub(r"(?i)^amar\s+", "", " ".join(match.group("recipient").strip(" ,:").split())).strip()
-            return WhatsAppDraftIntent(recipient or None, None, _infer_tone(raw), exact)
+            return WhatsAppDraftIntent(recipient or None, None, _infer_tone(raw), exact, send_requested)
     return WhatsAppDraftIntent()
 
 
@@ -2343,6 +2376,7 @@ def _whatsapp_skill_response(
     message: str,
     draft_open_target: str | None = "auto",
     address_style: str | None = None,
+    request_id: str | None = None,
 ) -> ChatMessageResponse:
     if not is_permission_enabled("whatsapp_draft_skill") and not is_permission_enabled("trusted_whatsapp_draft_auto_open"):
         denied = permission_denied_message("whatsapp_draft_skill")
@@ -2359,6 +2393,11 @@ def _whatsapp_skill_response(
 
     normalized = normalize_text(message)
     draft_intent = _parse_whatsapp_draft(message)
+    is_send = draft_intent.send_requested
+    if is_send and not is_permission_enabled("whatsapp_send_skill"):
+        denied = permission_denied_message("whatsapp_send_skill")
+        answer = f"{denied} Enable WhatsApp Web Sending in Settings, then repeat the command."
+        return ChatMessageResponse(status="blocked", intent="whatsapp_send", message=message, answer=answer, blocked=True, chips=["WhatsApp", "Send permission disabled"], error=answer)
     recipient = draft_intent.recipient
     draft_text = draft_intent.raw_message
     wants_draft = bool(recipient or draft_text) or _has_any(normalized, MESSAGE_ACTION_KEYWORDS)
@@ -2403,12 +2442,17 @@ def _whatsapp_skill_response(
                 chips=["WhatsApp", "Draft only", "Need contact and message"],
                 error=answer,
             )
-        matches = find_contact_matches(recipient)
+        direct_phone = None
+        try:
+            direct_phone = normalize_phone_number(recipient)
+        except ValueError:
+            pass
+        matches = [] if direct_phone else (find_exact_contact_matches(recipient) if is_send else find_contact_matches(recipient))
         if len(matches) > 1:
             names = ", ".join(contact.name for contact in matches[:5])
             answer = (
                 f"Multiple local WhatsApp contacts match '{recipient}': {names}. "
-                "Please use the exact contact name. Nexa will not send anything automatically."
+                "Please use the exact contact name."
             )
             _record_chat_event("whatsapp_draft", "needs_more_info", message, f"Ambiguous contact: {recipient}")
             return ChatMessageResponse(
@@ -2420,7 +2464,7 @@ def _whatsapp_skill_response(
                 execution_enabled=False,
                 provider="WhatsApp safe draft",
                 source="Local contact resolver",
-                chips=["WhatsApp", "Draft only", "Ambiguous contact", "Auto-send locked"],
+                chips=["WhatsApp", "Ambiguous contact"] + (["Send blocked"] if is_send else ["Draft only", "Auto-send locked"]),
                 action=ChatActionStatus(
                     kind="whatsapp_draft",
                     target="",
@@ -2434,8 +2478,13 @@ def _whatsapp_skill_response(
                 ),
                 error=answer,
             )
-        contact = matches[0] if matches else get_contact(recipient)
+        contact = matches[0] if matches else (None if is_send else get_contact(recipient))
+        if direct_phone:
+            contact = type("PhoneRecipient", (), {"name": recipient, "phone_number": direct_phone, "relationship": "unknown", "default_tone": "normal"})()
         if not contact:
+            if is_send:
+                answer = f"I could not resolve an exact contact for '{recipient}'. Provide the valid phone number or exact saved contact name. Nothing was sent."
+                return ChatMessageResponse(status="needs_more_info", intent="whatsapp_send", message=message, answer=answer, chips=["WhatsApp", "Exact recipient required"], error=answer)
             task = set_pending_task(whatsapp_number_task(recipient, draft_text or "", message))
             answer = (
                 f"{recipient}-er phone number ta den Boss, ami local contact hisebe save kore next time draft open kore dibo. "
@@ -2493,7 +2542,7 @@ def _whatsapp_skill_response(
 
         phone = contact.phone_number
         draft_intent.tone = _infer_tone(message, contact)
-        final_draft = _local_compose_whatsapp_draft(contact, draft_text, draft_intent.tone, draft_intent.exact)
+        final_draft = _local_compose_whatsapp_draft(contact, draft_text, draft_intent.tone, draft_intent.exact or is_send)
         composed = None
         if _should_use_llm_for_draft(message, contact, draft_intent):
             composed = complete_llm(
@@ -2508,6 +2557,32 @@ def _whatsapp_skill_response(
             )
             if composed and composed.answer.strip():
                 final_draft = composed.answer.strip().strip('"')
+        if is_send:
+            send_id = request_id or hashlib.sha256(f"{message}|{phone}|{final_draft}".encode("utf-8")).hexdigest()
+            result = send_whatsapp_message(send_id, phone, final_draft)
+            return ChatMessageResponse(
+                status=result.status,
+                intent="whatsapp_send",
+                message=message,
+                answer=result.message,
+                blocked=result.status in {"wrong_chat", "unknown", "failed"},
+                execution_enabled=result.status == "submitted",
+                provider="WhatsApp Web Selenium",
+                source="Dedicated WhatsApp browser profile",
+                chips=["WhatsApp", result.status.replace("_", " ").title()],
+                error=result.message if result.status in {"wrong_chat", "unknown", "failed"} else None,
+                action=ChatActionStatus(
+                    kind="whatsapp_send",
+                    target="https://web.whatsapp.com",
+                    label=f"WhatsApp message to {contact.name}",
+                    executed=result.status == "submitted",
+                    requires_confirmation=False,
+                    message=result.message,
+                    recipient=contact.name,
+                    draft_text=final_draft,
+                    action_label=result.status,
+                ),
+            )
         urls = _whatsapp_draft_urls(phone, final_draft, draft_open_target)
         url = urls[0]
         if is_permission_enabled("trusted_whatsapp_draft_auto_open"):
@@ -3311,7 +3386,7 @@ def handle_chat_message(request: ChatMessageRequest) -> ChatMessageResponse:
         return _with_route_debug(_attach_voice_action_confirmation(response, message, request.source), route)
 
     if intent == "whatsapp_skill":
-        response = _whatsapp_skill_response(message, request.whatsapp_draft_open_target, request.address_style)
+        response = _whatsapp_skill_response(message, request.whatsapp_draft_open_target, request.address_style, request.request_id)
         return _with_route_debug(_attach_voice_action_confirmation(response, message, request.source), route)
 
     if intent == "app_open_request":

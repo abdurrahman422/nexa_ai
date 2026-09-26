@@ -155,6 +155,22 @@ def find_contact_matches(name: str | None) -> list[ContactRecord]:
     return exact or fuzzy
 
 
+def find_exact_contact_matches(name: str | None) -> list[ContactRecord]:
+    """Return only exact name, nickname, or alias matches for action use."""
+    key = normalize_contact_name(name)
+    if not key:
+        return []
+    data = _read_contacts()
+    matches: list[ContactRecord] = []
+    for item in data.values():
+        if not isinstance(item, dict) or key not in _name_candidates(item):
+            continue
+        record = _record_from_dict(item)
+        if record:
+            matches.append(record)
+    return matches
+
+
 def _normalize_aliases(aliases: list[str] | str | None, nickname: str | None = None) -> list[str]:
     values: list[str] = []
     if isinstance(aliases, str):

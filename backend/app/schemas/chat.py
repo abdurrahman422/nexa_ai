@@ -10,6 +10,7 @@ class ChatHistoryItem(BaseModel):
 
 class ChatMessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=800)
+    request_id: str | None = Field(default=None, max_length=128)
     history: list[ChatHistoryItem] = Field(default_factory=list)
     source: str = "chat_page"
     address_style: str | None = Field(default=None, max_length=40)

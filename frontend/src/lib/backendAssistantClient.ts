@@ -555,12 +555,14 @@ export function requestChatMessage(
   whatsappDraftOpenTarget = "auto",
   source = "chat_page",
   backendUrl = DEFAULT_BACKEND_URL,
+  requestId?: string,
 ) {
   return sendJson<ChatMessageResponseDto>(
     `${backendUrl}/api/chat/message`,
     "POST",
     {
       message,
+      request_id: requestId,
       history,
       source,
       address_style: addressStyle,
