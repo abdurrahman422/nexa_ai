@@ -66,15 +66,24 @@ def _fuzzy_ratio(left: str, right: str) -> float:
 
 def normalize_phone_number(value: str | None) -> str:
     raw = (value or "").strip()
+    if not raw or re.fullmatch(r"\+?[\d\s()-]+", raw) is None:
+        raise ValueError("Malformed phone number. Use a valid international number or Bangladesh mobile number.")
     digits = re.sub(r"\D", "", raw)
+    has_international_prefix = raw.startswith("+") or digits.startswith("00")
     if digits.startswith("00"):
         digits = digits[2:]
-    if digits.startswith("0") and len(digits) == 11:
-        digits = "88" + digits
-    if digits.startswith("880") and len(digits) == 13:
+    if has_international_prefix:
+        if re.fullmatch(r"[1-9]\d{7,14}", digits):
+            return digits
+        raise ValueError("Malformed phone number. Include a valid country code, such as +8801712345678.")
+    if re.fullmatch(r"01[3-9]\d{8}", digits):
+        return "88" + digits
+    if re.fullmatch(r"8801[3-9]\d{8}", digits):
         return digits
     if digits.startswith("1") and len(digits) == 10:
         return "880" + digits
+    if re.fullmatch(r"[1-9]\d{7,14}", digits):
+        return digits
     raise ValueError("Malformed phone number. Use a valid Bangladesh mobile number such as 017xxxxxxxx.")
 
 

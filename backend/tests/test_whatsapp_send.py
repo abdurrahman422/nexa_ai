@@ -33,7 +33,8 @@ def _enable_send(monkeypatch) -> None:
 
 
 def _save_rahim(client: TestClient) -> None:
-    contact_store.save_contact("Rahim", "01712345678")
+    response = client.post("/api/chat/message", json={"message": "Rahim er number save koro 01712345678"})
+    assert response.status_code == 200
 
 
 def test_explicit_english_send_uses_exact_text_and_request_id(tmp_path, monkeypatch) -> None:
@@ -59,6 +60,42 @@ def test_explicit_english_send_uses_exact_text_and_request_id(tmp_path, monkeypa
     assert data["intent"] == "whatsapp_send"
     assert data["status"] == "submitted"
     assert calls == [("turn-1", "8801712345678", "I will call tomorrow.")]
+
+
+def test_explicit_send_accepts_international_phone_number(tmp_path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    _enable_send(monkeypatch)
+    calls: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        chat_service,
+        "send_whatsapp_message",
+        lambda request_id, phone, text: (calls.append((phone, text)) or WhatsAppSendResult("submitted", "Submitted.")),
+    )
+
+    response = client.post(
+        "/api/chat/message",
+        json={"message": "Send a WhatsApp message to +14155552671 saying hello."},
+    )
+
+    assert response.json()["intent"] == "whatsapp_send"
+    assert calls == [("14155552671", "hello.")]
+
+
+def test_whatsapp_send_permission_is_disabled_by_default_and_toggleable(tmp_path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+
+    permissions = client.get("/api/permissions").json()["permissions"]
+    send_permission = next(item for item in permissions if item["key"] == "whatsapp_send_skill")
+    assert send_permission["enabled"] is False
+
+    response = client.put(
+        "/api/permissions",
+        json={"key": "whatsapp_send_skill", "enabled": True},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["updated"] is True
+    assert response.json()["enabled"] is True
 
 
 def test_draft_never_calls_sender(tmp_path, monkeypatch) -> None:

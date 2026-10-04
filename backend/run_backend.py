@@ -1,5 +1,12 @@
+import os
 import sys
+from pathlib import Path
 import uvicorn
+
+if not getattr(sys, "frozen", False):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+os.environ.setdefault("NEXA_WHATSAPP_RELIABLE_SENDER", "1")
 
 from app.core.config import get_settings
 from app.main import app

@@ -562,7 +562,7 @@ export function requestChatMessage(
     "POST",
     {
       message,
-      request_id: requestId,
+      request_id: requestId ?? crypto.randomUUID(),
       history,
       source,
       address_style: addressStyle,

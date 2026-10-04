@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexa WhatsApp text sending</title>
+<style>body{background:#101720;color:#e7edf7;font:17px/1.7 system-ui,sans-serif;max-width:840px;margin:48px auto;padding:0 24px}h1{line-height:1.25}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #354152;padding:12px;text-align:left}code{color:#82e6cf}.notice{padding:20px;background:#1d2b3b;border-radius:12px}a{color:#82e6cf}</style>
+<h1>Nexa · WhatsApp text-send</h1>
+<p class="notice">নতুন extension চালু করার আলাদা entry point আছে। পুরোনো launcher নিজে থেকে এটি ব্যবহার করে না। বাস্তবে message পাঠানো এখনো যাচাই হয়নি।</p>
+<p>Draft command লেখা তৈরি বা draft link খোলে; Send চাপবে না। স্পষ্ট send command-এর জন্য Security Center-এর <strong>WhatsApp Web Sending</strong> চালু থাকতে হবে।</p>
+<table><tr><th>ফল</th><th>অর্থ ও পরের কাজ</th></tr>
+<tr><td><code>login_required</code></td><td>QR scan করে login করো। একই request ID দিয়ে আবার command দাও; কোনো message queued নেই।</td></tr>
+<tr><td><code>draft_present / text_mismatch</code></td><td>Send হয়নি। Draft review/clear করে একই request ID দিয়ে retry করো।</td></tr>
+<tr><td><code>wrong_chat</code></td><td>Recipient নিশ্চিত হয়নি; কিছু পাঠানো হয়নি।</td></tr>
+<tr><td><code>submitted</code></td><td>নতুন outgoing message দেখা গেছে; server acceptance বা delivery নিশ্চিত নয়।</td></tr>
+<tr><td><code>sent</code></td><td>Sent acknowledgement দেখা গেছে; recipient delivery নিশ্চিত নয়।</td></tr>
+<tr><td><code>delivered / read</code></td><td>সংশ্লিষ্ট acknowledgement দেখা গেছে। সব account/UI-তে read status পাওয়া যাবে না।</td></tr>
+<tr><td><code>unknown</code></td><td>পাঠানো হয়ে থাকতে পারে। WhatsApp দেখে যাচাই করো; নতুন ID দিয়ে আবার পাঠিও না।</td></tr>
+<tr><td><code>ledger_error</code></td><td>Request record সমস্যা। State মুছে নতুন করে পাঠিও না; আগে WhatsApp-এ ফল যাচাই করো।</td></tr></table>
+<p>পুরোনো chat UI সফল ফলকে <code>submitted</code> হিসেবে দেখাতে পারে; reply text-এ বিস্তারিত থাকবে। এই extension group, attachment, incoming-message reading বা auto-reply যোগ করে না।</p>
+</html>

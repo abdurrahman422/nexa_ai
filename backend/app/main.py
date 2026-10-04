@@ -1,3 +1,7 @@
+import os
+from pathlib import Path
+import sys
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -58,6 +62,27 @@ app.include_router(system_controls_router, prefix="/api")
 app.include_router(content_router, prefix="/api")
 app.include_router(setup_router, prefix="/api")
 app.include_router(productivity_router, prefix="/api")
+
+if os.getenv("NEXA_WHATSAPP_RELIABLE_SENDER", "").strip().lower() in {"1", "true", "yes", "on"}:
+    if not getattr(sys, "frozen", False):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+    from app.core.runtime_paths import data_dir
+    from whatsapp_feature.adapter import install as install_whatsapp_sender
+
+    _whatsapp_sender, _whatsapp_browser_pool = install_whatsapp_sender(data_dir() / "whatsapp-send-state")
+
+    @app.on_event("shutdown")
+    def shutdown_whatsapp_browser_pool() -> None:
+        _whatsapp_browser_pool.shutdown()
+
+    @app.get("/api/whatsapp-extension/health")
+    def whatsapp_extension_health() -> dict[str, object]:
+        return {
+            "enabled": True,
+            "live_delivery_verified": False,
+            "note": "Explicit WhatsApp sends require permission and a logged-in WhatsApp Web session.",
+        }
 
 
 @app.get("/")

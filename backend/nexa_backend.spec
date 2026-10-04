@@ -1,11 +1,29 @@
+from pathlib import Path
+
 from PyInstaller.utils.hooks import collect_submodules
 
 
-hiddenimports = collect_submodules("app")
+project_root = Path(SPECPATH).resolve().parent
+hiddenimports = collect_submodules("app") + [
+    "whatsapp_feature.adapter",
+    "whatsapp_feature.browser",
+    "whatsapp_feature.ledger",
+    "whatsapp_feature.models",
+    "whatsapp_feature.service",
+    "selenium.common.exceptions",
+    "selenium.webdriver",
+    "selenium.webdriver.chrome.options",
+    "selenium.webdriver.chrome.service",
+    "selenium.webdriver.chrome.webdriver",
+    "selenium.webdriver.common.action_chains",
+    "selenium.webdriver.common.by",
+    "selenium.webdriver.common.keys",
+    "selenium.webdriver.support.ui",
+]
 
 a = Analysis(
     ["run_backend.py"],
-    pathex=["."],
+    pathex=[".", str(project_root)],
     binaries=[],
     datas=[(".env.example", ".")],
     hiddenimports=hiddenimports,

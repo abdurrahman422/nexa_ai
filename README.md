@@ -24,7 +24,7 @@ Nexa AI is a Windows desktop assistant built as an academic software project wit
 The core application can run without a paid AI API. Optional provider keys can be added for hosted LLMs, higher-quality search, Google Cloud streaming speech-to-text, and AI image generation.
 
 > [!IMPORTANT]
-> Nexa AI is under active development. The current source includes the main assistant, safety center, chat, web answers, reminders, voice integrations, YouTube controls, and WhatsApp drafting. Some automation templates remain preview-only.
+> Nexa AI is under active development. The current source includes the main assistant, safety center, chat, web answers, reminders, voice integrations, YouTube controls, and permission-gated WhatsApp text sending. Some automation templates remain preview-only.
 
 ## ✨ Features
 
@@ -37,7 +37,7 @@ The core application can run without a paid AI API. Optional provider keys can b
 | Voice output | Bangla and English neural speech through Edge TTS | Internet required |
 | Safe launcher | Opens recognized, whitelisted Windows apps and websites with permission and confirmation controls | Built in |
 | YouTube assistant | Search/play, pause, seek, volume, captions, speed, theater/fullscreen, autoplay, and sleep timer | Chrome + internet |
-| WhatsApp drafts | Local contact aliases, tone-aware draft composition, and safe `wa.me` links | Draft-only; never auto-sends |
+| WhatsApp messaging | Local contacts and drafts; explicit text sends through a verified visible WhatsApp Web session | Send permission off by default; internet and WhatsApp login required |
 | Smart reminders | Natural-language reminders, recurrence, editing, snooze, and local persistence | Built in |
 | Document tools | Read-only PDF/TXT/Markdown preview and safe file-name search | Built in |
 | Content writer | Exports confirmed Markdown/TXT content only into Nexa's generated-content directory | Permission-gated |
@@ -184,6 +184,26 @@ cd frontend
 npm.cmd run dev
 ```
 
+### WhatsApp Web sending
+
+WhatsApp sending is disabled by default. Enable **WhatsApp Web Sending** in Nexa's Settings/Security Center only when you want to use explicit send commands. Nexa opens a visible Chrome window with a dedicated profile under `backend/data/whatsapp-send-state` (or the configured app data directory); it does not reuse your personal Chrome profile or store a WhatsApp password.
+
+On first send, scan the official WhatsApp Web QR code in that window. The command returns **Login required** and does not queue a message. After login, repeat the same explicit send command. Draft commands never click Send. Sending requires both the separate permission and an explicit send command; no background or unsolicited messages are sent.
+
+Examples:
+
+```text
+Send a WhatsApp message to Rahim saying I will call tomorrow.
+Send a WhatsApp message to +14155552671 saying hello.
+WhatsApp e Rahim ke message pathao: ami kal ashbo.
+রহিমকে হোয়াটসঅ্যাপে মেসেজ পাঠাও: আমি কাল আসব।
+Draft a WhatsApp message to Rahim about tomorrow's meeting.
+```
+
+Explicit sending accepts a valid international number with country code (E.164) or Bangladesh mobile number, or one unique exact saved contact name/alias. Fuzzy matches, duplicate contacts, groups, unverified chats, changed WhatsApp selectors, and uncertain browser outcomes are blocked safely. Nexa distinguishes sent, delivered, and read indicators when WhatsApp exposes them. After a timeout or uncertain result, check WhatsApp; the same request is not automatically retried.
+
+The normal backend launcher binds the hardened sender from `whatsapp_feature/` and stores its durable ledger and dedicated browser profile under `whatsapp-send-state`. Mocked tests cover authorization, exact text, recipient safety, login-required behavior, duplicate protection, and browser acknowledgement handling. Real WhatsApp login, selectors, and delivery still require live acceptance with the user's account; automated tests do not send real messages.
+
 ## 🔌 Optional Configuration
 
 Edit `backend/.env` only for services you plan to use. Never commit this file or any credential JSON.
@@ -265,11 +285,11 @@ Nexa AI treats desktop control as a permissioned capability, not an unrestricted
 - App and website launch targets are allowlisted.
 - Sensitive actions require confirmation unless a narrowly scoped trusted mode is enabled.
 - File search and document preview are read-only.
-- WhatsApp integration creates drafts and never clicks **Send**.
+- WhatsApp drafts never click **Send**. Explicit text sending is separately permission-gated; background/unsolicited sending remains locked off.
 - Generated content is written only to Nexa-managed output folders.
 - Permissions are visible and adjustable in the Security Center.
 - Executed and blocked actions are recorded in a local audit trail.
-- Shell execution, arbitrary app execution, file delete/move/rename/edit, and automatic message sending are permanently locked off.
+- Shell execution, arbitrary app execution, file delete/move/rename/edit, and background/unsolicited message sending are permanently locked off.
 
 ## ✅ Verification
 

@@ -157,7 +157,7 @@ These tests cover the same safety-critical route behavior as the smoke script wi
 | Database | Preview/status only | Readiness/status; not full memory system. |
 | AI Chat | Working / Wired | Weather uses Open-Meteo; web answers reuse safe public answer logic; chat never executes actions. |
 | Workflow automation | Missing / Future | No workflow executor. |
-| WhatsApp drafts | Working / Wired | Local contacts, aliases, relationship/tone, safe `wa.me` draft URLs only. Nexa never clicks Send. |
+| WhatsApp messaging | Working / Wired | Drafts plus explicit permission-gated text sends to verified numbers through visible WhatsApp Web. |
 | Email automation | Missing / Future | Not implemented. |
 
 ## Optional Providers
@@ -191,7 +191,7 @@ Local WhatsApp contacts are stored under backend local data and support:
 - `relationship`: `boss`, `client`, `friend`, `family`, or `unknown`
 - `default_tone`: `formal`, `friendly`, or `normal`
 
-Trusted WhatsApp draft auto-open may open `https://wa.me/<phone>?text=<draft>`, but Nexa never clicks Send or reads chats.
+Trusted WhatsApp draft auto-open may open `https://wa.me/<phone>?text=<draft>`; draft commands never click Send. Explicit text sends require the separate `whatsapp_send_skill` permission, an exact phone/contact, and a logged-in visible WhatsApp Web session. The sender checks the exact message and recipient, records a durable request ID, and never automatically retries after a possible click.
 | Smart home | Future | Not implemented. |
 
 ## Safety Rules
@@ -200,8 +200,8 @@ Trusted WhatsApp draft auto-open may open `https://wa.me/<phone>?text=<draft>`, 
 - Dangerous text such as delete, format, shutdown, registry, system32, cmd, and powershell is blocked by backend safety checks.
 - File write operations are intentionally not implemented.
 - TTS and other capabilities can be disabled through backend permissions.
-- Messages are not auto-sent.
-- WhatsApp messages are draft-only; the user manually presses Send.
+- Background/unsolicited messages are never sent.
+- WhatsApp drafts remain manual; only an explicit send command with `whatsapp_send_skill` enabled may click Send.
 - The microphone flow is push-to-talk, not always-on.
 
 ## Useful Commands

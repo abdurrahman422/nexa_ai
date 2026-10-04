@@ -417,11 +417,21 @@ export function SettingsPageV2({
             <div className="nx-switch-row">
               <span>
                 WhatsApp Draft Skill Enabled
-                <small>Create message drafts after confirmation. Auto-send remains locked off.</small>
+                <small>Prepare WhatsApp drafts; draft commands never send. Explicit sending has a separate permission.</small>
               </span>
               <Switch
                 on={permissionEnabled("whatsapp_draft_skill")}
                 onClick={() => void togglePermission("whatsapp_draft_skill", "WhatsApp Draft Skill")}
+              />
+            </div>
+            <div className="nx-switch-row">
+              <span>
+                WhatsApp Web Sending
+                <small>Explicit send commands can send real messages. Requires WhatsApp Web login; the recipient and exact message are checked. No automatic retries.</small>
+              </span>
+              <Switch
+                on={permissionEnabled("whatsapp_send_skill")}
+                onClick={() => void togglePermission("whatsapp_send_skill", "WhatsApp Web Sending")}
               />
             </div>
             <div className="nx-switch-row">
@@ -534,8 +544,8 @@ export function SettingsPageV2({
             </div>
             <div className="nx-chip-row" style={{ marginBottom: 10 }}>
               <div className="nx-chip muted">Local-only</div>
-              <div className="nx-chip muted">Draft only</div>
-              <div className="nx-chip warn">No auto-send</div>
+              <div className="nx-chip muted">Drafts + explicit send</div>
+              <div className="nx-chip warn">Sending off by default</div>
             </div>
             <div className="nx-field-row">
               <span>Name</span>
@@ -701,7 +711,7 @@ export function SettingsPageV2({
           <div className="nx-card-head">
             <div className="nx-card-title"><ShieldCheck /> Quick Toggles</div>
           </div>
-          {["actions_website", "actions_app", "trusted_quick_launch", "youtube_skill", "trusted_youtube_auto_open", "whatsapp_draft_skill", "trusted_whatsapp_draft_auto_open", "always_on_microphone", "voice_stt", "voice_tts", "web_answers", "reminders"].map((key) => {
+          {["actions_website", "actions_app", "trusted_quick_launch", "youtube_skill", "trusted_youtube_auto_open", "whatsapp_draft_skill", "trusted_whatsapp_draft_auto_open", "whatsapp_send_skill", "always_on_microphone", "voice_stt", "voice_tts", "web_answers", "reminders"].map((key) => {
             const permission = permissions.find((p) => p.key === key);
             if (!permission) return null;
             return (

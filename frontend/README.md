@@ -80,7 +80,7 @@ npm.cmd run build
 | Voice STT | Backend + internet required | Push-to-talk calls online Bangla STT; no local model is needed. |
 | TTS | Backend required | Calls backend TTS status/speak endpoint; permission-gated. |
 | Audit/history | Working / Wired, Backend required | Shows local preview history and backend audit events. |
-| AI Chat / Dashboard assistant | Working / Wired, Backend required | Smart router with local persona, weather/time, search, optional LLM, safe YouTube actions, WhatsApp draft composer, and blocked dangerous commands. |
+| AI Chat / Dashboard assistant | Working / Wired, Backend required | Smart router with local persona, weather/time, search, optional LLM, safe YouTube actions, WhatsApp drafts and permission-gated explicit sends, and blocked dangerous commands. |
 | LLM provider chips | Working / Wired, Backend required | Shows provider chip only for LLM-backed answers. Local conversation stays clean. |
 | WhatsApp contacts | Working / Wired, Backend required | Settings form supports name, phone, aliases, relationship, and default tone. |
 | Automation workflow templates | Preview only | Templates do not execute workflows. |
@@ -93,7 +93,8 @@ npm.cmd run build
 - Hosted LLM providers are optional and require user-provided backend `.env` keys.
 - Search/live data quality depends on configured backend search provider. Serper is optional.
 - YouTube trusted open/search and WhatsApp trusted draft auto-open are backend permission settings.
-- WhatsApp is draft-only. Nexa never clicks Send, reads chats, or sends silently.
+- WhatsApp draft commands never click Send. Explicit message sends require the separate off-by-default WhatsApp Web Sending permission and a visible logged-in browser session.
+- WhatsApp send status depends on WhatsApp Web's current UI and acknowledgement indicators; live delivery is not guaranteed by mocked tests.
 - Workflow automation templates are preview-only.
 - Profile settings are local-only.
 - File write operations are intentionally disabled.
