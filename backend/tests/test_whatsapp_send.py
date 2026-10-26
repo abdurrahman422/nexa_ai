@@ -98,6 +98,28 @@ def test_whatsapp_send_permission_is_disabled_by_default_and_toggleable(tmp_path
     assert response.json()["enabled"] is True
 
 
+def test_send_permission_does_not_require_draft_permissions(tmp_path, monkeypatch) -> None:
+    client = _client(tmp_path, monkeypatch)
+    monkeypatch.setattr(chat_service, "is_permission_enabled", lambda key: key == "whatsapp_send_skill")
+    calls: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        chat_service,
+        "send_whatsapp_message",
+        lambda request_id, phone, text: (
+            calls.append((phone, text)) or WhatsAppSendResult("submitted", "Submitted.")
+        ),
+    )
+
+    response = client.post(
+        "/api/chat/message",
+        json={"message": "Send a WhatsApp message to +14155552671 saying hello."},
+    )
+
+    assert response.json()["intent"] == "whatsapp_send"
+    assert response.json()["status"] == "submitted"
+    assert calls == [("14155552671", "hello.")]
+
+
 def test_draft_never_calls_sender(tmp_path, monkeypatch) -> None:
     client = _client(tmp_path, monkeypatch)
     _save_rahim(client)

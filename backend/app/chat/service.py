@@ -2378,7 +2378,16 @@ def _whatsapp_skill_response(
     address_style: str | None = None,
     request_id: str | None = None,
 ) -> ChatMessageResponse:
-    if not is_permission_enabled("whatsapp_draft_skill") and not is_permission_enabled("trusted_whatsapp_draft_auto_open"):
+    normalized = normalize_text(message)
+    draft_intent = _parse_whatsapp_draft(message)
+    is_send = draft_intent.send_requested
+
+    if is_send and not is_permission_enabled("whatsapp_send_skill"):
+        denied = permission_denied_message("whatsapp_send_skill")
+        answer = f"{denied} Enable WhatsApp Web Sending in Settings, then repeat the command."
+        return ChatMessageResponse(status="blocked", intent="whatsapp_send", message=message, answer=answer, blocked=True, chips=["WhatsApp", "Send permission disabled"], error=answer)
+
+    if not is_send and not is_permission_enabled("whatsapp_draft_skill") and not is_permission_enabled("trusted_whatsapp_draft_auto_open"):
         denied = permission_denied_message("whatsapp_draft_skill")
         _record_chat_event("whatsapp_skill", "blocked", message, denied)
         return ChatMessageResponse(
@@ -2391,13 +2400,6 @@ def _whatsapp_skill_response(
             error=denied,
         )
 
-    normalized = normalize_text(message)
-    draft_intent = _parse_whatsapp_draft(message)
-    is_send = draft_intent.send_requested
-    if is_send and not is_permission_enabled("whatsapp_send_skill"):
-        denied = permission_denied_message("whatsapp_send_skill")
-        answer = f"{denied} Enable WhatsApp Web Sending in Settings, then repeat the command."
-        return ChatMessageResponse(status="blocked", intent="whatsapp_send", message=message, answer=answer, blocked=True, chips=["WhatsApp", "Send permission disabled"], error=answer)
     recipient = draft_intent.recipient
     draft_text = draft_intent.raw_message
     wants_draft = bool(recipient or draft_text) or _has_any(normalized, MESSAGE_ACTION_KEYWORDS)

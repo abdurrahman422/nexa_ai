@@ -427,7 +427,7 @@ export function SettingsPageV2({
             <div className="nx-switch-row">
               <span>
                 WhatsApp Web Sending
-                <small>Explicit send commands can send real messages. Requires WhatsApp Web login; the recipient and exact message are checked. No automatic retries.</small>
+                <small>Send an exact message to an international phone number or saved contact; Nexa verifies both. Example: "Send a WhatsApp message to +8801XXXXXXXXX saying Hello". First use may open Chrome for QR login; sign in, then submit again. The first attempt sends nothing; uncertain sends are never retried automatically.</small>
               </span>
               <Switch
                 on={permissionEnabled("whatsapp_send_skill")}
